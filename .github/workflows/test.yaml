@@ -84,9 +84,3 @@ jobs:
 
       - name: Node tests
         run: npm test
-
-      - name: Extract coverage info
-        run: npm run coverage
-
-      - name: Test coverage
-        uses: coverallsapp/github-action@v2
