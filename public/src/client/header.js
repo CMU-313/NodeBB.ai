@@ -8,16 +8,19 @@ define('forum/header', [
 ], function (unread, notifications, chat, alerts) {
 	const module = {};
 
-	module.prepareDOM = function () {
-		if (app.user.uid > 0) {
-			unread.initUnreadTopics();
-		}
-		notifications.prepareDOM();
-		chat.prepareDOM();
-		handleStatusChange();
-		createHeaderTooltips();
-		handleLogout();
-	};
+       module.prepareDOM = function () {
+	       if (app.user.uid > 0) {
+		       unread.initUnreadTopics();
+	       }
+	       notifications.prepareDOM();
+	       chat.prepareDOM();
+	       handleStatusChange();
+	       createHeaderTooltips();
+	       handleLogout();
+	       require(['forum/postsearch'], function (PostSearch) {
+		       PostSearch.init();
+	       });
+       };
 
 	function handleStatusChange() {
 		$('[component="header/usercontrol"] [data-status]').off('click').on('click', function (e) {
