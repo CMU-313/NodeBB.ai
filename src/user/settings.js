@@ -1,4 +1,3 @@
-
 'use strict';
 
 const validator = require('validator');
@@ -48,50 +47,82 @@ module.exports = function (User) {
 	};
 
 	async function onSettingsLoaded(uid, settings) {
-		const data = await plugins.hooks.fire('filter:user.getSettings', { uid: uid, settings: settings });
-		settings = data.settings;
+		settings = await applyPluginFilters(uid, settings);
+		settings = applyDefaultSettings(settings);
+		settings = await applyNotificationSettings(settings);
+		settings = applyChatSettings(settings);
+		return settings;
+	}
 
+	function applyDefaultSettings(settings) {
 		const defaultTopicsPerPage = meta.config.topicsPerPage;
 		const defaultPostsPerPage = meta.config.postsPerPage;
 
-		settings.showemail = parseInt(getSetting(settings, 'showemail', 0), 10) === 1;
-		settings.showfullname = parseInt(getSetting(settings, 'showfullname', 0), 10) === 1;
-		settings.openOutgoingLinksInNewTab = parseInt(getSetting(settings, 'openOutgoingLinksInNewTab', 0), 10) === 1;
-		settings.dailyDigestFreq = getSetting(settings, 'dailyDigestFreq', 'off');
-		settings.usePagination = parseInt(getSetting(settings, 'usePagination', 0), 10) === 1;
+		const booleanSettings = [
+			['showemail', 0],
+			['showfullname', 0],
+			['openOutgoingLinksInNewTab', 0],
+			['usePagination', 0],
+			['followTopicsOnCreate', 1],
+			['followTopicsOnReply', 0],
+			['disableIncomingChats', 0],
+			['topicSearchEnabled', 0],
+			['updateUrlWithPostIndex', 1],
+			['scrollToMyPost', 1],
+		];
+
+		booleanSettings.forEach(([key, defaultValue]) => {
+			settings[key] = parseBooleanSetting(settings, key, defaultValue);
+		});
+
+		const stringSettings = [
+			['dailyDigestFreq', 'off'],
+			['topicPostSort', 'oldest_to_newest'],
+			['categoryTopicSort', 'recently_replied'],
+			['upvoteNotifFreq', 'all'],
+			['categoryWatchState', 'notwatching'],
+		];
+
+		stringSettings.forEach(([key, defaultValue]) => {
+			settings[key] = getSetting(settings, key, defaultValue);
+		});
+
 		settings.topicsPerPage = Math.min(
 			meta.config.maxTopicsPerPage,
-			settings.topicsPerPage ? parseInt(settings.topicsPerPage, 10) : defaultTopicsPerPage,
-			defaultTopicsPerPage
+			parseInt(settings.topicsPerPage || defaultTopicsPerPage, 10)
 		);
 		settings.postsPerPage = Math.min(
 			meta.config.maxPostsPerPage,
-			settings.postsPerPage ? parseInt(settings.postsPerPage, 10) : defaultPostsPerPage,
-			defaultPostsPerPage
+			parseInt(settings.postsPerPage || defaultPostsPerPage, 10)
 		);
 		settings.userLang = settings.userLang || meta.config.defaultLang || 'en-GB';
 		settings.acpLang = settings.acpLang || settings.userLang;
-		settings.topicPostSort = getSetting(settings, 'topicPostSort', 'oldest_to_newest');
-		settings.categoryTopicSort = getSetting(settings, 'categoryTopicSort', 'recently_replied');
-		settings.followTopicsOnCreate = parseInt(getSetting(settings, 'followTopicsOnCreate', 1), 10) === 1;
-		settings.followTopicsOnReply = parseInt(getSetting(settings, 'followTopicsOnReply', 0), 10) === 1;
-		settings.upvoteNotifFreq = getSetting(settings, 'upvoteNotifFreq', 'all');
-		settings.disableIncomingChats = parseInt(getSetting(settings, 'disableIncomingChats', 0), 10) === 1;
-		settings.topicSearchEnabled = parseInt(getSetting(settings, 'topicSearchEnabled', 0), 10) === 1;
-		settings.updateUrlWithPostIndex = parseInt(getSetting(settings, 'updateUrlWithPostIndex', 1), 10) === 1;
 		settings.bootswatchSkin = validator.escape(String(settings.bootswatchSkin || ''));
 		settings.homePageRoute = validator.escape(String(settings.homePageRoute || '')).replace(/&#x2F;/g, '/');
-		settings.scrollToMyPost = parseInt(getSetting(settings, 'scrollToMyPost', 1), 10) === 1;
-		settings.categoryWatchState = getSetting(settings, 'categoryWatchState', 'notwatching');
+		return settings;
+	}
 
+	function parseBooleanSetting(settings, key, defaultValue) {
+		return parseInt(getSetting(settings, key, defaultValue), 10) === 1;
+	}
+
+	async function applyNotificationSettings(settings) {
 		const notificationTypes = await notifications.getAllNotificationTypes();
 		notificationTypes.forEach((notificationType) => {
 			settings[notificationType] = getSetting(settings, notificationType, 'notification');
 		});
+		return settings;
+	}
 
+	function applyChatSettings(settings) {
 		settings.chatAllowList = parseJSONSetting(settings.chatAllowList || '[]', []).map(String);
 		settings.chatDenyList = parseJSONSetting(settings.chatDenyList || '[]', []).map(String);
 		return settings;
+	}
+
+	async function applyPluginFilters(uid, settings) {
+		const data = await plugins.hooks.fire('filter:user.getSettings', { uid: uid, settings: settings });
+		return data.settings;
 	}
 
 	function parseJSONSetting(value, defaultValue) {
