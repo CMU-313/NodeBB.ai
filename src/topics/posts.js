@@ -22,7 +22,28 @@ module.exports = function (Topics) {
 		await Topics.addPostToTopic(postData.tid, postData);
 	};
 
-	Topics.getTopicPosts = async function (topicData, set, start, stop, uid, reverse) {
+	Topics.getTopicPosts = async function (topicData, options = {}) {
+		// Accept either positional signature (for backward-compat) or an options object
+		let set;
+		let start = 0;
+		let stop = 0;
+		let uid = 0;
+		let reverse = false;
+		if (options && typeof options === 'object' && (options.hasOwnProperty('set') || options.hasOwnProperty('start') || options.hasOwnProperty('stop') || options.hasOwnProperty('uid') || options.hasOwnProperty('reverse'))) {
+			set = options.set;
+			start = typeof options.start !== 'undefined' ? Number(options.start) : 0;
+			stop = typeof options.stop !== 'undefined' ? Number(options.stop) : 0;
+			uid = typeof options.uid !== 'undefined' ? options.uid : 0;
+			reverse = !!options.reverse;
+		} else {
+			// Backwards compatible: options was actually the `set` string
+			set = options;
+			start = typeof arguments[2] !== 'undefined' ? Number(arguments[2]) : 0;
+			stop = typeof arguments[3] !== 'undefined' ? Number(arguments[3]) : 0;
+			uid = typeof arguments[4] !== 'undefined' ? arguments[4] : 0;
+			reverse = !!arguments[5];
+		}
+
 		if (!topicData) {
 			return [];
 		}
