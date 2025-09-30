@@ -39,6 +39,9 @@ module.exports = function (Posts) {
 		if (data.handle && !parseInt(uid, 10)) {
 			postData.handle = data.handle;
 		}
+		if (data.anonymous && parseInt(uid, 10) > 0 && meta.config.allowAnonymousPosts) {
+			postData.anonymous = 1;
+		}
 		if (_activitypub) {
 			if (_activitypub.url) {
 				postData.url = _activitypub.url;

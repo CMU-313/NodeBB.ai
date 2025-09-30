@@ -66,6 +66,26 @@ module.exports = function (Posts) {
 		}
 	};
 
+	Posts.overrideAnonymousUser = function (postData) {
+		if (postData && postData.anonymous && parseInt(postData.anonymous, 10) === 1 &&
+			postData.user && parseInt(postData.uid, 10) > 0) {
+			postData.user.username = '[[global:anonymous]]';
+			postData.user.userslug = '';
+			postData.user.fullname = '[[global:anonymous]]';
+			postData.user.displayname = '[[global:anonymous]]';
+			postData.user.picture = '';
+			postData.user.status = '';
+			postData.user.signature = '';
+			postData.user.reputation = 0;
+			postData.user.postcount = 0;
+			postData.user.groupTitle = '';
+			postData.user.groupTitleArray = [];
+			postData.user.custom_profile_info = [];
+			// Preserve the real uid for moderation purposes but hide it from display
+			postData.realUid = postData.uid;
+		}
+	};
+
 	async function checkGroupMembership(uid, groupTitleArray) {
 		if (!Array.isArray(groupTitleArray) || !groupTitleArray.length) {
 			return null;

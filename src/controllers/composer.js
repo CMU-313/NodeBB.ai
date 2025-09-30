@@ -6,6 +6,7 @@ const user = require('../user');
 const plugins = require('../plugins');
 const topics = require('../topics');
 const posts = require('../posts');
+const meta = require('../meta');
 const helpers = require('./helpers');
 
 exports.get = async function (req, res, callback) {
@@ -19,7 +20,9 @@ exports.get = async function (req, res, callback) {
 		req: req,
 		res: res,
 		next: callback,
-		templateData: {},
+		templateData: {
+			allowAnonymousPosts: meta.config.allowAnonymousPosts,
+		},
 	});
 
 	if (res.headersSent) {
