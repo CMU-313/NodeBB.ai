@@ -124,14 +124,17 @@ module.exports = function (Topics) {
 			userData,
 			editors,
 			replies,
+			postHistory,
 		] = await Promise.all([
 			posts.hasBookmarked(pids, uid),
 			posts.getVoteStatusByPostIDs(pids, uid),
 			getPostUserData('uid', async uids => await posts.getUserInfoForPosts(uids, uid)),
 			getPostUserData('editor', async uids => await user.getUsersFields(uids, ['uid', 'username', 'userslug'])),
 			getPostReplies(postData, uid),
-			Topics.addParentPosts(postData, uid),
+			getPostHistoryData(pids, uid),
 		]);
+
+		await Topics.addParentPosts(postData, uid);
 
 		postData.forEach((postObj, i) => {
 			if (postObj) {
@@ -143,6 +146,11 @@ module.exports = function (Topics) {
 				postObj.votes = postObj.votes || 0;
 				postObj.replies = replies[i];
 				postObj.selfPost = parseInt(uid, 10) > 0 && parseInt(uid, 10) === postObj.uid;
+				postObj.history = postHistory && postHistory[i] ? postHistory[i] : {
+					hasHistory: false,
+					revisionCount: 0,
+					canViewHistory: false,
+				};
 
 				// Username override for guests, if enabled
 				if (meta.config.allowGuestHandles && postObj.uid === 0 && postObj.handle) {
@@ -173,6 +181,13 @@ module.exports = function (Topics) {
 					(post.selfPost && post.deleted && parseInt(post.deleterUid, 10) === parseInt(topicPrivileges.uid, 10)) ||
 					((loggedIn || topicData.postSharing.length) && !post.deleted);
 				post.ip = topicPrivileges.isAdminOrMod ? post.ip : undefined;
+
+				// Add post history display permissions
+				post.display_history = meta.config.enablePostHistory === 1 && 
+					topicPrivileges['posts:history'] && 
+					post.history && 
+					post.history.hasHistory;
+				post.display_history_menu = post.display_history && (post.history.revisionCount > 0);
 
 				posts.modifyPostByPrivilege(post, topicPrivileges);
 			}
@@ -356,6 +371,43 @@ module.exports = function (Topics) {
 		return await db.getObjectField(`topic:${tid}`, 'postcount');
 	};
 
+	async function getPostHistoryData(pids, callerUid) {
+		// Check if post history is enabled
+		if (meta.config.enablePostHistory !== 1) {
+			return pids.map(() => ({ hasHistory: false, revisionCount: 0, canViewHistory: false }));
+		}
+
+		// Check privileges for viewing post history
+		const postPrivileges = await privileges.posts.get(pids, callerUid);
+		
+		// Get revision counts for all posts
+		const revisionCounts = await Promise.all(
+			pids.map(async (pid) => {
+				if (!pid) return 0;
+				try {
+					const count = await db.listLength(`post:${pid}:diffs`);
+					return count || 0;
+				} catch (err) {
+					return 0;
+				}
+			})
+		);
+
+		// Build history data for each post
+		return pids.map((pid, index) => {
+			const privileges = postPrivileges[index];
+			const canViewHistory = privileges && privileges['posts:history'];
+			const revisionCount = revisionCounts[index];
+			
+			return {
+				hasHistory: revisionCount > 0,
+				revisionCount: revisionCount,
+				canViewHistory: canViewHistory,
+				pid: pid,
+			};
+		});
+	}
+
 	async function getPostReplies(postData, callerUid) {
 		const pids = postData.map(p => p && p.pid);
 		const keys = pids.map(pid => `pid:${pid}:replies`);
@@ -433,6 +485,70 @@ module.exports = function (Topics) {
 
 		return returnData;
 	}
+
+	Topics.getPostRevisions = async function (pid, uid) {
+		// Check if post history is enabled
+		if (meta.config.enablePostHistory !== 1) {
+			return {
+				hasHistory: false,
+				revisions: [],
+				error: 'Post history is disabled',
+			};
+		}
+
+		// Check privileges
+		const postPrivileges = await privileges.posts.get([pid], uid);
+		if (!postPrivileges[0] || !postPrivileges[0]['posts:history']) {
+			return {
+				hasHistory: false,
+				revisions: [],
+				error: 'No permission to view post history',
+			};
+		}
+
+		try {
+			// Get revision timestamps
+			const timestamps = await posts.diffs.list(pid);
+			if (!timestamps.length) {
+				return {
+					hasHistory: false,
+					revisions: [],
+					count: 0,
+				};
+			}
+
+			// Get revision data with user information
+			const diffs = await posts.diffs.get(pid, 0);
+			const revisions = await Promise.all(timestamps.map(async (timestamp, index) => {
+				const diffData = diffs.find(d => d && d.timestamp === timestamp) || {};
+				const editorData = diffData.uid ? await user.getUserFields(diffData.uid, ['username', 'userslug', 'picture']) : null;
+				
+				return {
+					timestamp: parseInt(timestamp, 10),
+					timestampISO: utils.toISOString(parseInt(timestamp, 10)),
+					editor: editorData,
+					isOriginal: index === timestamps.length - 1,
+					isCurrent: index === 0,
+					hasContentChanges: !!diffData.patch,
+					hasTitleChanges: !!diffData.title,
+					hasTagChanges: !!diffData.tags,
+				};
+			}));
+
+			return {
+				hasHistory: true,
+				revisions,
+				count: timestamps.length,
+				canRestore: postPrivileges[0]['posts:edit'] || false,
+			};
+		} catch (err) {
+			return {
+				hasHistory: false,
+				revisions: [],
+				error: err.message,
+			};
+		}
+	};
 
 	Topics.syncBacklinks = async (postData) => {
 		if (!postData) {
