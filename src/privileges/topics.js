@@ -2,8 +2,18 @@
 'use strict';
 
 const _ = require('lodash');
+		co		const canViewPrivate = !topicData.private || isOwner || isAdminOrMod;
 
-const meta = require('../meta');
+		return await plugins.hooks.fire('filter:privileges.topics.get', {
+			'topics:reply': ((privData['topics:reply'] && ((!topicData.locked && mayReply) || isModerator)) || isAdministrator) && canViewPrivate,
+			'topics:read': (privData['topics:read'] || isAdministrator) && canViewPrivate,
+			'topics:schedule': privData['topics:schedule'] || isAdministrator,
+			'topics:tag': privData['topics:tag'] || isAdministrator,anViewPrivate = !topicData.private || isOwner || isAdminOrMod;
+		return await plugins.hooks.fire('filter:privileges.topics.get', {
+		'topics:reply': ((privData['topics:reply'] && ((!topicData.locked && mayReply) || isModerator)) || isAdministrator) && canViewPrivate,
+		'topics:read': (privData['topics:read'] || isAdministrator) && canViewPrivate,
+		'topics:schedule': privData['topics:schedule'] || isAdministrator,
+		'topics:tag': privData['topics:tag'] || isAdministrator,t meta = require('../meta');
 const topics = require('../topics');
 const user = require('../user');
 const helpers = require('./helpers');
@@ -23,7 +33,7 @@ privsTopics.get = async function (tid, uid) {
 		'posts:upvote', 'posts:downvote',
 		'posts:delete', 'posts:view_deleted', 'read', 'purge',
 	];
-	const topicData = await topics.getTopicFields(tid, ['cid', 'uid', 'locked', 'deleted', 'scheduled']);
+	const topicData = await topics.getTopicFields(tid, ['cid', 'uid', 'locked', 'deleted', 'scheduled', 'private']);
 	const [userPrivileges, isAdministrator, isModerator, disabled, topicTools] = await Promise.all([
 		helpers.isAllowedTo(privs, uid, topicData.cid),
 		user.isAdministrator(uid),
@@ -43,9 +53,11 @@ privsTopics.get = async function (tid, uid) {
 	const mayReply = privsTopics.canViewDeletedScheduled(topicData, {}, false, privData['topics:schedule']);
 	const hasTools = topicTools.tools.length > 0;
 
+	const canViewPrivate = !topicData.private || isOwner || isAdministrator;
+
 	return await plugins.hooks.fire('filter:privileges.topics.get', {
-		'topics:reply': (privData['topics:reply'] && ((!topicData.locked && mayReply) || isModerator)) || isAdministrator,
-		'topics:read': privData['topics:read'] || isAdministrator,
+		'topics:reply': ((privData['topics:reply'] && ((!topicData.locked && mayReply) || isModerator)) || isAdministrator) && canViewPrivate,
+		'topics:read': (privData['topics:read'] || isAdministrator) && canViewPrivate,
 		'topics:schedule': privData['topics:schedule'] || isAdministrator,
 		'topics:tag': privData['topics:tag'] || isAdministrator,
 		'topics:delete': (privData['topics:delete'] && (isOwner || isModerator)) || isAdministrator,

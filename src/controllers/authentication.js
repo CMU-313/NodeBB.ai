@@ -20,57 +20,26 @@ const sockets = require('../socket.io');
 
 const authenticationController = module.exports;
 
+const UserRegistration = require('./registration/UserRegistration');
+
 async function registerAndLoginUser(req, res, userData) {
-	if (!userData.hasOwnProperty('email')) {
-		userData.updateEmail = true;
-	}
+	const registration = new UserRegistration(req, res);
+	registration.setUserData(userData);
 
-	const data = await user.interstitials.get(req, userData);
-
-	// If interstitials are found, save registration attempt into session and abort
-	const deferRegistration = data.interstitials.length;
-	if (deferRegistration) {
-		userData.register = true;
-		req.session.registration = userData;
-
-		if (req.body?.noscript === 'true') {
-			res.redirect(`${nconf.get('relative_path')}/register/complete`);
-			return;
-		}
-		res.json({ next: `${nconf.get('relative_path')}/register/complete` });
+	let result = await registration.handleInterstitials();
+	if (!result) {
 		return;
 	}
 
-	const queue = await user.shouldQueueUser(req.ip);
-	const result = await plugins.hooks.fire('filter:register.shouldQueue', { req: req, res: res, userData: userData, queue: queue });
-	if (result.queue) {
-		return await addToApprovalQueue(req, userData);
+	result = await result.checkQueue();
+	if (result && result.message) {
+		return result;
 	}
 
-	const uid = await user.create(userData);
-	if (res.locals.processLogin) {
-		const hasLoginPrivilege = await privileges.global.can('local:login', uid);
-		if (hasLoginPrivilege) {
-			await authenticationController.doLogin(req, uid);
-		}
-	}
-
-	// Distinguish registrations through invites from direct ones
-	if (userData.token) {
-		// Token has to be verified at this point
-		await Promise.all([
-			user.confirmIfInviteEmailIsUsed(userData.token, userData.email, uid),
-			user.joinGroupsFromInvitation(uid, userData.token),
-		]);
-	}
-	await user.deleteInvitationKey(userData.email, userData.token);
-	let next = req.session.returnTo || `${nconf.get('relative_path')}/`;
-	if (req.loggedIn && next === `${nconf.get('relative_path')}/login`) {
-		next = `${nconf.get('relative_path')}/`;
-	}
-	const complete = await plugins.hooks.fire('filter:register.complete', { uid: uid, next: next });
-	req.session.returnTo = complete.next;
-	return complete;
+	await result.createUser();
+	await result.processLogin();
+	await result.handleInvitation();
+	return await result.finalizeRegistration();
 }
 
 authenticationController.register = async function (req, res) {
@@ -125,21 +94,6 @@ authenticationController.register = async function (req, res) {
 	}
 };
 
-async function addToApprovalQueue(req, userData) {
-	userData.ip = req.ip;
-	await user.addToApprovalQueue(userData);
-	let message = '[[register:registration-added-to-queue]]';
-	if (meta.config.showAverageApprovalTime) {
-		const average_time = await db.getObjectField('registration:queue:approval:times', 'average');
-		if (average_time > 0) {
-			message += ` [[register:registration-queue-average-time, ${Math.floor(average_time / 60)}, ${Math.floor(average_time % 60)}]]`;
-		}
-	}
-	if (meta.config.autoApproveTime > 0) {
-		message += ` [[register:registration-queue-auto-approve-time, ${meta.config.autoApproveTime}]]`;
-	}
-	return { message: message };
-}
 
 authenticationController.registerComplete = async function (req, res) {
 	try {
