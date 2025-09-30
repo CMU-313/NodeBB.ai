@@ -13,36 +13,67 @@ const helpers = require('./helpers');
 
 const postsController = module.exports;
 
-postsController.redirectToPost = async function (req, res, next) {
-	const pid = utils.isNumber(req.params.pid) ? parseInt(req.params.pid, 10) : req.params.pid;
+async function validatePostId(pid) {
 	if (!pid) {
+		return { isValid: false };
+	}
+	return { isValid: true, pid };
+}
+
+async function handleActivityPubAssertion(pid, uid) {
+	if (!utils.isNumber(pid) && uid && meta.config.activitypubEnabled) {
+		const exists = await posts.exists(pid);
+		if (!exists) {
+			await activitypub.notes.assert(uid, pid);
+		}
+	}
+}
+
+async function checkPostPermissions(pid, uid) {
+	const [canRead, path] = await Promise.all([
+		privileges.posts.can('topics:read', pid, uid),
+		posts.generatePostPath(pid, uid),
+	]);
+	
+	return { canRead, path };
+}
+
+function setActivityPubHeaders(res, pid) {
+	if (meta.config.activitypubEnabled) {
+		// Include link header for richer parsing
+		res.set('Link', `<${nconf.get('url')}/post/${pid}>; rel="alternate"; type="application/activity+json"`);
+	}
+}
+
+postsController.redirectToPost = async function (req, res, next) {
+	console.log('mmingus'); // Temporary log for testing
+	
+	const pid = utils.isNumber(req.params.pid) ? parseInt(req.params.pid, 10) : req.params.pid;
+	
+	// Validate post ID
+	const validation = await validatePostId(pid);
+	if (!validation.isValid) {
 		return next();
 	}
 
-	// Kickstart note assertion if applicable
-	if (!utils.isNumber(pid) && req.uid && meta.config.activitypubEnabled) {
-		const exists = await posts.exists(pid);
-		if (!exists) {
-			await activitypub.notes.assert(req.uid, pid);
-		}
-	}
+	// Handle ActivityPub assertion if applicable
+	await handleActivityPubAssertion(pid, req.uid);
 
-	const [canRead, path] = await Promise.all([
-		privileges.posts.can('topics:read', pid, req.uid),
-		posts.generatePostPath(pid, req.uid),
-	]);
+	// Check permissions and get post path
+	const { canRead, path } = await checkPostPermissions(pid, req.uid);
+	
 	if (!path) {
 		return next();
 	}
+	
 	if (!canRead) {
 		return helpers.notAllowed(req, res);
 	}
 
-	if (meta.config.activitypubEnabled) {
-		// Include link header for richer parsing
-		res.set('Link', `<${nconf.get('url')}/post/${req.params.pid}>; rel="alternate"; type="application/activity+json"`);
-	}
+	// Set ActivityPub headers
+	setActivityPubHeaders(res, req.params.pid);
 
+	// Perform redirect with query string
 	const qs = querystring.stringify(req.query);
 	helpers.redirect(res, qs ? `${path}?${qs}` : path, true);
 };
