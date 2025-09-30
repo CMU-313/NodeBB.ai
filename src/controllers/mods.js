@@ -23,6 +23,17 @@ modsController.flags.list = async function (req, res) {
 	const validFilters = ['assignee', 'state', 'reporterId', 'type', 'targetUid', 'cid', 'quick', 'page', 'perPage'];
 	const validSorts = ['newest', 'oldest', 'reports', 'upvotes', 'downvotes', 'replies'];
 
+	function isOnlyPagination(filters) {
+		const keys = Object.keys(filters);
+		if (keys.length === 1 && filters.hasOwnProperty('page')) {
+			return true;
+		}
+		if (keys.length === 2 && filters.hasOwnProperty('page') && filters.hasOwnProperty('perPage')) {
+			return true;
+		}
+		return false;
+	}
+
 	const results = await Promise.all([
 		user.isAdminOrGlobalMod(req.uid),
 		user.getModeratedCids(req.uid),
@@ -69,10 +80,7 @@ modsController.flags.list = async function (req, res) {
 	}
 
 	// Pagination doesn't count as a filter
-	if (
-		(Object.keys(filters).length === 1 && filters.hasOwnProperty('page')) ||
-		(Object.keys(filters).length === 2 && filters.hasOwnProperty('page') && filters.hasOwnProperty('perPage'))
-	) {
+	if (isOnlyPagination(filters)) {
 		hasFilter = false;
 	}
 
@@ -220,6 +228,18 @@ modsController.postQueue = async function (req, res, next) {
 	const page = parseInt(req.query.page, 10) || 1;
 	const postsPerPage = 20;
 
+	function canViewPost(post, categoriesData, isAdmin, isGlobalMod, moderatedCids, uid) {
+		if (!post) {
+			return false;
+		}
+		const matchesCategory = !categoriesData.selectedCids.length || 
+			categoriesData.selectedCids.includes(post.category.cid);
+		const hasPermission = isAdmin || isGlobalMod || 
+			moderatedCids.includes(Number(post.category.cid)) || 
+			uid === post.user.uid;
+		return matchesCategory && hasPermission;
+	}
+
 	let postData = await posts.getQueuedPosts({ id: id });
 	let [isAdmin, isGlobalMod, moderatedCids, categoriesData, _privileges] = await Promise.all([
 		user.isAdministrator(req.uid),
@@ -231,9 +251,7 @@ modsController.postQueue = async function (req, res, next) {
 	_privileges = { ..._privileges[0], ..._privileges[1] };
 
 	postData = postData
-		.filter(p => p &&
-			(!categoriesData.selectedCids.length || categoriesData.selectedCids.includes(p.category.cid)) &&
-			(isAdmin || isGlobalMod || moderatedCids.includes(Number(p.category.cid)) || req.uid === p.user.uid))
+		.filter(p => canViewPost(p, categoriesData, isAdmin, isGlobalMod, moderatedCids, req.uid))
 		.map((post) => {
 			const isSelf = post.user.uid === req.uid;
 			post.canAccept = !isSelf && (isAdmin || isGlobalMod || !!moderatedCids.length);
