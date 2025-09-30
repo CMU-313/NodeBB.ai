@@ -140,6 +140,7 @@
 
 	"guest": "Guest",
 	"guests": "Guests",
+	"anonymous": "Anonymous",
 	"former-user": "A Former User",
 	"system-user": "System",
 	"unknown-user": "Unknown user",

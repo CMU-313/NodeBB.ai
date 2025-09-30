@@ -15,6 +15,10 @@ exports.setDefaultPostData = function (reqOrSocket, data) {
 	data.req = exports.buildReqObject(reqOrSocket, { ...data });
 	data.timestamp = Date.now();
 	data.fromQueue = false;
+	// Keep the anonymous flag if it was set
+	if (data.anonymous) {
+		data.anonymous = !!data.anonymous;
+	}
 };
 
 // creates a slimmed down version of the request object
