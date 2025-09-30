@@ -40,6 +40,12 @@ define('forum/topic/events', [
 		'posts.bookmark': togglePostBookmark,
 		'posts.unbookmark': togglePostBookmark,
 
+		'event:post_endorsed': togglePostEndorse,
+		'event:post_unendorsed': togglePostEndorse,
+
+		'action:post.endorse': updatePostEndorsement,
+		'action:post.unendorse': updatePostEndorsement,
+
 		'posts.upvote': togglePostVote,
 		'posts.downvote': togglePostVote,
 		'posts.unvote': togglePostVote,
@@ -240,6 +246,38 @@ define('forum/topic/events', [
 
 		el.find('[component="post/bookmark/on"]').toggleClass('hidden', !data.isBookmarked);
 		el.find('[component="post/bookmark/off"]').toggleClass('hidden', data.isBookmarked);
+	}
+
+	function togglePostEndorse(data) {
+		const el = $('[data-pid="' + data.pid + '"] [component="post/endorse"]').filter(function (index, el) {
+			return $(el).closest('[data-pid]').attr('data-pid') === String(data.pid);
+		});
+		if (!el.length) {
+			return;
+		}
+
+		const isEndorsed = !!data.endorsedBy;
+		el.attr('data-endorsed', isEndorsed);
+
+		el.find('[component="post/endorse/on"]').toggleClass('hidden', !isEndorsed);
+		el.find('[component="post/endorse/off"]').toggleClass('hidden', isEndorsed);
+		el.find('.endorse-text').text(isEndorsed ? '[[topic:endorsed]]' : '[[topic:endorse]]');
+	}
+
+	function updatePostEndorsement(data) {
+		const pid = data.pid;
+		const postEl = $('[data-pid="' + pid + '"]');
+		const endorseEl = postEl.find('[component="post/endorse"]');
+		
+		if (endorseEl.length) {
+			const isEndorsed = endorseEl.attr('data-endorsed') === 'true';
+			const newEndorsedState = !isEndorsed;
+			
+			endorseEl.attr('data-endorsed', newEndorsedState);
+			endorseEl.find('[component="post/endorse/on"]').toggleClass('hidden', !newEndorsedState);
+			endorseEl.find('[component="post/endorse/off"]').toggleClass('hidden', newEndorsedState);
+			endorseEl.find('.endorse-text').text(newEndorsedState ? '[[topic:endorsed]]' : '[[topic:endorse]]');
+		}
 	}
 
 	function togglePostVote(data) {

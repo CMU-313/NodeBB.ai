@@ -477,6 +477,46 @@ postsAPI.unbookmark = async function (caller, data) {
 	return await apiHelpers.postCommand(caller, 'unbookmark', 'bookmarked', '', data);
 };
 
+postsAPI.endorse = async function (caller, data) {
+	if (!data || !data.pid) {
+		throw new Error('[[error:invalid-data]]');
+	}
+	if (!caller.uid) {
+		throw new Error('[[error:not-logged-in]]');
+	}
+
+	const postData = await posts.endorse(data.pid, caller.uid);
+	
+	// Emit websocket event
+	const topicData = await posts.getTopicFields(data.pid, ['tid']);
+	websockets.in(`topic_${topicData.tid}`).emit('event:post_endorsed', {
+		pid: data.pid,
+		endorsedBy: caller.uid,
+	});
+
+	return postData;
+};
+
+postsAPI.unendorse = async function (caller, data) {
+	if (!data || !data.pid) {
+		throw new Error('[[error:invalid-data]]');
+	}
+	if (!caller.uid) {
+		throw new Error('[[error:not-logged-in]]');
+	}
+
+	const postData = await posts.unendorse(data.pid, caller.uid);
+	
+	// Emit websocket event
+	const topicData = await posts.getTopicFields(data.pid, ['tid']);
+	websockets.in(`topic_${topicData.tid}`).emit('event:post_unendorsed', {
+		pid: data.pid,
+		endorsedBy: caller.uid,
+	});
+
+	return postData;
+};
+
 async function diffsPrivilegeCheck(pid, uid) {
 	const [deleted, privilegesData] = await Promise.all([
 		posts.getPostField(pid, 'deleted'),
