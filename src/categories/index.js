@@ -24,6 +24,8 @@ require('./recentreplies')(Categories);
 require('./update')(Categories);
 require('./watch')(Categories);
 require('./search')(Categories);
+// Basic category-scoped search provider (returns tids filtered by title when a query is provided)
+require('./search-provider');
 
 Categories.icons = require('./icon');
 
