@@ -9,8 +9,7 @@ const user = require('../user');
 const posts = require('../posts');
 const topics = require('../topics');
 const groups = require('../groups');
-const plugins = require('../plugins');
-const meta = require('../meta');
+const plugins = require('../meta');
 const events = require('../events');
 const privileges = require('../privileges');
 const activitypub = require('../activitypub');
@@ -19,6 +18,7 @@ const websockets = require('../socket.io');
 const socketHelpers = require('../socket.io/helpers');
 const translator = require('../translator');
 const notifications = require('../notifications');
+const meta = require('../meta');
 
 const postsAPI = module.exports;
 
@@ -669,3 +669,33 @@ async function sendQueueNotification(type, targetUid, path, notificationText) {
 	const notifObj = await notifications.create(notifData);
 	await notifications.push(notifObj, [targetUid]);
 }
+
+postsAPI.markAnswered = async function (caller, { pid, answered }) {
+	if (!caller.uid) {
+		throw new Error('[[error:not-logged-in]]');
+	}
+
+	// Ensure the post exists
+	const post = await posts.getPostData(pid);
+	if (!post) {
+		throw new Error('[[error:post-not-found]]');
+	}
+
+	// Ensure the user has permission to mark as answered
+	const hasPermission = await privileges.posts.canMarkAnswered(pid, caller.uid);
+	if (!hasPermission) {
+		throw new Error('[[error:no-privileges]]');
+	}
+
+	// Update the answered status in the database
+	await posts.setPostField(pid, 'answered', answered);
+
+	// Log the action
+	await events.log({
+		type: answered ? 'post-marked-answered' : 'post-unmarked-answered',
+		uid: caller.uid,
+		pid,
+	});
+
+	return { pid, answered };
+};

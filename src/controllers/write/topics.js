@@ -220,3 +220,17 @@ Topics.move = async (req, res) => {
 
 	helpers.formatApiResponse(200, res);
 };
+
+Topics.markAnswered = async (req, res) => {
+	const { pid } = req.params; // Post ID
+	const { answered } = req.body; // Boolean to mark as answered or not
+
+	// Ensure the user has the necessary privileges
+	await middleware.assert.canMarkAnswered(req, res);
+
+	// Call the API to update the answered status
+	await api.posts.markAnswered(req, { pid, answered });
+
+	// Respond with success
+	helpers.formatApiResponse(200, res, { pid, answered });
+};

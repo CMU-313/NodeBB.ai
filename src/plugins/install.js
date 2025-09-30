@@ -187,4 +187,7 @@ module.exports = function (Plugins) {
 		// Autocomplete only if single match
 		return plugins.length === 1 ? plugins.pop() : fragment;
 	};
+
+	// Export Plugins object
+	module.exports.Plugins = Plugins;
 };
