@@ -1,4 +1,3 @@
-
 'use strict';
 
 const _ = require('lodash');
@@ -35,44 +34,9 @@ module.exports = function (User) {
 
 		const startTime = process.hrtime();
 
-		let uids = [];
-		if (searchBy === 'ip') {
-			uids = await searchByIP(query);
-		} else if (searchBy === 'uid') {
-			uids = [query];
-		} else {
-			if (!data.findUids && data.uid) {
-				const handle = activitypub.helpers.isWebfinger(data.query);
-				if (handle || activitypub.helpers.isUri(data.query)) {
-					const local = await activitypub.helpers.resolveLocalId(data.query);
-					if (local.type === 'user' && utils.isNumber(local.id)) {
-						uids = [local.id];
-					} else {
-						const assertion = await activitypub.actors.assert([handle || data.query]);
-						if (assertion === true) {
-							uids = [handle ? await User.getUidByUserslug(handle) : query];
-						} else if (Array.isArray(assertion) && assertion.length) {
-							uids = assertion.map(u => u.id);
-						}
-					}
-				}
-			}
-
-			if (!uids.length) {
-				const searchMethod = data.findUids || findUids;
-				uids = await searchMethod(query, searchBy, data.hardCap);
-
-				const mapping = {
-					username: 'ap.preferredUsername',
-					fullname: 'ap.name',
-				};
-				if (meta.config.activitypubEnabled && mapping.hasOwnProperty(searchBy)) {
-					uids = uids.concat(await searchMethod(query, mapping[searchBy], data.hardCap));
-				}
-			}
-		}
-
+		let uids = await determineUids(data, query, searchBy);
 		uids = await filterAndSortUids(uids, data);
+
 		if (data.hardCap > 0) {
 			uids.length = data.hardCap;
 		}
@@ -80,6 +44,44 @@ module.exports = function (User) {
 		const result = await plugins.hooks.fire('filter:users.search', { uids: uids, uid: uid });
 		uids = result.uids;
 
+		return await buildSearchResult(uids, data, page, paginate, startTime, uid);
+	};
+
+	async function determineUids(data, query, searchBy) {
+		if (searchBy === 'ip') {
+			return await searchByIP(query);
+		}
+		if (searchBy === 'uid') {
+			return [query];
+		}
+		if (!data.findUids && data.uid) {
+			return await handleActivityPub(data, query);
+		}
+		return await findUids(query, searchBy, data.hardCap);
+	}
+
+	async function handleActivityPub(data, query) {
+		const handle = activitypub.helpers.isWebfinger(query);
+		if (!handle && !activitypub.helpers.isUri(query)) {
+			return [];
+		}
+
+		const local = await activitypub.helpers.resolveLocalId(query);
+		if (local.type === 'user' && utils.isNumber(local.id)) {
+			return [local.id];
+		}
+
+		const assertion = await activitypub.actors.assert([handle || query]);
+		if (assertion === true) {
+			return [handle ? await User.getUidByUserslug(handle) : query];
+		}
+		if (Array.isArray(assertion) && assertion.length) {
+			return assertion.map(u => u.id);
+		}
+		return [];
+	}
+
+	async function buildSearchResult(uids, data, page, paginate, startTime, uid) {
 		const searchResult = {
 			matchCount: uids.length,
 		};
@@ -109,7 +111,7 @@ module.exports = function (User) {
 		searchResult.users = userData.filter(user => (user &&
 			utils.isNumber(user.uid) ? user.uid > 0 : activitypub.helpers.isUri(user.uid)));
 		return searchResult;
-	};
+	}
 
 	async function findUids(query, searchBy, hardCap) {
 		if (!query) {
