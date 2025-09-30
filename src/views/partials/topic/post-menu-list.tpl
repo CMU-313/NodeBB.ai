@@ -94,6 +94,18 @@
 	</li>
 	{{{ end }}}
 
+	{{{ if posts.display_endorse_tools }}}
+	<li>
+		<a class="dropdown-item rounded-1 d-flex align-items-center gap-2" component="post/endorse" role="menuitem" href="#" data-endorsed="{posts.endorsed}">
+			<span class="menu-icon">
+				<i component="post/endorse/on" class="fa fa-fw text-secondary fa-check-circle {{{ if !posts.endorsed }}}hidden{{{ end }}}"></i>
+				<i component="post/endorse/off" class="fa fa-fw text-secondary fa-check-circle-o {{{ if posts.endorsed }}}hidden{{{ end }}}"></i>
+			</span>
+			<span class="endorse-text">{{{ if posts.endorsed }}}[[topic:endorsed]]{{{ else }}}[[topic:endorse]]{{{ end }}}</span>
+		</a>
+	</li>
+	{{{ end }}}
+
 
 	{{{ if !posts.display_original_url }}}
 	<li>
