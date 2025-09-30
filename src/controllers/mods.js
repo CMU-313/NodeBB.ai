@@ -69,10 +69,15 @@ modsController.flags.list = async function (req, res) {
 	}
 
 	// Pagination doesn't count as a filter
-	if (
-		(Object.keys(filters).length === 1 && filters.hasOwnProperty('page')) ||
-		(Object.keys(filters).length === 2 && filters.hasOwnProperty('page') && filters.hasOwnProperty('perPage'))
-	) {
+	const isOnlyPagination = (filtersObj) => {
+		const keys = Object.keys(filtersObj);
+		const hasPage = Object.prototype.hasOwnProperty.call(filtersObj, 'page');
+		const hasPerPage = Object.prototype.hasOwnProperty.call(filtersObj, 'perPage');
+
+		return (keys.length === 1 && hasPage) || (keys.length === 2 && hasPage && hasPerPage);
+	};
+
+	if (isOnlyPagination(filters)) {
 		hasFilter = false;
 	}
 
