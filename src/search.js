@@ -62,19 +62,53 @@ async function searchInContent(data) {
 	]);
 
 	async function doSearch(type, searchIn) {
-		if (searchIn.includes(data.searchIn)) {
-			const result = await plugins.hooks.fire('filter:search.query', {
-				index: type,
-				content: data.query,
-				matchWords: data.matchWords || 'all',
-				cid: searchCids,
-				uid: searchUids,
-				searchData: data,
-				ids: [],
-			});
-			return Array.isArray(result) ? result : result.ids;
-		}
-		return [];
+			if (searchIn.includes(data.searchIn)) {
+				// If there are listeners (plugin-based search), use the hook
+				if (plugins.hooks.hasListeners('filter:search.query')) {
+					const result = await plugins.hooks.fire('filter:search.query', {
+						index: type,
+						content: data.query,
+						matchWords: data.matchWords || 'all',
+						cid: searchCids,
+						uid: searchUids,
+						searchData: data,
+						ids: [],
+					});
+					return Array.isArray(result) ? result : result.ids;
+				}
+
+				// Fallback: if no search plugin is present, provide a basic title-only search
+				// for topic searches. This is intentionally simple (scans topic titles via
+				// batches) and is suitable for small installs and for test environments.
+				if (type === 'topic' && ['titles', 'titlesposts'].includes(data.searchIn) && data.query) {
+					const cleaned = String(data.query || '').toLowerCase().trim();
+					if (!cleaned.length) {
+						return [];
+					}
+					const tokens = cleaned.split(/\s+/);
+					const matchedTids = [];
+					// iterate through topics in batches
+					await batch.processSortedSet('topics:tid', async (tids) => {
+						// fetch title fields for this batch
+						const topicsData = await topics.getTopicsFields(tids, ['tid', 'title']);
+						for (let i = 0; i < topicsData.length; i += 1) {
+							const t = topicsData[i];
+							if (!t || !t.title) { continue; }
+							const title = String(t.title).toLowerCase();
+							const method = (data.matchWords === 'any') ? 'some' : 'every';
+							const ok = tokens[method](token => title.includes(token));
+							if (ok) {
+								matchedTids.push(t.tid);
+							}
+						}
+					}, { batch: 500 });
+					return matchedTids;
+				}
+
+				// No plugin and not topic title search -> nothing to return
+				return [];
+			}
+			return [];
 	}
 	let pids = [];
 	let tids = [];
