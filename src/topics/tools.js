@@ -118,6 +118,14 @@ module.exports = function (Topics) {
 		return await togglePin(tid, uid, false);
 	};
 
+	topicTools.resolve = async function (tid, uid) {
+		return await toggleResolve(tid, uid, true);
+	};
+
+	topicTools.unresolve = async function (tid, uid) {
+		return await toggleResolve(tid, uid, false);
+	};
+
 	topicTools.setPinExpiry = async (tid, expiry, uid) => {
 		if (isNaN(parseInt(expiry, 10)) || expiry <= Date.now()) {
 			throw new Error('[[error:invalid-data]]');
@@ -198,6 +206,31 @@ module.exports = function (Topics) {
 
 		plugins.hooks.fire('action:topic.pin', { topic: _.clone(topicData), uid });
 
+		return topicData;
+	}
+
+
+	async function toggleResolve(tid, uid, resolved) {
+		const topicData = await Topics.getTopicData(tid);
+		if (!topicData) {
+			throw new Error('[[error:no-topic]]');
+		}
+
+		// Scheduled topics should not be changed via this action
+		if (topicData.scheduled) {
+			throw new Error('[[error:invalid-data]]');
+		}
+
+		// Only admins/mods (or system) can toggle resolved state for now
+		if (uid !== 'system' && !await privileges.topics.isAdminOrMod(tid, uid)) {
+			throw new Error('[[error:no-privileges]]');
+		}
+
+		await Topics.setTopicField(tid, 'resolved', resolved ? 1 : 0);
+		topicData.resolved = resolved ? 1 : 0;
+		topicData.events = await Topics.events.log(tid, { type: resolved ? 'resolve' : 'unresolve', uid });
+
+		plugins.hooks.fire(resolved ? 'action:topic.resolve' : 'action:topic.unresolve', { topic: _.clone(topicData), uid });
 		return topicData;
 	}
 
