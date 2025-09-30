@@ -85,6 +85,33 @@
 		</div>
 	</div>
 
+		<!-- author role filter -->
+		<div class="post-search-item">
+			<div class="dropdown" data-filter-name="role">
+				<a component="role/filter/button" class="filter-btn btn btn-light btn-sm border {{{ if filters.role.active }}}active-filter{{{ end }}} dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-haspopup="true" aria-expanded="false">
+					<span class="filter-label">{{{ if filters.role.active }}}{filters.role.label}{{{ else }}}[[search:author-role]]{{{ end }}}</span>
+					<span class="caret text-primary opacity-75"></span>
+				</a>
+
+				<ul class="dropdown-menu p-1 text-sm" style="width: 220px;" role="menu">
+					<li class="px-2 py-1 d-flex flex-column gap-2">
+						<div class="form-check">
+							<input class="form-check-input" type="checkbox" value="student" id="role-student" />
+							<label class="form-check-label" for="role-student">Student</label>
+						</div>
+						<div class="form-check">
+							<input class="form-check-input" type="checkbox" value="ta" id="role-ta" />
+							<label class="form-check-label" for="role-ta">TA</label>
+						</div>
+						<div class="form-check">
+							<input class="form-check-input" type="checkbox" value="professor" id="role-professor" />
+							<label class="form-check-label" for="role-professor">Professor</label>
+						</div>
+					</li>
+				</ul>
+			</div>
+		</div>
+
 
 	<!-- reply count filter -->
 	<div class="post-search-item">
