@@ -27,7 +27,8 @@ module.exports = function (module) {
 			}
 		} catch (err) {
 			if (err && err.message.includes('E11000 duplicate key error')) {
-				console.log(new Error('e11000').stack, key, data);
+				const winston = require('winston');
+				winston.warn(new Error('e11000').stack, key, data);
 				return await module.setObject(key, data);
 			}
 			throw err;
@@ -63,7 +64,8 @@ module.exports = function (module) {
 			}
 		} catch (err) {
 			if (err && err.message.includes('E11000 duplicate key error')) {
-				console.log(new Error('e11000').stack, data);
+				const winston = require('winston');
+				winston.warn(new Error('e11000').stack, data);
 				return await module.setObjectBulk(data);
 			}
 			throw err;
@@ -259,7 +261,8 @@ module.exports = function (module) {
 			// https://jira.mongodb.org/browse/SERVER-14322
 			// https://docs.mongodb.org/manual/reference/command/findAndModify/#upsert-and-unique-index
 			if (err && err.message.includes('E11000 duplicate key error')) {
-				console.log(new Error('e11000').stack, key, field, value);
+				const winston = require('winston');
+				winston.warn(new Error('e11000').stack, key, field, value);
 				return await module.incrObjectFieldBy(key, field, value);
 			}
 			throw err;

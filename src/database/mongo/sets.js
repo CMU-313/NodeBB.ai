@@ -28,7 +28,8 @@ module.exports = function (module) {
 			});
 		} catch (err) {
 			if (err && err.message.includes('E11000 duplicate key error')) {
-				console.log(new Error('e11000').stack, key, value);
+				const winston = require('winston');
+				winston.warn(new Error('e11000').stack, key, value);
 				return await module.setAdd(key, value);
 			}
 			throw err;
@@ -61,7 +62,8 @@ module.exports = function (module) {
 			await bulk.execute();
 		} catch (err) {
 			if (err && err.message.includes('E11000 duplicate key error')) {
-				console.log(new Error('e11000').stack, keys, value);
+				const winston = require('winston');
+				winston.warn(new Error('e11000').stack, keys, value);
 				return await module.setsAdd(keys, value);
 			}
 			throw err;

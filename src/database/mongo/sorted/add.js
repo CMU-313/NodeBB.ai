@@ -20,7 +20,8 @@ module.exports = function (module) {
 			await module.client.collection('objects').updateOne({ _key: key, value: value }, { $set: { score: parseFloat(score) } }, { upsert: true });
 		} catch (err) {
 			if (err && err.message.includes('E11000 duplicate key error')) {
-				console.log(new Error('e11000').stack, key, score, value);
+				const winston = require('winston');
+				winston.warn(new Error('e11000').stack, key, score, value);
 				return await module.sortedSetAdd(key, score, value);
 			}
 			throw err;
