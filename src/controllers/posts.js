@@ -47,11 +47,33 @@ postsController.redirectToPost = async function (req, res, next) {
 	helpers.redirect(res, qs ? `${path}?${qs}` : path, true);
 };
 
+postsController.createPost = async function (req, res) {
+	const { content, visibility } = req.body;
+	if (!content) {
+		return res.status(400).json({ error: 'Content is required' });
+	}
+
+	const allowedVisibilities = ['public', 'instructors', 'private'];
+	if (!allowedVisibilities.includes(visibility)) {
+		return res.status(400).json({ error: 'Invalid visibility option' });
+	}
+
+	const post = await posts.create({
+		content,
+		visibility,
+		uid: req.uid,
+	});
+
+	res.status(201).json(post);
+};
+
 postsController.getRecentPosts = async function (req, res) {
 	const page = parseInt(req.query.page, 10) || 1;
 	const postsPerPage = 20;
 	const start = Math.max(0, (page - 1) * postsPerPage);
 	const stop = start + postsPerPage - 1;
-	const data = await posts.getRecentPosts(req.uid, start, stop, req.params.term);
+	const visibility = req.query.visibility || 'public';
+
+	const data = await posts.getRecentPosts(req.uid, start, stop, visibility);
 	res.json(data);
 };
