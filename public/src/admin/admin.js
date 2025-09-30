@@ -89,6 +89,10 @@ app.onDomReady();
 			search.init();
 		});
 
+		require(['admin/modules/post-filter'], function (postFilter) {
+			postFilter.init();
+		});
+
 		$('[component="logout"]').on('click', function () {
 			require(['logout'], function (logout) {
 				logout();
