@@ -5,7 +5,8 @@ define('forum/header', [
 	'forum/header/notifications',
 	'forum/header/chat',
 	'alerts',
-], function (unread, notifications, chat, alerts) {
+	'forum/topic/time-filter',
+], function (unread, notifications, chat, alerts, timeFilter) {
 	const module = {};
 
 	module.prepareDOM = function () {
@@ -14,6 +15,9 @@ define('forum/header', [
 		}
 		notifications.prepareDOM();
 		chat.prepareDOM();
+		if (timeFilter && typeof timeFilter.init === 'function') {
+			timeFilter.init();
+		}
 		handleStatusChange();
 		createHeaderTooltips();
 		handleLogout();

@@ -218,6 +218,12 @@
 	"most-posts": "Most Posts",
 	"most-views": "Most Views",
 
+	"time-filter": "Time",
+	"time-filter-all": "All time",
+	"time-filter-24h": "Last 24 hours",
+	"time-filter-7d": "Last 7 days",
+	"time-filter-30d": "Last 30 days",
+
 	"stale.title": "Create new topic instead?",
 	"stale.warning": "The topic you are replying to is quite old. Would you like to create a new topic instead, and reference this one in your reply?",
 	"stale.create": "Create a new topic",
