@@ -20,11 +20,11 @@ UserNotifications.get = async function (uid) {
 		return { read: [], unread: [] };
 	}
 
-	let unread = await getNotificationsFromSet(`uid:${uid}:notifications:unread`, uid, 0, 49);
+	let unread = await getNotificationsFromSet({ set: `uid:${uid}:notifications:unread`, uid, start: 0, stop: 49 });
 	unread = unread.filter(Boolean);
 	let read = [];
 	if (unread.length < 50) {
-		read = await getNotificationsFromSet(`uid:${uid}:notifications:read`, uid, 0, 49 - unread.length);
+		read = await getNotificationsFromSet({ set: `uid:${uid}:notifications:read`, uid, start: 0, stop: 49 - unread.length });
 	}
 
 	return await plugins.hooks.fire('filter:user.notifications.get', {
@@ -91,7 +91,16 @@ async function deleteUserNids(nids, uid) {
 	], nids);
 }
 
-async function getNotificationsFromSet(set, uid, start, stop) {
+async function getNotificationsFromSet(options) {
+	// Accept an options object to avoid many positional parameters.
+	// Expected shape: { set, uid, start = 0, stop = -1 }
+	const {
+		set,
+		uid,
+		start = 0,
+		stop = -1,
+	} = options || {};
+
 	const nids = await db.getSortedSetRevRange(set, start, stop);
 	return await UserNotifications.getNotifications(nids, uid);
 }
