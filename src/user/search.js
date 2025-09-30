@@ -1,4 +1,3 @@
-
 'use strict';
 
 const _ = require('lodash');
@@ -108,6 +107,7 @@ module.exports = function (User) {
 		searchResult.timing = (process.elapsedTimeSince(startTime) / 1000).toFixed(2);
 		searchResult.users = userData.filter(user => (user &&
 			utils.isNumber(user.uid) ? user.uid > 0 : activitypub.helpers.isUri(user.uid)));
+
 		return searchResult;
 	};
 
