@@ -7,6 +7,8 @@ const topics = require('../../topics');
 const posts = require('../../posts');
 const api = require('../../api');
 const helpers = require('../helpers');
+const Flags = require('../../flags');
+const winston = require('winston');
 
 const Posts = module.exports;
 
@@ -74,12 +76,32 @@ Posts.getRaw = async (req, res) => {
 	helpers.formatApiResponse(200, res, { content });
 };
 
+Posts.create = async (req, res) => {
+	const { content } = req.body;
+	const post = await api.posts.create(req, { ...req.body, uid: req.uid });
+
+	// Check for flagged keywords
+	const flagged = await Flags.createForKeywords('post', post.pid, req.uid, content);
+	if (flagged) {
+		winston.info(`[posts/create] Post ${post.pid} flagged for containing sensitive keywords.`);
+	}
+
+	helpers.formatApiResponse(200, res, post);
+};
+
 Posts.edit = async (req, res) => {
+	const { content } = req.body;
 	const editResult = await api.posts.edit(req, {
 		...req.body,
 		pid: req.params.pid,
 		uid: req.uid,
 	});
+
+	// Check for flagged keywords
+	const flagged = await Flags.createForKeywords('post', req.params.pid, req.uid, content);
+	if (flagged) {
+		winston.info(`[posts/edit] Post ${req.params.pid} flagged for containing sensitive keywords.`);
+	}
 
 	helpers.formatApiResponse(200, res, editResult);
 };
