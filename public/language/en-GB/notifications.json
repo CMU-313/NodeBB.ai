@@ -40,6 +40,7 @@
 	"upvoted-your-post-in-dual": "<strong>%1</strong> and <strong>%2</strong> have upvoted your post in <strong>%3</strong>.",
 	"upvoted-your-post-in-triple": "<strong>%1</strong>, <strong>%2</strong> and <strong>%3</strong> have upvoted your post in <strong>%4</strong>.",
 	"upvoted-your-post-in-multiple": "<strong>%1</strong>, <strong>%2</strong> and %3 others have upvoted your post in <strong>%4</strong>.",
+	"endorsed-your-post": "<strong>%1</strong> has endorsed your post in <strong>%2</strong>.",
 	"moved-your-post": "<strong>%1</strong> has moved your post to <strong>%2</strong>",
 	"moved-your-topic": "<strong>%1</strong> has moved <strong>%2</strong>",
 	"user-flagged-post-in": "<strong>%1</strong> flagged a post in <strong>%2</strong>",

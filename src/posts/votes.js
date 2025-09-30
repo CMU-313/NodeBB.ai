@@ -99,6 +99,42 @@ module.exports = function (Posts) {
 		return await db.getSetsMembers(pids.map(pid => `pid:${pid}:upvote`));
 	};
 
+	// Endorsements (instructors endorsing student responses)
+	Posts.endorse = async function (pid, uid) {
+		// privilege check
+		const canEndorse = await privileges.posts.can('posts:endorse', pid, uid);
+		if (!canEndorse) {
+			throw new Error('[[error:no-privileges]]');
+		}
+		// Only one endorsement per user; toggle behaviour
+		await db.setAdd(`pid:${pid}:endorse`, uid);
+
+		const postData = await Posts.getPostFields(pid, ['pid', 'uid', 'tid']);
+		// store count
+		const endorseCount = await db.setCount(`pid:${pid}:endorse`);
+		await Posts.setPostFields(pid, { endorseCount });
+		plugins.hooks.fire('action:post.endorse', { pid: pid, uid: uid, owner: postData.uid });
+		return { post: postData, endorse: true };
+	};
+
+	Posts.unendorse = async function (pid, uid) {
+		const owner = await Posts.getPostField(pid, 'uid');
+		if (parseInt(uid, 10) === parseInt(owner, 10)) {
+			throw new Error('[[error:self-endorse]]');
+		}
+		await db.setRemove(`pid:${pid}:endorse`, uid);
+
+		const postData = await Posts.getPostFields(pid, ['pid', 'uid', 'tid']);
+		const endorseCount = await db.setCount(`pid:${pid}:endorse`);
+		await Posts.setPostFields(pid, { endorseCount });
+		plugins.hooks.fire('action:post.unendorse', { pid: pid, uid: uid, owner: postData.uid });
+		return { post: postData, endorse: false };
+	};
+
+	Posts.getEndorsersByPids = async function (pids) {
+		return await db.getSetsMembers(pids.map(pid => `pid:${pid}:endorse`));
+	};
+
 	function voteInProgress(pid, uid) {
 		return Array.isArray(votesInProgress[uid]) && votesInProgress[uid].includes(String(pid));
 	}

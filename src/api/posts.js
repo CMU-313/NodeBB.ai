@@ -395,6 +395,20 @@ postsAPI.getUpvoters = async function (caller, data) {
 	return await getTooltipData(upvotedUids);
 };
 
+postsAPI.getEndorsers = async function (caller, data) {
+	if (!data.pid) {
+		throw new Error('[[error:invalid-data]]');
+	}
+	const { pid } = data;
+	const cid = await posts.getCidByPid(pid);
+	if (!await privileges.categories.isUserAllowedTo('topics:read', cid, caller.uid)) {
+		throw new Error('[[error:no-privileges]]');
+	}
+
+	const endorsersUids = (await posts.getEndorsersByPids([pid]))[0];
+	return await getTooltipData(endorsersUids);
+};
+
 async function getTooltipData(uids) {
 	const cutoff = 6;
 	if (!uids.length) {
@@ -475,6 +489,15 @@ postsAPI.bookmark = async function (caller, data) {
 
 postsAPI.unbookmark = async function (caller, data) {
 	return await apiHelpers.postCommand(caller, 'unbookmark', 'bookmarked', '', data);
+};
+
+// Instructors can endorse a student response to mark it as correct
+postsAPI.endorse = async function (caller, data) {
+	return await apiHelpers.postCommand(caller, 'endorse', 'endorsed', 'notifications:endorsed-your-post', data);
+};
+
+postsAPI.unendorse = async function (caller, data) {
+	return await apiHelpers.postCommand(caller, 'unendorse', 'endorsed', '', data);
 };
 
 async function diffsPrivilegeCheck(pid, uid) {

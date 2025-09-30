@@ -19,4 +19,18 @@ module.exports = function (SocketPosts) {
 		sockets.warnDeprecated(socket, 'GET /api/v3/posts/:pid/upvoters');
 		return await api.posts.getUpvoters(socket, { pid: pids[0] });
 	};
+
+	SocketPosts.endorse = async function (socket, data) {
+		if (!data || !data.pid) {
+			throw new Error('[[error:invalid-data]]');
+		}
+		return await api.posts.endorse(socket, data);
+	};
+
+	SocketPosts.getEndorsers = async function (socket, pids) {
+		if (!Array.isArray(pids)) {
+			throw new Error('[[error:invalid-data]]');
+		}
+		return await api.posts.getEndorsers(socket, { pid: pids[0] });
+	};
 };

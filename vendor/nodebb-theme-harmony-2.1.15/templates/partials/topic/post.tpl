@@ -132,6 +132,15 @@
 						</a>
 						{{{ end }}}
 					</div>
+
+					<!-- Endorse (instructors) -->
+					<div class="d-flex align-items-center ms-2">
+						<a component="post/endorse" href="#" class="btn btn-ghost btn-sm{{{ if posts.endorsed }}} endorsed{{{ end }}}" title="[[topic:endorse-post]]">
+							<i class="fa fa-fw fa-check text-success"></i>
+						</a>
+
+						<a href="#" class="px-2 mx-1 btn btn-ghost btn-sm" component="post/endorse-count" data-endorses="{posts.endorseCount}" title="[[global:endorsers]]">{posts.endorseCount}</a>
+					</div>
 					{{{ end }}}
 
 					<!-- IMPORT partials/topic/post-menu.tpl -->

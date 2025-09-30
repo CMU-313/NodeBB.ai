@@ -14,6 +14,7 @@ define('forum/topic/postTools', [
 	'helpers',
 ], function (share, navigator, components, translator, votes, api, bootbox, alerts, hooks, helpers) {
 	const PostTools = {};
+	const endorse = require ? require('forum/topic/endorse') : null; // fallback for AMD loader
 
 	let staleReplyAnyway = false;
 
@@ -23,6 +24,10 @@ define('forum/topic/postTools', [
 		renderMenu();
 
 		addPostHandlers(tid);
+
+		if (endorse && endorse.addEndorseHandler) {
+			endorse.addEndorseHandler();
+		}
 
 		share.addShareHandlers(ajaxify.data.titleRaw);
 
@@ -139,6 +144,19 @@ define('forum/topic/postTools', [
 
 		postContainer.on('click', '[component="post/vote-count"]', function () {
 			votes.showVotes(getData($(this), 'data-pid'));
+		});
+
+		postContainer.on('click', '[component="post/endorse"]', function () {
+			// Toggle endorse on click
+			if (endorse && endorse.toggleEndorse) {
+				return endorse.toggleEndorse($(this));
+			}
+			return false;
+		});
+
+		postContainer.on('mouseenter', '[component="post/endorse-count"]', function () {
+			// let the endorse module handle tooltip loading
+			// no-op here; endorse.addEndorseHandler registers the listener
 		});
 
 		postContainer.on('click', '[component="post/announce-count"]', function () {
