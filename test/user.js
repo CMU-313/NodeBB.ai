@@ -485,9 +485,9 @@ describe('User', () => {
 			});
 		});
 
-		it('should not re-add user to users:postcount if post is purged after user account deletion', async () => {
-			const uid = await User.create({ username: 'olduserwithposts' });
-			assert(await db.isSortedSetMember('users:postcount', uid));
+		async function testUserSetMembership(setKey, username, postAction) {
+			const uid = await User.create({ username });
+			assert(await db.isSortedSetMember(setKey, uid));
 
 			const result = await Topics.post({
 				uid: uid,
@@ -495,28 +495,19 @@ describe('User', () => {
 				content: 'old user topic post content',
 				cid: testCid,
 			});
-			assert.equal(await db.sortedSetScore('users:postcount', uid), 1);
+			assert.equal(await db.sortedSetScore(setKey, uid), setKey === 'users:postcount' ? 1 : 0);
 			await User.deleteAccount(uid);
-			assert(!await db.isSortedSetMember('users:postcount', uid));
-			await Posts.purge(result.postData.pid, 1);
-			assert(!await db.isSortedSetMember('users:postcount', uid));
+			assert(!await db.isSortedSetMember(setKey, uid));
+			await postAction(result.postData.pid, 1);
+			assert(!await db.isSortedSetMember(setKey, uid));
+		}
+
+		it('should not re-add user to users:postcount if post is purged after user account deletion', async () => {
+			await testUserSetMembership('users:postcount', 'olduserwithposts', Posts.purge);
 		});
 
 		it('should not re-add user to users:reputation if post is upvoted after user account deletion', async () => {
-			const uid = await User.create({ username: 'olduserwithpostsupvote' });
-			assert(await db.isSortedSetMember('users:reputation', uid));
-
-			const result = await Topics.post({
-				uid: uid,
-				title: 'old user topic',
-				content: 'old user topic post content',
-				cid: testCid,
-			});
-			assert.equal(await db.sortedSetScore('users:reputation', uid), 0);
-			await User.deleteAccount(uid);
-			assert(!await db.isSortedSetMember('users:reputation', uid));
-			await Posts.upvote(result.postData.pid, 1);
-			assert(!await db.isSortedSetMember('users:reputation', uid));
+			await testUserSetMembership('users:reputation', 'olduserwithpostsupvote', Posts.upvote);
 		});
 
 		it('should delete user even if they started a chat', async () => {
