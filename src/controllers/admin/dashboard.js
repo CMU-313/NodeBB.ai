@@ -392,3 +392,27 @@ dashboardController.getSearches = async (req, res) => {
 		endDate: req.query.end ? validator.escape(String(req.query.end)) : null,
 	});
 };
+
+dashboardController.getInstructorEngagement = async (req, res) => {
+	// Returns simple engagement metrics for instructors: posts and replies per day for the last 7 days
+	const days = parseInt(req.query.days, 10) || 7;
+	const until = req.query.until ? new Date(parseInt(req.query.until, 10)) : Date.now();
+
+	// Use analytics if available for posts and topics; replies are posts that are not main posts
+	const postsDaily = await analytics.getDailyStatsForSet('analytics:posts', until, days);
+	const topicsDaily = await analytics.getDailyStatsForSet('analytics:topics', until, days);
+
+	// replies = posts - topics (assuming 'topics' counts main posts)
+	const repliesDaily = postsDaily.map((p, idx) => Math.max(0, p - (topicsDaily[idx] || 0)));
+
+	const sum = arr => arr.reduce((a, b) => a + b, 0);
+
+	res.json({
+		query: { days, until },
+		result: {
+			posts: { daily: postsDaily, total: sum(postsDaily) },
+			topics: { daily: topicsDaily, total: sum(topicsDaily) },
+			replies: { daily: repliesDaily, total: sum(repliesDaily) },
+		},
+	});
+};
