@@ -18,6 +18,9 @@ start.start = async function () {
 		const meta = require('./meta');
 		await meta.configs.init();
 
+		// Register built-in profanity moderation (censor + optional auto-flag)
+		require('./moderation/profanity');
+
 		if (nconf.get('runJobs')) {
 			await runUpgrades();
 		}
