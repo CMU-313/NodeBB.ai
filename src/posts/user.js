@@ -15,6 +15,11 @@ const utils = require('../utils');
 
 module.exports = function (Posts) {
 	Posts.getUserInfoForPosts = async function (uids, uid) {
+		// First get the posts to check which ones are anonymous
+		const pids = await db.getSortedSetRevRange('uid:' + uid + ':posts', 0, -1);
+		const postsData = await Posts.getPostsFields(pids, ['pid', 'uid', 'isAnonymous']);
+		const anonymousUids = new Set(postsData.filter(post => post.isAnonymous).map(post => post.uid));
+		
 		const [userData, userSettings, signatureUids] = await Promise.all([
 			getUserData(uids, uid),
 			user.getMultipleUserSettings(uids),
@@ -24,12 +29,21 @@ module.exports = function (Posts) {
 		const groupsMap = await getGroupsMap(userData);
 
 		userData.forEach((userData, index) => {
-			userData.signature = validator.escape(String(userData.signature || ''));
-			userData.fullname = userSettings[index].showfullname ? validator.escape(String(userData.fullname || '')) : undefined;
-			userData.selectedGroups = [];
-
-			if (meta.config.hideFullname) {
+			if (anonymousUids.has(userData.uid)) {
+				userData.username = 'Anonymous';
+				userData.userslug = '';
+				userData.picture = 'https://www.gravatar.com/avatar/0?d=mm';
+				userData.signature = '';
 				userData.fullname = undefined;
+				userData.selectedGroups = [];
+			} else {
+				userData.signature = validator.escape(String(userData.signature || ''));
+				userData.fullname = userSettings[index].showfullname ? validator.escape(String(userData.fullname || '')) : undefined;
+				userData.selectedGroups = [];
+
+				if (meta.config.hideFullname) {
+					userData.fullname = undefined;
+				}
 			}
 		});
 
