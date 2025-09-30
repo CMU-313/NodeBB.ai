@@ -423,6 +423,25 @@ async function createGlobalModeratorsGroup() {
 	await groups.show('Global Moderators');
 }
 
+async function createInstructorsGroup() {
+	const groups = require('./groups');
+	const exists = await groups.exists('instructors');
+	if (exists) {
+		winston.info("'instructors' group found, skipping creation!");
+	} else {
+		await groups.create({
+			name: 'instructors',
+			userTitle: 'Instructor',
+			description: 'Course instructors with elevated content management privileges',
+			hidden: 0,
+			private: 1,
+			disableJoinRequests: 0,
+		});
+		winston.info("Created 'instructors' group");
+	}
+	await groups.show('instructors');
+}
+
 async function giveGlobalPrivileges() {
 	const privileges = require('./privileges');
 	const defaultPrivileges = [
@@ -619,6 +638,7 @@ install.setup = async function () {
 		await createDefaultUserGroups();
 		const adminInfo = await createAdministrator();
 		await createGlobalModeratorsGroup();
+		await createInstructorsGroup();
 		await giveGlobalPrivileges();
 		await giveWorldPrivileges();
 		await createMenuItems();
