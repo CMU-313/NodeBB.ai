@@ -193,3 +193,33 @@ searchApi.roomMessages = async (caller, { query, roomId, uid }) => {
 
 	return { messages: messageData };
 };
+
+searchApi.posts = async (caller, data) => {
+	const { query, limit = 20, page = 1 } = data;
+	if (!query || typeof query !== 'string') {
+		throw new Error('Invalid search query');
+	}
+
+	// Calculate pagination
+	const start = (page - 1) * limit;
+	const stop = start + limit - 1;
+
+	// Fetch posts matching the query
+	const postIds = await db.sortedSetRevRangeByScore(
+		'posts:search',
+		start,
+		stop,
+		query
+	);
+
+	// Fetch post details
+	const posts = await Promise.all(postIds.map(async (postId) => {
+		const post = await db.getObject(`post:${postId}`);
+		if (post) {
+			post.user = await user.getUserFields(post.uid, ['username', 'picture']);
+		}
+		return post;
+	}));
+
+	return { posts };
+};
