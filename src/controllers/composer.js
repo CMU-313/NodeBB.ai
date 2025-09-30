@@ -48,12 +48,14 @@ exports.post = async function (req, res) {
 		content: body.content,
 		handle: body.handle,
 		fromQueue: false,
+		anonymous: body.anonymous || false, // Add anonymous parameter
 	};
 	req.body.noscript = 'true';
 
 	if (!data.content) {
 		return helpers.noScriptErrors(req, res, '[[error:invalid-data]]', 400);
 	}
+
 	async function queueOrPost(postFn, data) {
 		const shouldQueue = await posts.shouldQueue(req.uid, data);
 		if (shouldQueue) {
