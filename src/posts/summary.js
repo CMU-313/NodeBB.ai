@@ -9,6 +9,7 @@ const topics = require('../topics');
 const user = require('../user');
 const plugins = require('../plugins');
 const categories = require('../categories');
+const privileges = require('../privileges');
 const utils = require('../utils');
 
 module.exports = function (Posts) {
@@ -40,31 +41,59 @@ module.exports = function (Posts) {
 		const tidToTopic = toObject('tid', topicsAndCategories.topics);
 		const cidToCategory = toObject('cid', topicsAndCategories.categories);
 
-		posts.forEach((post) => {
-			// If the post author isn't represented in the retrieved users' data,
-			// then it means they were deleted, assume guest.
+		// First pass: normalize and attach topic/category data
+		for (let i = 0; i < posts.length; i += 1) {
+			const post = posts[i];
 			if (!uidToUser.hasOwnProperty(post.uid)) {
 				post.uid = 0;
 			}
-
-			// toPid is nullable so it is casted separately
 			post.toPid = utils.isNumber(post.toPid) ? parseInt(post.toPid, 10) : post.toPid;
-
 			post.user = uidToUser[post.uid];
-			Posts.overrideGuestHandle(post, post.handle);
-			post.handle = undefined;
 			post.topic = tidToTopic[post.tid];
 			post.category = post.topic && cidToCategory[post.topic.cid];
+		}
+
+		// Prepare privilege checks for anonymous posts to avoid awaiting inside a loop
+		const checks = posts.map((post) => {
+			if (post.anonymous) {
+				return privileges.categories.isAdminOrMod(post.topic && post.topic.cid, uid);
+			}
+			return Promise.resolve(true);
+		});
+		const checksResult = await Promise.all(checks);
+
+		// Second pass: apply masking and other per-post derived fields
+		for (let i = 0; i < posts.length; i += 1) {
+			const post = posts[i];
+			// Preserve original user data and mask if caller cannot see identity
+			if (post.anonymous) {
+				post.user = post.user || {};
+				post.user._original = {
+					uid: post.user.uid,
+					username: post.user.username,
+					userslug: post.user.userslug,
+					picture: post.user.picture,
+					displayname: post.user.displayname,
+				};
+				if (!checksResult[i]) {
+					post.user.displayname = 'Anonymous Student';
+					post.user.userslug = null;
+					post.user.username = null;
+					post.user.picture = null;
+					post.user.uid = 0;
+				}
+				post.isAnonymousPost = true;
+			}
+
+			Posts.overrideGuestHandle(post, post.handle);
+			post.handle = undefined;
 			post.isMainPost = post.topic && post.pid === post.topic.mainPid;
 			post.deleted = post.deleted === 1;
 			post.timestampISO = utils.toISOString(post.timestamp);
-
-			// url only applies to remote posts; assume permalink otherwise
 			if (utils.isNumber(post.pid)) {
 				post.url = `${nconf.get('url')}/post/${post.pid}`;
 			}
-		});
-
+		}
 		posts = posts.filter(post => tidToTopic[post.tid]);
 
 		posts = await parsePosts(posts, options);
