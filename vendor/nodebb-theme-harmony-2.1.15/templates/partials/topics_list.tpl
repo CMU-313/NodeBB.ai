@@ -10,7 +10,7 @@
 
 		<div class="d-flex p-0 col-12 col-lg-7 gap-2 gap-lg-3 pe-1 align-items-start {{{ if config.theme.mobileTopicTeasers }}}mb-2 mb-lg-0{{{ end }}}">
 			<div class="flex-shrink-0 position-relative">
-				<a class="d-inline-block text-decoration-none avatar-tooltip" title="{./user.displayname}" href="{{{ if ./user.userslug }}}{config.relative_path}/user/{./user.userslug}{{{ else }}}#{{{ end }}}">
+				<a class="d-inline-block text-decoration-none avatar-tooltip" title="{displayTopicAuthor(./user, .).displayname}" href="{{{ if !./isAnonymous }}}{config.relative_path}/user/{./user.userslug}{{{ else }}}#{{{ end }}}">
 					{buildAvatar(./user, "40px", true)}
 				</a>
 				{{{ if showSelect }}}

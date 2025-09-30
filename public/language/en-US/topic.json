@@ -1,5 +1,7 @@
 {
     "topic": "Topic",
+    "composer.anonymous": "Post as Anonymous",
+    "composer.anonymous_help": "When enabled, your username will be hidden from other students but visible to instructors and TAs",
     "title": "Title",
     "no-topics-found": "No topics found!",
     "no-posts-found": "No posts found!",
