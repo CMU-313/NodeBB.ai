@@ -144,7 +144,9 @@ helpers.uploadFile = async function uploadFile(optsOrEndpoint, legacyFilePath, l
 	const form = new FormData();
 
 	const file = await fs.promises.readFile(filePath);
-	const blob = new Blob([file], { type: mime.getType(filePath) || 'application/octet-stream' });
+	const mimeType = mime.getType(filePath);
+	const blobOptions = mimeType ? { type: mimeType } : {};
+	const blob = new Blob([file], blobOptions);
 
 	form.append('files', blob, path.basename(filePath));
 
