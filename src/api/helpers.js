@@ -138,6 +138,9 @@ async function executeCommand(caller, command, eventName, notification, data) {
 	if (result && command === 'upvote') {
 		socketHelpers.upvote(result, notification);
 		await api.activitypub.like.note(caller, { pid: data.pid });
+	} else if (result && command === 'endorse') {
+		// send an endorse notification to the post owner
+		socketHelpers.sendNotificationToPostOwner(data.pid, caller.uid, command, notification);
 	} else if (result && notification) {
 		socketHelpers.sendNotificationToPostOwner(data.pid, caller.uid, command, notification);
 	} else if (result && command === 'unvote') {
