@@ -30,6 +30,24 @@ module.exports = function (Posts) {
 		const pid = data.pid || await db.incrObjectField('global', 'nextPid');
 		let postData = { pid, uid, tid, content, sourceContent, timestamp };
 
+		// Support anonymous posting when enabled in site config.
+		// If anonymous flag is requested and allowed, mark the post as anonymous
+		// but retain uid for moderation/audit purposes. Strip handle and ip to
+		// avoid exposing identifying information in public views.
+		if (data.anonymous && meta.config && meta.config.allowAnonymousPosting) {
+			// Only allow logged-in users to post anonymously (uid !== 0)
+			if (parseInt(uid, 10)) {
+				postData.anonymous = 1;
+				// prevent accidental storage of identifying handle/ip
+				if (postData.handle) {
+					delete postData.handle;
+				}
+				if (postData.ip) {
+					delete postData.ip;
+				}
+			}
+		}
+
 		if (data.toPid) {
 			postData.toPid = data.toPid;
 		}
