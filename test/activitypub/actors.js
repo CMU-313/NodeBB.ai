@@ -16,6 +16,16 @@ const slugify = require('../../src/slugify');
 
 const helpers = require('./helpers');
 
+// Small test helper to reduce duplication for inbox resolution tests.
+async function resolveInboxFor(factoryFn, assertMethod) {
+	const { id, actor } = factoryFn();
+	await assertMethod(id);
+
+	const inboxes = await activitypub.resolveInboxes([id]);
+
+	return { inboxes, actor };
+}
+
 describe.skip('Actor asserton', () => {
 	before(async () => {
 		meta.config.activitypubEnabled = 1;
@@ -445,10 +455,11 @@ describe.skip('as:Group', () => {
 describe.skip('Inbox resolution', () => {
 	describe('remote users', () => {
 		it('should return an inbox if present', async () => {
-			const { id, actor } = helpers.mocks.person();
-			await activitypub.actors.assert(id);
-
-			const inboxes = await activitypub.resolveInboxes([id]);
+			const res = await resolveInboxFor(
+				helpers.mocks.person,
+				async (id) => activitypub.actors.assert(id)
+			);
+			const { inboxes, actor } = res;
 
 			assert(inboxes && Array.isArray(inboxes));
 			assert.strictEqual(inboxes.length, 1);
@@ -456,14 +467,14 @@ describe.skip('Inbox resolution', () => {
 		});
 
 		it('should return a shared inbox if present', async () => {
-			const { id, actor } = helpers.mocks.person({
+			// Use a factory that returns a person with a sharedInbox endpoint
+			const factory = () => helpers.mocks.person({
 				endpoints: {
 					sharedInbox: 'https://example.org/inbox',
 				},
 			});
-			await activitypub.actors.assert(id);
 
-			const inboxes = await activitypub.resolveInboxes([id]);
+			const { inboxes } = await resolveInboxFor(factory, async (id) => activitypub.actors.assert(id));
 
 			assert(inboxes && Array.isArray(inboxes));
 			assert.strictEqual(inboxes.length, 1);
@@ -473,10 +484,11 @@ describe.skip('Inbox resolution', () => {
 
 	describe('remote categories', () => {
 		it('should return an inbox if present', async () => {
-			const { id, actor } = helpers.mocks.group();
-			await activitypub.actors.assertGroup(id);
-
-			const inboxes = await activitypub.resolveInboxes([id]);
+			const res = await resolveInboxFor(
+				helpers.mocks.group,
+				async (id) => activitypub.actors.assertGroup(id)
+			);
+			const { inboxes, actor } = res;
 
 			assert(inboxes && Array.isArray(inboxes));
 			assert.strictEqual(inboxes.length, 1);
@@ -484,14 +496,13 @@ describe.skip('Inbox resolution', () => {
 		});
 
 		it('should return a shared inbox if present', async () => {
-			const { id, actor } = helpers.mocks.group({
+			const factory = () => helpers.mocks.group({
 				endpoints: {
 					sharedInbox: 'https://example.org/inbox',
 				},
 			});
-			await activitypub.actors.assertGroup(id);
 
-			const inboxes = await activitypub.resolveInboxes([id]);
+			const { inboxes } = await resolveInboxFor(factory, async (id) => activitypub.actors.assertGroup(id));
 
 			assert(inboxes && Array.isArray(inboxes));
 			assert.strictEqual(inboxes.length, 1);
