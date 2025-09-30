@@ -260,6 +260,20 @@ module.exports = function (Topics) {
 		postData.display_move_tools = true;
 		postData.selfPost = false;
 		posts.overrideGuestHandle(postData, handle);
+
+		// If the post was created as anonymous, mask author info for peers (non-moderators)
+		if (postData.anonymous) {
+			const isAdminOrMod = await privileges.categories.isAdminOrMod(postData.cid, uid);
+			if (!isAdminOrMod) {
+				// mask identifying fields for regular users
+				postData.user = postData.user || {};
+				postData.user.displayname = 'Anonymous Student';
+				postData.user.userslug = null;
+				postData.user.username = null;
+				postData.user.picture = null;
+				postData.user.uid = 0;
+			}
+		}
 		return postData;
 	}
 
