@@ -69,6 +69,7 @@ define('forum/topic', [
 		setupQuickReply();
 		handleBookmark(tid);
 		handleThumbs();
+		addMarkAnsweredHandler();
 
 		$(window).on('scroll', utils.debounce(updateTopicTitle, 250));
 
@@ -478,6 +479,21 @@ define('forum/topic', [
 		if (!currentBookmark || parseInt(index, 10) >= parseInt(currentBookmark, 10)) {
 			alerts.remove('bookmark');
 		}
+	}
+
+	function addMarkAnsweredHandler() {
+		$(document).on('click', '[component="post/mark-answered"]', async function () {
+			const pid = $(this).data('pid');
+			const answered = !$(this).hasClass('answered');
+
+			try {
+				await api.put(`/posts/${pid}/answered`, { answered });
+				$(this).toggleClass('answered', answered);
+				alerts.success(answered ? 'Post marked as answered' : 'Post unmarked as answered');
+			} catch (err) {
+				alerts.error(err.message);
+			}
+		});
 	}
 
 

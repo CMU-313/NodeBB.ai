@@ -23,6 +23,8 @@ const activitypub = require('../activitypub');
 const helpers = require('./helpers');
 const controllerHelpers = require('../controllers/helpers');
 
+const privileges = require('../privileges');
+
 const Assert = module.exports;
 
 Assert.user = helpers.try(async (req, res, next) => {
@@ -156,6 +158,17 @@ Assert.message = helpers.try(async (req, res, next) => {
 		!(await messaging.canViewMessage(req.params.mid, roomId || req.params.roomId, req.uid))
 	) {
 		return controllerHelpers.formatApiResponse(400, res, new Error('[[error:invalid-mid]]'));
+	}
+
+	next();
+});
+
+Assert.canMarkAnswered = helpers.try(async (req, res, next) => {
+	const { pid } = req.params;
+	const hasPermission = await privileges.posts.canMarkAnswered(pid, req.uid);
+
+	if (!hasPermission) {
+		return controllerHelpers.formatApiResponse(403, res, new Error('[[error:no-privileges]]'));
 	}
 
 	next();
