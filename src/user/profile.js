@@ -339,10 +339,9 @@ module.exports = function (User) {
 	}
 
 	User.changePassword = async function (uid, data) {
-		if (uid <= 0 || !data || !data.uid) {
-			throw new Error('[[error:invalid-uid]]');
-		}
-		User.isPasswordValid(data.newPassword);
+		// Validate basic request shape and password
+		await validateChangePasswordRequest(uid, data);
+
 		const [isAdmin, hasPassword] = await Promise.all([
 			User.isAdministrator(uid),
 			User.hasPassword(uid),
@@ -353,36 +352,53 @@ module.exports = function (User) {
 		}
 
 		const isSelf = parseInt(uid, 10) === parseInt(data.uid, 10);
-
 		if (!isAdmin && !isSelf) {
 			throw new Error('[[user:change-password-error-privileges]]');
 		}
 
 		await plugins.hooks.fire('filter:password.check', { password: data.newPassword, uid: data.uid });
 
+		// If the user is changing their own password and already has one, validate current password
 		if (isSelf && hasPassword) {
-			const correct = await User.isPasswordCorrect(data.uid, data.currentPassword, data.ip);
-			if (!correct) {
-				throw new Error('[[user:change-password-error-wrong-current]]');
-			}
-			if (data.currentPassword === data.newPassword) {
-				throw new Error('[[user:change-password-error-same-password]]');
-			}
+			await validateCurrentPassword(data);
 		}
 
-		const hashedPassword = await User.hashPassword(data.newPassword);
+		await updatePasswordAndCleanup(data.uid, data.newPassword);
+
+		plugins.hooks.fire('action:password.change', { uid: uid, targetUid: data.uid });
+	};
+
+
+	async function validateChangePasswordRequest(callerUid, data) {
+		if (callerUid <= 0 || !data || !data.uid) {
+			throw new Error('[[error:invalid-uid]]');
+		}
+		// throws if invalid
+		User.isPasswordValid(data.newPassword);
+	}
+
+	async function validateCurrentPassword(data) {
+		const correct = await User.isPasswordCorrect(data.uid, data.currentPassword, data.ip);
+		if (!correct) {
+			throw new Error('[[user:change-password-error-wrong-current]]');
+		}
+		if (data.currentPassword === data.newPassword) {
+			throw new Error('[[user:change-password-error-same-password]]');
+		}
+	}
+
+	async function updatePasswordAndCleanup(targetUid, newPassword) {
+		const hashedPassword = await User.hashPassword(newPassword);
 		await Promise.all([
-			User.setUserFields(data.uid, {
+			User.setUserFields(targetUid, {
 				password: hashedPassword,
 				'password:shaWrapped': 1,
 				rss_token: utils.generateUUID(),
 			}),
-			User.reset.cleanByUid(data.uid),
-			User.reset.updateExpiry(data.uid),
-			User.auth.revokeAllSessions(data.uid),
-			User.email.expireValidation(data.uid),
+			User.reset.cleanByUid(targetUid),
+			User.reset.updateExpiry(targetUid),
+			User.auth.revokeAllSessions(targetUid),
+			User.email.expireValidation(targetUid),
 		]);
-
-		plugins.hooks.fire('action:password.change', { uid: uid, targetUid: data.uid });
-	};
+	}
 };
