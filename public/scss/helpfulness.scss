@@ -1,0 +1,25 @@
+.helpfulness-badge {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.25rem;
+	margin-left: 0.5rem;
+}
+
+.helpfulness-badge .fa-check-circle {
+	color: #28a745;
+}
+
+.helpfulness-info {
+	margin-top: 0.25rem;
+}
+
+.user-helpfulness {
+	color: #666;
+	font-size: 0.9rem;
+	margin-top: 0.25rem;
+}
+
+.users-box .helpfulness-score {
+	font-weight: bold;
+	color: #28a745;
+}

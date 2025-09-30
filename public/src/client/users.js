@@ -92,6 +92,8 @@ define('forum/users', [
 			sortBy = 'postcount';
 		} else if (activeSection === 'sort-reputation') {
 			sortBy = 'reputation';
+		} else if (activeSection === 'sort-helpfulness') {
+			sortBy = 'helpfulness';
 		} else if (activeSection === 'users') {
 			sortBy = 'joindate';
 		}
