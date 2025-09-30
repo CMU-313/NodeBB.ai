@@ -39,6 +39,7 @@ Write.reload = async (params) => {
 	router.use('/api/v3/topics', require('./topics')());
 	router.use('/api/v3/tags', require('./tags')());
 	router.use('/api/v3/posts', require('./posts')());
+	router.use('/api/v3/polls', require('./polls')());
 	router.use('/api/v3/chats', require('./chats')());
 	router.use('/api/v3/flags', require('./flags')());
 	router.use('/api/v3/search', require('./search')());

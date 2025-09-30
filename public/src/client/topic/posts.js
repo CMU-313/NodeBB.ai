@@ -11,6 +11,7 @@ define('forum/topic/posts', [
 	'translator',
 	'hooks',
 	'helpers',
+	'client/topic/polls',
 ], function (pagination, infinitescroll, postTools, images, navigator, components, translator, hooks, helpers) {
 	const Posts = { };
 
@@ -412,6 +413,17 @@ define('forum/topic/posts', [
 	Posts.onNewPostsAddedToDom = async function (posts) {
 		await Posts.onTopicPageLoad(posts);
 		posts.find('.timeago').timeago();
+
+		// Render polls for any posts that include a data-poll-id attribute
+		posts.find('[data-poll-id]').each(function () {
+			const el = $(this);
+			const pollId = el.attr('data-poll-id');
+			if (pollId) {
+				require(['client/topic/polls'], function (Polls) {
+					Polls.render(el, pollId);
+				});
+			}
+		});
 	};
 
 	Posts.showBottomPostBar = function () {

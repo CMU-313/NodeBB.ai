@@ -84,6 +84,10 @@
 			{posts.content}
 		</div>
 
+		{{{ if posts.pollId }}}
+		<div data-poll-id="{posts.pollId}"></div>
+		{{{ end }}}
+
 		<div component="post/footer" class="post-footer border-bottom pb-2">
 			{{{ if posts.user.signature }}}
 			<div component="post/signature" data-uid="{posts.user.uid}" class="text-xs text-muted mt-2">{posts.user.signature}</div>
