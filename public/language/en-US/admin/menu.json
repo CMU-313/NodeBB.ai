@@ -11,6 +11,7 @@
 	"manage/categories": "Categories",
 	"manage/privileges": "Privileges",
 	"manage/tags": "Tags",
+	"manage/leaderboard": "Contribution Leaderboard",
 	"manage/users": "Users",
 	"manage/admins-mods": "Admins & Mods",
 	"manage/registration": "Registration Queue",

@@ -1,0 +1,17 @@
+{
+	"title": "Student Contribution Leaderboard",
+	"global-leaderboard": "Global Leaderboard",
+	"global-title": "All Students Contribution Leaderboard",
+	"global-info": "Global Student Participation",
+	"global-description": "This leaderboard shows student participation across all categories. Use the category selector to view participation in a specific category.",
+	"category-title": "Student Leaderboard for %1",
+	"category-info": "Category: %1",
+	"category-description": "This leaderboard shows student participation in the selected category. Select a different category or view the global leaderboard to see all students.",
+	"rank": "Rank",
+	"student": "Student",
+	"topics": "Topics Created",
+	"posts": "Posts/Comments",
+	"total": "Total Contributions",
+	"no-data": "No student contributions found for this category.",
+	"view-global": "View Global Leaderboard"
+}
