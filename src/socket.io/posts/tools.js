@@ -19,7 +19,7 @@ module.exports = function (SocketPosts) {
 		}
 		const cid = await posts.getCidByPid(data.pid);
 		const results = await utils.promiseParallel({
-			posts: posts.getPostFields(data.pid, ['deleted', 'bookmarks', 'uid', 'ip', 'flagId', 'url']),
+			posts: posts.getPostFields(data.pid, ['deleted', 'bookmarks', 'uid', 'ip', 'flagId', 'url', 'pinned']),
 			isAdmin: user.isAdministrator(socket.uid),
 			isGlobalMod: user.isGlobalModerator(socket.uid),
 			isModerator: user.isModerator(socket.uid, cid),
@@ -46,6 +46,8 @@ module.exports = function (SocketPosts) {
 		postData.display_flag_tools = socket.uid && results.canFlag.flag;
 		postData.display_moderator_tools = postData.display_edit_tools || postData.display_delete_tools;
 		postData.display_move_tools = results.isAdmin || results.isModerator;
+		// allow pin/unpin tools for category admins/mods (interpreting "instructor" as moderator role)
+		postData.display_pin_tools = results.isModerator || results.isAdmin;
 		postData.display_change_owner_tools = results.isAdmin || results.isModerator;
 		postData.display_manage_editors_tools = results.isAdmin || results.isModerator || postData.selfPost;
 		postData.display_ip_ban = (results.isAdmin || results.isGlobalMod) && !postData.selfPost;

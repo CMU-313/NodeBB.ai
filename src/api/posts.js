@@ -332,6 +332,30 @@ postsAPI.move = async function (caller, data) {
 	}
 };
 
+postsAPI.pin = async function (caller, data) {
+	if (!caller.uid) {
+		throw new Error('[[error:not-logged-in]]');
+	}
+	if (!data || !data.pid) {
+		throw new Error('[[error:invalid-data]]');
+	}
+	const post = await posts.tools.pin(caller.uid, data.pid);
+	websockets.in(`topic_${post.tid}`).emit('event:post_pinned', post);
+	return post;
+};
+
+postsAPI.unpin = async function (caller, data) {
+	if (!caller.uid) {
+		throw new Error('[[error:not-logged-in]]');
+	}
+	if (!data || !data.pid) {
+		throw new Error('[[error:invalid-data]]');
+	}
+	const post = await posts.tools.unpin(caller.uid, data.pid);
+	websockets.in(`topic_${post.tid}`).emit('event:post_unpinned', post);
+	return post;
+};
+
 postsAPI.upvote = async function (caller, data) {
 	return await apiHelpers.postCommand(caller, 'upvote', 'voted', 'notifications:upvoted-your-post-in', data);
 };

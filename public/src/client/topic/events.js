@@ -29,6 +29,9 @@ define('forum/topic/events', [
 		'event:topic_pinned': threadTools.setPinnedState,
 		'event:topic_unpinned': threadTools.setPinnedState,
 
+		'event:post_pinned': onPostPinned,
+		'event:post_unpinned': onPostPinned,
+
 		'event:topic_moved': onTopicMoved,
 
 		'event:post_edited': onPostEdited,
@@ -257,6 +260,19 @@ define('forum/topic/events', [
 		if (data && data.tid && String(data.tid) === String(tid)) {
 			socket.emit('topics.markTopicNotificationsRead', [tid]);
 		}
+	}
+
+	function onPostPinned(data) {
+		if (!data || !data.pid || String(data.tid) !== String(ajaxify.data.tid)) {
+			return;
+		}
+		const postEl = components.get('post', 'pid', data.pid);
+		if (!postEl.length) {
+			return;
+		}
+		const isPinned = !!data.pinned;
+		postEl.toggleClass('pinned', isPinned);
+		hooks.fire('action:posts.pinned', data);
 	}
 
 	return Events;

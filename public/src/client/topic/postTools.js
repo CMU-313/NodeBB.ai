@@ -129,6 +129,20 @@ define('forum/topic/postTools', [
 			return bookmarkPost($(this), getData($(this), 'data-pid'));
 		});
 
+		postContainer.on('click', '[component="post/pin"]', function () {
+			const pid = getData($(this), 'data-pid');
+			api.put(`/posts/${encodeURIComponent(pid)}/pin`).then(() => {
+				hooks.fire('action:post.pin', { pid });
+			}).catch(alerts.error);
+		});
+
+		postContainer.on('click', '[component="post/unpin"]', function () {
+			const pid = getData($(this), 'data-pid');
+			api.del(`/posts/${encodeURIComponent(pid)}/unpin`).then(() => {
+				hooks.fire('action:post.unpin', { pid });
+			}).catch(alerts.error);
+		});
+
 		postContainer.on('click', '[component="post/upvote"]', function () {
 			return votes.toggleVote($(this), '.upvoted', 1);
 		});

@@ -4,6 +4,18 @@
 		<span class="menu-icon"><i class="fa fa-fw text-secondary fa-pencil"></i></span> [[topic:edit]]
 	</a>
 </li>
+{{{ if posts.display_pin_tools }}}
+<li {{{ if posts.pinned }}}hidden{{{ end }}}>
+	<a class="dropdown-item rounded-1 d-flex align-items-center gap-2" component="post/pin" role="menuitem" href="#">
+		<span class="menu-icon"><i class="fa fa-fw text-secondary fa-thumb-tack"></i></span> [[topic:pin-post]]
+	</a>
+</li>
+<li {{{ if !posts.pinned }}}hidden{{{ end }}}>
+	<a class="dropdown-item rounded-1 d-flex align-items-center gap-2" component="post/unpin" role="menuitem" href="#">
+		<span class="menu-icon"><i class="fa fa-fw text-secondary fa-thumb-tack fa-rotate-90"></i></span> [[topic:unpin-post]]
+	</a>
+</li>
+{{{ end }}}
 {{{ if posts.display_delete_tools }}}
 <li {{{ if posts.deleted }}}hidden{{{ end }}}>
 	<a class="dropdown-item rounded-1 d-flex align-items-center gap-2" component="post/delete" role="menuitem" href="#" class="{{{ if posts.deleted }}}hidden{{{ end }}}">
