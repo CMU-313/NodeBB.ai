@@ -1,4 +1,3 @@
-
 'use strict';
 
 const _ = require('lodash');
@@ -191,6 +190,11 @@ module.exports = function (Topics) {
 
 		await guestHandleValid(data);
 		data.content = String(data.content || '').trimEnd();
+
+		// Pass private field to posts.create
+		if (data.private) {
+			data.private = true;
+		}
 
 		if (!data.fromQueue && !isAdmin) {
 			await user.isReadyToPost(uid, data.cid);
