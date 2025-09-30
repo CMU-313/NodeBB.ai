@@ -19,29 +19,24 @@ const helpers = require('./helpers');
 const modsController = module.exports;
 modsController.flags = {};
 
-modsController.flags.list = async function (req, res) {
+async function validateFiltersAndSorts() {
 	const validFilters = ['assignee', 'state', 'reporterId', 'type', 'targetUid', 'cid', 'quick', 'page', 'perPage'];
 	const validSorts = ['newest', 'oldest', 'reports', 'upvotes', 'downvotes', 'replies'];
 
-	const results = await Promise.all([
-		user.isAdminOrGlobalMod(req.uid),
-		user.getModeratedCids(req.uid),
+	const [filtersResult, sortsResult] = await Promise.all([
 		plugins.hooks.fire('filter:flags.validateFilters', { filters: validFilters }),
 		plugins.hooks.fire('filter:flags.validateSort', { sorts: validSorts }),
 	]);
-	const [isAdminOrGlobalMod, moderatedCids,, { sorts }] = results;
-	let [,, { filters }] = results;
 
-	if (!(isAdminOrGlobalMod || !!moderatedCids.length)) {
-		return helpers.notAllowed(req, res);
-	}
+	return {
+		filters: filtersResult.filters,
+		sorts: sortsResult.sorts,
+	};
+}
 
-	if (!isAdminOrGlobalMod && moderatedCids.length) {
-		res.locals.cids = moderatedCids.map(cid => String(cid));
-	}
-
+function parseFilters(validFilters, req, res) {
 	// Parse query string params for filters, eliminate non-valid filters
-	filters = filters.reduce((memo, cur) => {
+	const filters = validFilters.reduce((memo, cur) => {
 		if (req.query.hasOwnProperty(cur)) {
 			if (typeof req.query[cur] === 'string' && req.query[cur].trim() !== '') {
 				memo[cur] = validator.escape(String(req.query[cur].trim()));
@@ -49,7 +44,6 @@ modsController.flags.list = async function (req, res) {
 				memo[cur] = req.query[cur].map(item => validator.escape(String(item).trim()));
 			}
 		}
-
 		return memo;
 	}, {});
 
@@ -76,17 +70,23 @@ modsController.flags.list = async function (req, res) {
 		hasFilter = false;
 	}
 
-	// Parse sort from query string
+	return { filters, hasFilter };
+}
+
+function parseSort(validSorts, req, hasFilter) {
 	let sort;
 	if (req.query.sort) {
-		sort = sorts.includes(req.query.sort) ? req.query.sort : null;
+		sort = validSorts.includes(req.query.sort) ? req.query.sort : null;
 	}
 	if (sort === 'newest') {
 		sort = undefined;
 	}
-	hasFilter = hasFilter || !!sort;
+	const updatedHasFilter = hasFilter || !!sort;
+	return { sort, hasFilter: updatedHasFilter };
+}
 
-	const [flagsData, analyticsData, selectData] = await Promise.all([
+async function fetchData(filters, sort, req) {
+	return await Promise.all([
 		flags.list({
 			filters: filters,
 			sort: sort,
@@ -96,8 +96,9 @@ modsController.flags.list = async function (req, res) {
 		analytics.getDailyStatsForSet('analytics:flags', Date.now(), 30),
 		helpers.getSelectedCategory(filters.cid),
 	]);
+}
 
-	// Send back information for userFilter module
+async function prepareSelected(filters) {
 	const selected = {};
 	await Promise.all(['assignee', 'reporterId', 'targetUid'].map(async (filter) => {
 		let uids = filters[filter];
@@ -108,9 +109,35 @@ modsController.flags.list = async function (req, res) {
 		if (!Array.isArray(uids)) {
 			uids = [uids];
 		}
-
 		selected[filter] = await user.getUsersFields(uids, ['username', 'userslug', 'picture']);
 	}));
+	return selected;
+}
+
+modsController.flags.list = async function (req, res) {
+	const [isAdminOrGlobalMod, moderatedCids, validatedData] = await Promise.all([
+		user.isAdminOrGlobalMod(req.uid),
+		user.getModeratedCids(req.uid),
+		validateFiltersAndSorts(),
+	]);
+
+	if (!(isAdminOrGlobalMod || !!moderatedCids.length)) {
+		return helpers.notAllowed(req, res);
+	}
+
+	if (!isAdminOrGlobalMod && moderatedCids.length) {
+		res.locals.cids = moderatedCids.map(cid => String(cid));
+	}
+
+	const { filters: parsedFilters, hasFilter: initialHasFilter } = parseFilters(
+		validatedData.filters,
+		req,
+		res
+	);
+	const { sort, hasFilter } = parseSort(validatedData.sorts, req, initialHasFilter);
+
+	const [flagsData, analyticsData, selectData] = await fetchData(parsedFilters, sort, req);
+	const selected = await prepareSelected(parsedFilters);
 
 	res.render('flags/list', {
 		flags: flagsData.flags,
@@ -119,8 +146,8 @@ modsController.flags.list = async function (req, res) {
 		selectedCategory: selectData.selectedCategory,
 		selected,
 		hasFilter: hasFilter,
-		filters: filters,
-		expanded: !!(filters.assignee || filters.reporterId || filters.targetUid),
+		filters: parsedFilters,
+		expanded: !!(parsedFilters.assignee || parsedFilters.reporterId || parsedFilters.targetUid),
 		sort: sort || 'newest',
 		title: '[[pages:flags]]',
 		pagination: pagination.create(flagsData.page, flagsData.pageCount, req.query),
