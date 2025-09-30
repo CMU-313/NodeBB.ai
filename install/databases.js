@@ -20,23 +20,28 @@ async function getDatabaseConfig(config) {
 		throw new Error('invalid config, aborted');
 	}
 
-	if (config.database === 'redis') {
-		if (config['redis:host'] && config['redis:port']) {
-			return config;
-		}
-		return await prompt.get(questions.redis);
-	} else if (config.database === 'mongo') {
-		if ((config['mongo:host'] && config['mongo:port']) || config['mongo:uri']) {
-			return config;
-		}
-		return await prompt.get(questions.mongo);
-	} else if (config.database === 'postgres') {
-		if (config['postgres:host'] && config['postgres:port']) {
-			return config;
-		}
-		return await prompt.get(questions.postgres);
+	const db = config.database;
+	if (!db || !questions[db]) {
+		throw new Error(`unknown database : ${db}`);
 	}
-	throw new Error(`unknown database : ${config.database}`);
+
+	// Determine whether the provided config already contains the required fields
+	const isConfigured = {
+		redis: () => config['redis:host'] && config['redis:port'],
+		mongo: () => (config['mongo:uri'] || (config['mongo:host'] && config['mongo:port'])),
+		postgres: () => config['postgres:host'] && config['postgres:port'],
+	}[db];
+
+	if (typeof isConfigured !== 'function') {
+		throw new Error(`unknown database : ${db}`);
+	}
+
+	if (isConfigured()) {
+		return config;
+	}
+
+	// Otherwise prompt for the required fields for the selected database
+	return await prompt.get(questions[db]);
 }
 
 function saveDatabaseConfig(config, databaseConfig) {
