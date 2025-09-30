@@ -263,3 +263,6 @@ async function enableDefaultPlugins() {
 
 	await db.sortedSetAdd('plugins:active', Object.keys(defaultEnabled), defaultEnabled);
 }
+
+// Use a unique port for testing to avoid conflicts
+nconf.set('port', 4568);
