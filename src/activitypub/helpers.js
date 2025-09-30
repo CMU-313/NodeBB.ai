@@ -353,20 +353,18 @@ Helpers.generateTitle = (html) => {
 	title = utils.stripHTMLTags(title);
 
 	// Split sentences and use only first one
-	const sentences = title
-		.split(/(\.|\?|!)\s/)
-		.reduce((memo, cur, idx, sentences) => {
-			if (idx % 2) {
-				memo.push(`${sentences[idx - 1]}${cur}`);
-			} else if (idx === sentences.length - 1) {
-				memo.push(cur);
-			}
-
-			return memo;
-		}, []);
+	const parts = title.split(/(\.|\?|!)\s/);
+	const sentences = [];
+	for (let i = 0; i < parts.length; i += 1) {
+		if (i % 2 === 1) {
+			sentences.push(`${parts[i - 1]}${parts[i]}`);
+		} else if (i === parts.length - 1) {
+			sentences.push(parts[i]);
+		}
+	}
 
 	if (sentences.length > 1) {
-		title = sentences.shift();
+		title = sentences[0];
 	}
 
 	// Truncate down if too long
