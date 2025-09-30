@@ -82,3 +82,42 @@ Interested in a sublicense agreement for use of NodeBB in a non-free/restrictive
 * Unofficial IRC community &ndash; channel `#nodebb` on Libera.chat
 * [Follow us on Twitter](http://www.twitter.com/NodeBB/ "NodeBB Twitter")
 * [Like us on Facebook](http://www.facebook.com/NodeBB/ "NodeBB Facebook")
+
+## New Feature: Unanswered Posts Filter
+
+### API Endpoint
+
+**GET /api/unanswered**
+
+This endpoint retrieves a list of posts that have not received any replies.
+
+#### Query Parameters
+- `start` (optional): The starting index for pagination (default: 0).
+- `stop` (optional): The ending index for pagination (default: 19).
+- `reverse` (optional): Whether to reverse the order of the results (default: false).
+
+#### Response
+- `posts`: An array of unanswered posts. Each post object includes details such as `pid`, `content`, and `replies` (which will always be 0).
+
+#### Example Request
+```bash
+curl -X GET 'http://<your-nodebb-instance>/api/unanswered?start=0&stop=10'
+```
+
+#### Example Response
+```json
+{
+  "posts": [
+    {
+      "pid": 123,
+      "content": "This is an unanswered post.",
+      "replies": 0
+    },
+    {
+      "pid": 124,
+      "content": "Another unanswered post.",
+      "replies": 0
+    }
+  ]
+}
+```
