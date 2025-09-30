@@ -45,6 +45,14 @@ start.start = async function () {
 
 		await webserver.listen();
 
+		// Register anonymous posting hooks
+		const anonymousPosting = require('./anonymous-posting');
+		const plugins = require('./plugins');
+		plugins.hooks.register('core', {
+			hook: 'filter:composer.build',
+			method: anonymousPosting.addAnonymousOption,
+		});
+
 		if (process.send) {
 			process.send({
 				action: 'listening',

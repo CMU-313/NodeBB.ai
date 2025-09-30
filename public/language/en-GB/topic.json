@@ -203,6 +203,8 @@
 	"composer.thumb-file-label": "Or upload a file",
 	"composer.thumb-remove": "Clear fields",
 	"composer.drag-and-drop-images": "Drag and Drop Images Here",
+	"composer.post-anonymously": "Post anonymously",
+	"composer.post-anonymously-help": "Your username will be hidden and this post will appear as posted by 'Anonymous'",
 
 	"more-users-and-guests": "%1 more user(s) and %2 guest(s)",
 	"more-users": "%1 more user(s)",
