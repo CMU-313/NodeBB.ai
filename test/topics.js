@@ -617,6 +617,91 @@ describe('Topic\'s', () => {
 				}
 			});
 		});
+
+		describe('post history', () => {
+			let testTid;
+			let testPid;
+			let testUid;
+
+			before(async () => {
+				testUid = adminUid;
+				
+				// Enable post history
+				await meta.configs.set('enablePostHistory', 1);
+				
+				// Create a test topic and post
+				const result = await topics.post({ 
+					uid: testUid, 
+					title: 'Test topic for post history', 
+					content: 'Original post content', 
+					cid: categoryObj.cid, 
+				});
+				testTid = result.topicData.tid;
+				testPid = result.postData.pid;
+
+				// Edit the post to create history
+				await posts.edit({
+					uid: testUid,
+					pid: testPid,
+					content: 'Edited post content',
+				});
+			});
+
+			it('should include post history data in post objects', async () => {
+				const topicData = await topics.getTopicData(testTid);
+				const postsData = await topics.getTopicPosts(topicData, `tid:${testTid}:posts`, 0, 0, testUid, false);
+				
+				assert.strictEqual(postsData.length, 1);
+				const post = postsData[0];
+				
+				// Debug: Check PIDs match
+				console.log('Expected PID:', testPid);
+				console.log('Actual PID:', post.pid);
+				console.log('Topic data mainPid:', topicData.mainPid);
+				
+				// Debug: Check if post history is enabled
+				const historyEnabled = await meta.configs.get('enablePostHistory');
+				console.log('Post history enabled:', historyEnabled);
+				console.log('Post history data:', post.history);
+				
+				// Check that history data is included
+				assert(post.history, 'Post should have history data');
+				assert.strictEqual(typeof post.history.hasHistory, 'boolean', 'hasHistory should be boolean');
+				assert.strictEqual(typeof post.history.revisionCount, 'number', 'revisionCount should be number');
+				assert.strictEqual(typeof post.history.canViewHistory, 'boolean', 'canViewHistory should be boolean');
+				
+				// Since we edited the post, it should have history
+				if (historyEnabled === 1) {
+					assert.strictEqual(post.history.hasHistory, true, 'Post should have history after edit');
+					assert(post.history.revisionCount > 0, 'Post should have at least one revision');
+				}
+			});
+
+			it('should return detailed revision information', async () => {
+				const revisionData = await topics.getPostRevisions(testPid, testUid);
+				
+				assert.strictEqual(revisionData.hasHistory, true);
+				assert(Array.isArray(revisionData.revisions), 'Revisions should be an array');
+				assert(revisionData.revisions.length > 0, 'Should have at least one revision');
+				assert.strictEqual(typeof revisionData.count, 'number');
+				
+				// Check revision structure
+				const revision = revisionData.revisions[0];
+				assert(revision.timestamp, 'Revision should have timestamp');
+				assert(revision.timestampISO, 'Revision should have ISO timestamp');
+				assert.strictEqual(typeof revision.isOriginal, 'boolean');
+				assert.strictEqual(typeof revision.isCurrent, 'boolean');
+			});
+
+			it('should respect privilege settings for post history', async () => {
+				// Test with a different user (simulate no privileges)
+				const revisionData = await topics.getPostRevisions(testPid, 0); // guest user
+				
+				// Guest should not have access to post history
+				assert.strictEqual(revisionData.hasHistory, false);
+				assert(revisionData.error, 'Should have error message for no privileges');
+			});
+		});
 	});
 
 	describe('Title escaping', () => {
