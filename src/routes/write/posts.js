@@ -22,6 +22,10 @@ module.exports = function () {
 	setupApiRoute(router, 'put', '/:pid/state', middlewares, controllers.write.posts.restore);
 	setupApiRoute(router, 'delete', '/:pid/state', middlewares, controllers.write.posts.delete);
 
+	// Hide/unhide (soft hidden) - instructors/mods/admins
+	setupApiRoute(router, 'put', '/:pid/hidden', middlewares, controllers.write.posts.hide);
+	setupApiRoute(router, 'delete', '/:pid/hidden', middlewares, controllers.write.posts.unhide);
+
 	setupApiRoute(router, 'put', '/:pid/move', [...middlewares, middleware.checkRequired.bind(null, ['tid'])], controllers.write.posts.move);
 
 	setupApiRoute(router, 'put', '/:pid/vote', [...middlewares, middleware.checkRequired.bind(null, ['delta'])], controllers.write.posts.vote);

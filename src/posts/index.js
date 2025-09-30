@@ -20,6 +20,7 @@ require('./topics')(Posts);
 require('./category')(Posts);
 require('./summary')(Posts);
 require('./recent')(Posts);
+require('./hide')(Posts);
 require('./tools')(Posts);
 require('./votes')(Posts);
 require('./bookmarks')(Posts);
@@ -98,6 +99,14 @@ Posts.getPostIndices = async function (posts, uid) {
 Posts.modifyPostByPrivilege = function (post, privileges) {
 	if (post && post.deleted && !(post.selfPost || privileges['posts:view_deleted'])) {
 		post.content = '[[topic:post-is-deleted]]';
+		if (post.user) {
+			post.user.signature = '';
+		}
+	}
+
+	// Hidden posts: similar to deleted but controlled by hide/unhide
+	if (post && post.hidden && !privileges.isAdminOrMod && !post.selfPost) {
+		post.content = '[[topic:post-is-hidden]]';
 		if (post.user) {
 			post.user.signature = '';
 		}

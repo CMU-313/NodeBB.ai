@@ -37,6 +37,9 @@ define('forum/topic/events', [
 		'event:post_deleted': togglePostDeleteState,
 		'event:post_restored': togglePostDeleteState,
 
+		'event:post_hidden': togglePostHiddenState,
+		'event:post_unhidden': togglePostHiddenState,
+
 		'posts.bookmark': togglePostBookmark,
 		'posts.unbookmark': togglePostBookmark,
 
@@ -221,6 +224,39 @@ define('forum/topic/events', [
 				const $parent = $(el);
 				if (isDeleted) {
 					$parent.find('[component="post/parent/content"]').translateHtml('[[topic:post-is-deleted]]');
+				} else {
+					$parent.find('[component="post/parent/content"]').html(translator.unescape(data.content));
+				}
+			});
+		}
+	}
+
+	function togglePostHiddenState(data) {
+		const postEl = components.get('post', 'pid', data.pid);
+
+		const { isAdminOrMod } = ajaxify.data.privileges;
+		const isSelfPost = String(data.uid) === String(app.user.uid);
+		const isHidden = !!data.hidden;
+		if (postEl.length) {
+			postEl.toggleClass('hidden-by-instructor', isHidden);
+			postTools.toggle(data.pid, isHidden);
+
+			if (!isAdminOrMod && !isSelfPost) {
+				postEl.find('[component="post/tools"]').toggleClass('hidden', isHidden);
+				if (isHidden) {
+					postEl.find('[component="post/content"]').translateHtml('[[topic:post-is-hidden]]');
+				} else {
+					postEl.find('[component="post/content"]').html(translator.unescape(data.content));
+				}
+			}
+		}
+
+		const parentEl = $(`[component="post/parent"][data-parent-pid="${data.pid}"]`);
+		if (parentEl.length) {
+			parentEl.each((i, el) => {
+				const $parent = $(el);
+				if (isHidden) {
+					$parent.find('[component="post/parent/content"]').translateHtml('[[topic:post-is-hidden]]');
 				} else {
 					$parent.find('[component="post/parent/content"]').html(translator.unescape(data.content));
 				}
