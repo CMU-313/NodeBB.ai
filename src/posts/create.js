@@ -65,6 +65,11 @@ module.exports = function (Posts) {
 				});
 		}
 
+		// Add support for private posts
+		if (data.private) {
+			postData.private = true;
+		}
+
 		({ post: postData } = await plugins.hooks.fire('filter:post.create', { post: postData, data: data }));
 		await db.setObject(`post:${postData.pid}`, postData);
 

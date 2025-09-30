@@ -1,4 +1,3 @@
-
 'use strict';
 
 const _ = require('lodash');
@@ -106,6 +105,14 @@ privsPosts.filter = async function (privilege, pids, uid) {
 			scheduled: post.topic.scheduled,
 		}, {}, canViewDeleted[post.topic.cid], canViewScheduled[post.topic.cid]) || results.isAdmin)
 	)).map(post => post.pid);
+
+	// Exclude private posts unless the user is the author or has admin privileges
+	const privatePosts = await posts.getPostsFields(pids, ['private']);
+	const isAuthor = postData.map(post => post && post.uid === uid);
+	pids = pids.filter((pid, index) => {
+		const isPrivate = privatePosts[index] && privatePosts[index].private;
+		return !isPrivate || isAuthor[index] || results.isAdmin;
+	});
 
 	const data = await plugins.hooks.fire('filter:privileges.posts.filter', {
 		privilege: privilege,
