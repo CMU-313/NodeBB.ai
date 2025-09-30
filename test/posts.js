@@ -1173,7 +1173,7 @@ describe('Post\'s', () => {
 				assert(events);
 				assert.strictEqual(events.length, 1);
 				assert(backlinks);
-				assert(backlinks.includes('1'));
+				assert.strictEqual(backlinks.includes('1'), true);
 			});
 
 			it('should remove the backlink (but keep the event) if the post no longer contains a link to a topic', async () => {
@@ -1271,6 +1271,26 @@ describe('Posts\'', async () => {
 	it('subfolder tests', () => {
 		files.forEach((filePath) => {
 			require(filePath);
+		});
+	});
+});
+
+describe('getUnresolvedPosts', () => {
+	it('should fetch unresolved posts sorted by time elapsed', async () => {
+		const unresolvedPosts = await apiPosts.getUnresolvedPosts({ limit: 5, offset: 0 });
+		assert(Array.isArray(unresolvedPosts));
+		assert(unresolvedPosts.length <= 5);
+		assert(unresolvedPosts.every(post => post.resolved === false));
+	});
+});
+
+describe('getUnresolvedPostCounts', () => {
+	it('should return accurate unresolved post counts per category', async () => {
+		const counts = await apiPosts.getUnresolvedPostCounts();
+		assert(typeof counts === 'object');
+		Object.keys(counts).forEach((cid) => {
+			assert(Number.isInteger(counts[cid]));
+			assert(counts[cid] >= 0);
 		});
 	});
 });

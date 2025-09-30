@@ -155,6 +155,14 @@ PostObject:
       type: boolean
     replies:
       type: number
+    resolved:
+      type: boolean
+      description: Indicates whether the post has been resolved.
+      default: false
+    createdAt:
+      type: string
+      format: date-time
+      description: The timestamp when the post was created.
 PostDataObject:
   description: The output as returned from `Posts.getPostsData`
   allOf:
