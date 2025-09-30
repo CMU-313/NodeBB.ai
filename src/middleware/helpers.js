@@ -54,11 +54,17 @@ helpers.buildBodyClass = function (req, res, templateData = {}) {
 helpers._processUrlParts = function (path) {
 	const clean = path.replace(/^\/api/, '').replace(/^\/|\/$/g, '');
 	const parts = clean.split('/').slice(0, 3);
+	const processedParts = [];
 	
-	return parts.map((p, index) => helpers._processUrlPart(p, index, parts[0]));
+	parts.forEach((p, index) => {
+		const processedPart = helpers._processUrlPart(p, index, processedParts[0]);
+		processedParts[index] = processedPart;
+	});
+	
+	return processedParts;
 };
 
-helpers._processUrlPart = function (part, index, firstPart) {
+helpers._processUrlPart = function (part, index, firstProcessedPart) {
 	let processedPart = part;
 	
 	try {
@@ -70,7 +76,7 @@ helpers._processUrlPart = function (part, index, firstPart) {
 	}
 	
 	processedPart = validator.escape(String(processedPart));
-	return index ? `${firstPart}-${processedPart}` : `page-${processedPart || 'home'}`;
+	return index ? `${firstProcessedPart}-${processedPart}` : `page-${processedPart || 'home'}`;
 };
 
 helpers._addTemplateClasses = function (parts, templateData) {

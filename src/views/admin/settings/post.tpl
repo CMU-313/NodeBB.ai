@@ -23,6 +23,7 @@
 						<option value="most_posts">[[admin/settings/post:sorting.most-posts]]</option>
 						<option value="most_votes">[[admin/settings/post:sorting.most-votes]]</option>
 						<option value="most_views">[[admin/settings/post:sorting.most-views]]</option>
+						<option value="unreplied">[[admin/settings/post:sorting.unreplied]]</option>
 					</select>
 				</div>
 
