@@ -1425,6 +1425,87 @@ describe('Topic\'s', () => {
 		});
 	});
 
+	describe('unanswered', () => {
+		let answeredTid;
+		let unansweredTid;
+		let testUid;
+
+		before(async () => {
+			testUid = await User.create({ username: 'unansweredTestUser' });
+			
+			// Create an unanswered topic (no replies)
+			const unansweredResult = await topics.post({ 
+				uid: testUid, 
+				title: 'Unanswered Question', 
+				content: 'This topic has no replies', 
+				cid: categoryObj.cid,
+			});
+			unansweredTid = unansweredResult.topicData.tid;
+
+			// Create an answered topic (with a reply)
+			const answeredResult = await topics.post({ 
+				uid: testUid, 
+				title: 'Answered Question', 
+				content: 'This topic has replies', 
+				cid: categoryObj.cid,
+			});
+			answeredTid = answeredResult.topicData.tid;
+			
+			// Add a reply to make it answered
+			await topics.reply({ 
+				uid: adminUid, 
+				content: 'This is a reply', 
+				tid: answeredTid,
+			});
+		});
+
+		it('should return topics with no replies', async () => {
+			const result = await topics.getUnansweredTopics({ start: 0, stop: 19, uid: testUid });
+			assert(result.topics);
+			assert(Array.isArray(result.topics));
+			const tids = result.topics.map(t => t.tid);
+			assert(tids.includes(unansweredTid), 'Should include unanswered topic');
+		});
+
+		it('should not return topics with replies', async () => {
+			const result = await topics.getUnansweredTopics({ start: 0, stop: 19, uid: testUid });
+			const tids = result.topics.map(t => t.tid);
+			assert(!tids.includes(answeredTid), 'Should not include answered topic');
+		});
+
+		it('should return empty array when no unanswered topics', async () => {
+			// Reply to the unanswered topic
+			await topics.reply({ 
+				uid: adminUid, 
+				content: 'Now this is answered', 
+				tid: unansweredTid,
+			});
+			
+			// Create a new category with no topics
+			const newCat = await categories.create({
+				name: 'Empty Test Category',
+				description: 'Category for testing empty results',
+			});
+			
+			// Create topic in new category and answer it
+			const tempResult = await topics.post({ 
+				uid: testUid, 
+				title: 'Temp Question', 
+				content: 'Will be answered', 
+				cid: newCat.cid,
+			});
+			await topics.reply({ 
+				uid: adminUid, 
+				content: 'Answer', 
+				tid: tempResult.topicData.tid,
+			});
+			
+			const result = await topics.getUnansweredTopics({ start: 0, stop: 19, uid: testUid });
+			assert(result.topics);
+			assert(Array.isArray(result.topics));
+		});
+	});
+
 	describe('tags', () => {
 		const socketTopics = require('../src/socket.io/topics');
 		const socketAdmin = require('../src/socket.io/admin');
