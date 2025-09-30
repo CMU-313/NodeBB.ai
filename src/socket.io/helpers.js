@@ -89,7 +89,7 @@ function filterTidCidIgnorers(uids, watchStates) {
 			(!watchStates.topicIgnored[index] && watchStates.categoryWatchStates[index] !== categories.watchStates.ignoring));
 }
 
-SocketHelpers.sendNotificationToPostOwner = async function (pid, fromuid, command, notification) {
+SocketHelpers.sendNotificationToPostOwner = async function ({ pid, fromuid, command, notification }) {
 	if (!pid || !fromuid || !notification) {
 		return;
 	}
@@ -198,7 +198,12 @@ SocketHelpers.upvote = async function (data, notification) {
 	const should = shouldNotify[settings.upvoteNotifFreq] || shouldNotify.all;
 
 	if (should()) {
-		SocketHelpers.sendNotificationToPostOwner(pid, fromuid, 'upvote', notification);
+		SocketHelpers.sendNotificationToPostOwner({
+			pid: pid,
+			fromuid: fromuid,
+			command: 'upvote',
+			notification: notification,
+		});
 	}
 };
 
