@@ -11,10 +11,21 @@ const websockets = require('../socket.io');
 const events = require('../events');
 
 exports.setDefaultPostData = function (reqOrSocket, data) {
+	// Preserve the authenticated caller id for permission/rate-limit checks
 	data.uid = reqOrSocket.uid;
+	// Keep an internal copy of the real author uid so we can store posts as anonymous
+	data._uid = reqOrSocket.uid;
 	data.req = exports.buildReqObject(reqOrSocket, { ...data });
 	data.timestamp = Date.now();
 	data.fromQueue = false;
+
+	// Only honour anonymous posting when the caller is a logged-in local user
+	if (data.anonymous) {
+		if (!data._uid || parseInt(data._uid, 10) === 0) {
+			// If the caller isn't a logged-in user, ignore the anonymous flag
+			data.anonymous = false;
+		}
+	}
 };
 
 // creates a slimmed down version of the request object

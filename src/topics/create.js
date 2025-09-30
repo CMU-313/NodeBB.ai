@@ -115,9 +115,16 @@ module.exports = function (Topics) {
 			throw new Error('[[error:no-privileges]]');
 		}
 
+		// If the caller requested anonymous posting and is an authenticated user,
+		// store the post as from uid 0 but keep uid available on data._uid for checks.
+		if (data.anonymous) {
+			// Replace stored owner with guest uid for display/storage
+			data.uid = 0;
+		}
 		await guestHandleValid(data);
 		if (!data.fromQueue) {
-			await user.isReadyToPost(uid, data.cid);
+			// Use the real caller id (data._uid) for rate-limiting and readiness checks
+			await user.isReadyToPost(data._uid || uid, data.cid);
 		}
 
 		const tid = await Topics.create(data);
@@ -127,7 +134,7 @@ module.exports = function (Topics) {
 		postData.ip = data.req ? data.req.ip : null;
 		postData.isMain = true;
 		postData = await posts.create(postData);
-		postData = await onNewPost(postData, data);
+		postData = await onNewPost(postData, { uid: data._uid || uid, handle: data.handle });
 
 		const [settings, topics] = await Promise.all([
 			user.getSettings(uid),
@@ -189,13 +196,17 @@ module.exports = function (Topics) {
 
 		data.cid = topicData.cid;
 
+		// If anonymous requested, set stored uid to 0 but preserve original in _uid
+		if (data.anonymous) {
+			data.uid = 0;
+		}
 		await guestHandleValid(data);
 		data.content = String(data.content || '').trimEnd();
 
 		if (!data.fromQueue && !isAdmin) {
-			await user.isReadyToPost(uid, data.cid);
+			await user.isReadyToPost(data._uid || uid, data.cid);
 			Topics.checkContent(data.sourceContent || data.content);
-			if (!await posts.canUserPostContentWithLinks(uid, data.content)) {
+			if (!await posts.canUserPostContentWithLinks(data._uid || uid, data.content)) {
 				throw new Error(`[[error:not-enough-reputation-to-post-links, ${meta.config['min:rep:post-links']}]]`);
 			}
 		}
@@ -207,7 +218,7 @@ module.exports = function (Topics) {
 
 		data.ip = data.req ? data.req.ip : null;
 		let postData = await posts.create(data);
-		postData = await onNewPost(postData, data);
+		postData = await onNewPost(postData, { uid: data._uid || uid, handle: data.handle });
 
 		const settings = await user.getSettings(uid);
 		if (uid > 0 && settings.followTopicsOnReply) {
@@ -285,6 +296,7 @@ module.exports = function (Topics) {
 	}
 
 	async function guestHandleValid(data) {
+		// Treat anonymous posts (stored as uid 0) like guest posts for handle validation
 		if (meta.config.allowGuestHandles && parseInt(data.uid, 10) === 0 && data.handle) {
 			if (data.handle.length > meta.config.maximumUsernameLength) {
 				throw new Error('[[error:guest-handle-invalid]]');
