@@ -1,6 +1,8 @@
 {
 	"username-email": "Username / Email",
 	"username": "Username",
+	"nickname": "Nickname",
+	"nickname-placeholder": "Enter Nickname (optional)",
 	"remember-me": "Remember Me?",
 	"forgot-password": "Forgot Password?",
 	"alternative-logins": "Alternative Logins",
