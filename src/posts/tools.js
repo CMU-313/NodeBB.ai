@@ -1,6 +1,9 @@
 'use strict';
 
 const privileges = require('../privileges');
+const db = require('../database');
+const plugins = require('../plugins');
+const events = require('../events');
 
 module.exports = function (Posts) {
 	Posts.tools = {};
@@ -41,4 +44,44 @@ module.exports = function (Posts) {
 		}
 		return post;
 	}
+
+	Posts.tools.pin = async function (uid, pid) {
+		const postData = await Posts.getPostData(pid);
+		if (!postData) {
+			throw new Error('[[error:no-post]]');
+		}
+		const cid = await Posts.getCidByPid(pid);
+		if (!await privileges.categories.isAdminOrMod(cid, uid)) {
+			throw new Error('[[error:no-privileges]]');
+		}
+		const { tid } = postData;
+		const promises = [
+			Posts.setPostFields(pid, { pinned: 1 }),
+			db.sortedSetAdd(`tid:${tid}:pids:pinned`, Date.now(), pid),
+			events.log({ type: 'post-pin', uid: uid, pid: pid, tid: tid }),
+			plugins.hooks.fire('action:post.pin', { pid: pid, tid: tid, uid: uid }),
+		];
+		await Promise.all(promises);
+		return await Posts.getPostData(pid);
+	};
+
+	Posts.tools.unpin = async function (uid, pid) {
+		const postData = await Posts.getPostData(pid);
+		if (!postData) {
+			throw new Error('[[error:no-post]]');
+		}
+		const cid = await Posts.getCidByPid(pid);
+		if (!await privileges.categories.isAdminOrMod(cid, uid)) {
+			throw new Error('[[error:no-privileges]]');
+		}
+		const { tid } = postData;
+		const promises = [
+			Posts.setPostFields(pid, { pinned: 0 }),
+			db.sortedSetRemove(`tid:${tid}:pids:pinned`, pid),
+			events.log({ type: 'post-unpin', uid: uid, pid: pid, tid: tid }),
+			plugins.hooks.fire('action:post.unpin', { pid: pid, tid: tid, uid: uid }),
+		];
+		await Promise.all(promises);
+		return await Posts.getPostData(pid);
+	};
 };

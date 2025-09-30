@@ -36,6 +36,7 @@ module.exports = function (SocketPosts) {
 		});
 
 		const postData = results.posts;
+		postData.pinned = postData.pinned || 0;
 		postData.pid = data.pid;
 		postData.absolute_url = `${nconf.get('url')}/post/${encodeURIComponent(data.pid)}`;
 		postData.bookmarked = results.bookmarked;

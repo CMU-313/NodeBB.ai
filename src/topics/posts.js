@@ -36,7 +36,18 @@ module.exports = function (Topics) {
 			}
 		}
 		let pids = [];
-		if (start !== 0 || stop !== 0) {
+		// If first page, fetch pinned posts for this topic and ensure they appear first
+		if (start === 0) {
+			const pinned = await db.getSortedSetRevRange(`tid:${topicData.tid}:pids:pinned`, 0, -1);
+			if (pinned && pinned.length) {
+				// fetch replies range as usual but ensure pinned are included and de-duplicated later
+				pids = await posts.getPidsFromSet(set, repliesStart, repliesStop, reverse);
+				// Prepend pinned pids keeping order and uniqueness
+				pids = Array.from(new Set(pinned.concat(pids)));
+			} else if (stop !== 0) {
+				pids = await posts.getPidsFromSet(set, repliesStart, repliesStop, reverse);
+			}
+		} else if (stop !== 0) {
 			pids = await posts.getPidsFromSet(set, repliesStart, repliesStop, reverse);
 		}
 		if (!pids.length && !topicData.mainPid) {
