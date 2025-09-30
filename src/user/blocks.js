@@ -24,7 +24,18 @@ module.exports = function (User) {
 		return isArray ? isBlocked : isBlocked[0];
 	};
 
-	User.blocks.can = async function (callerUid, blockerUid, blockeeUid, type) {
+	User.blocks.can = async function (options) {
+		console.log('sdarce - User.blocks.can refactored function called');
+		
+		// Handle backward compatibility - if called with old parameters
+		if (arguments.length > 1 || typeof options !== 'object' || options === null) {
+			// Old style call: User.blocks.can(callerUid, blockerUid, blockeeUid, type)
+			const [callerUid, blockerUid, blockeeUid, type] = arguments;
+			options = { callerUid, blockerUid, blockeeUid, type };
+		}
+
+		const { callerUid, blockerUid, blockeeUid, type } = options;
+
 		// Guests can't block
 		if (blockerUid === 0 || blockeeUid === 0) {
 			throw new Error('[[error:cannot-block-guest]]');
