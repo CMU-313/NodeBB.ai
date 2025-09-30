@@ -7,6 +7,7 @@ const categories = require('../categories');
 const utils = require('../utils');
 const translator = require('../translator');
 const plugins = require('../plugins');
+const anonymous = require('./anonymous');
 
 const intFields = [
 	'tid', 'cid', 'uid', 'mainPid', 'postcount',
@@ -36,6 +37,7 @@ module.exports = function (Topics) {
 			keys: keys,
 		});
 		result.topics.forEach(topic => modifyTopic(topic, fields));
+		await anonymous.modifyForAnonymous(result.topics, result.uid);
 		return result.topics;
 	};
 
