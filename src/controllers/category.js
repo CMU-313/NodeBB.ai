@@ -25,6 +25,61 @@ const validSorts = [
 	'recently_replied', 'recently_created', 'most_posts', 'most_votes', 'most_views',
 ];
 
+// Function to get pinned topic contents for display in category board
+async function getPinnedTopicContents(cid, uid) {
+	const topics = require('../topics');
+	const posts = require('../posts');
+	const utils = require('../utils');
+	
+	try {
+		// Get pinned topic IDs for this category
+		const pinnedTids = await categories.getPinnedTids({ cid: cid, start: 0, stop: 4 }); // Limit to 5 pinned topics
+		
+		if (!pinnedTids || pinnedTids.length === 0) {
+			return [];
+		}
+		
+		// Get topic data for pinned topics
+		const topicsData = await topics.getTopicsByTids(pinnedTids, uid);
+		
+		// Get the first post (main post) content for each pinned topic
+		const pinnedContents = [];
+		for (const topic of topicsData) {
+			if (topic && topic.mainPid) {
+				try {
+					const postData = await posts.getPostData(topic.mainPid);
+					if (postData && postData.content) {
+						// Truncate content for display (first 200 characters)
+						let content = postData.content;
+						if (content.length > 200) {
+							content = content.substring(0, 200) + '...';
+						}
+						
+						pinnedContents.push({
+							tid: topic.tid,
+							title: topic.title,
+							slug: topic.slug,
+							content: content,
+							user: topic.user,
+							timestamp: topic.timestamp,
+							timestampISO: topic.timestampISO
+						});
+					}
+				} catch (err) {
+					// Skip topics where we can't load the main post
+					continue;
+				}
+			}
+		}
+		
+		return pinnedContents;
+	} catch (err) {
+		// Log error for debugging but don't break the page
+		console.error('Error loading pinned topic contents:', err);
+		return [];
+	}
+}
+
 categoryController.get = async function (req, res, next) {
 	let cid = req.params.category_id;
 	if (cid === '-1') {
@@ -117,6 +172,9 @@ categoryController.get = async function (req, res, next) {
 
 	categories.modifyTopicsByPrivilege(categoryData.topics, userPrivileges);
 	categoryData.tagWhitelist = categories.filterTagWhitelist(categoryData.tagWhitelist, userPrivileges.isAdminOrMod);
+
+	// Load pinned topic contents for display in category board
+	categoryData.pinnedTopicContents = await getPinnedTopicContents(cid, req.uid);
 
 	const allCategories = [];
 	categories.flattenCategories(allCategories, categoryData.children);
