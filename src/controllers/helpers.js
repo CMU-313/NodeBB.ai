@@ -447,77 +447,90 @@ helpers.getHomePageRoutes = async function (uid) {
 	return data.routes;
 };
 
+// Helper: build successful 2xx response
+function send2xxResponse(statusCode, res, payload) {
+	if (res.req.loggedIn) {
+		res.set('cache-control', 'private');
+	}
+
+	let code = 'ok';
+	let message = 'OK';
+	switch (statusCode) {
+		case 202:
+			code = 'accepted';
+			message = 'Accepted';
+			break;
+
+		case 204:
+			code = 'no-content';
+			message = 'No Content';
+			break;
+	}
+
+	res.status(statusCode).json({
+		status: { code, message },
+		response: payload || {},
+	});
+}
+
+// Helper: handle error-like payloads (Error instance or string)
+async function handleErrorPayload(statusCode, res, payload) {
+	const message = payload instanceof Error ? payload.message : payload;
+	const response = {};
+
+	// Update status code based on some common error codes
+	switch (message) {
+		case '[[error:user-banned]]':
+			Object.assign(response, await generateBannedResponse(res));
+			// intentional fall through
+
+		case '[[error:no-privileges]]':
+			statusCode = 403;
+			break;
+
+		case '[[error:invalid-uid]]':
+			statusCode = 401;
+			break;
+
+		case '[[error:no-topic]]':
+			statusCode = 404;
+			break;
+	}
+
+	if (message && message.startsWith('[[error:required-parameters-missing, ')) {
+		const params = message.slice('[[error:required-parameters-missing, '.length, -2).split(' ');
+		Object.assign(response, { params });
+	}
+
+	const returnPayload = await helpers.generateError(statusCode, message, res);
+	returnPayload.response = response;
+
+	if (global.env === 'development' && payload instanceof Error) {
+		returnPayload.stack = payload.stack;
+		process.stdout.write(`[${chalk.yellow('api')}] Exception caught, error with stack trace follows:\n`);
+		process.stdout.write(payload.stack);
+	}
+
+	res.status(statusCode).json(returnPayload);
+}
+
 helpers.formatApiResponse = async (statusCode, res, payload) => {
 	if (res.req.method === 'HEAD') {
 		return res.sendStatus(statusCode);
 	}
 
 	if (String(statusCode).startsWith('2')) {
-		if (res.req.loggedIn) {
-			res.set('cache-control', 'private');
-		}
-
-		let code = 'ok';
-		let message = 'OK';
-		switch (statusCode) {
-			case 202:
-				code = 'accepted';
-				message = 'Accepted';
-				break;
-
-			case 204:
-				code = 'no-content';
-				message = 'No Content';
-				break;
-		}
-
-		res.status(statusCode).json({
-			status: { code, message },
-			response: payload || {},
-		});
-	} else if (payload instanceof Error || typeof payload === 'string') {
-		const message = payload instanceof Error ? payload.message : payload;
-		const response = {};
-
-		// Update status code based on some common error codes
-		switch (message) {
-			case '[[error:user-banned]]':
-				Object.assign(response, await generateBannedResponse(res));
-				// intentional fall through
-
-			case '[[error:no-privileges]]':
-				statusCode = 403;
-				break;
-
-			case '[[error:invalid-uid]]':
-				statusCode = 401;
-				break;
-
-			case '[[error:no-topic]]':
-				statusCode = 404;
-				break;
-		}
-
-		if (message.startsWith('[[error:required-parameters-missing, ')) {
-			const params = message.slice('[[error:required-parameters-missing, '.length, -2).split(' ');
-			Object.assign(response, { params });
-		}
-
-		const returnPayload = await helpers.generateError(statusCode, message, res);
-		returnPayload.response = response;
-
-		if (global.env === 'development') {
-			returnPayload.stack = payload.stack;
-			process.stdout.write(`[${chalk.yellow('api')}] Exception caught, error with stack trace follows:\n`);
-			process.stdout.write(payload.stack);
-		}
-		res.status(statusCode).json(returnPayload);
-	} else {
-		// Non-2xx statusCode, generate predefined error
-		const message = payload ? String(payload) : null;
-		const returnPayload = await helpers.generateError(statusCode, message, res);
-		res.status(statusCode).json(returnPayload);
+		return send2xxResponse(statusCode, res, payload);
 	}
+
+	if (payload instanceof Error || typeof payload === 'string') {
+		return await handleErrorPayload(statusCode, res, payload);
+	}
+
+	// Non-2xx statusCode, generate predefined error
+	const message = payload ? String(payload) : null;
+	const returnPayload = await helpers.generateError(statusCode, message, res);
+	res.status(statusCode).json(returnPayload);
 };
 
 async function generateBannedResponse(res) {
