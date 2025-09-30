@@ -1425,6 +1425,83 @@ describe('Topic\'s', () => {
 		});
 	});
 
+	describe('unanswered', () => {
+		let unansweredTid;
+		let answeredTid;
+		let testUid;
+
+		before(async () => {
+			testUid = await User.create({ username: 'unansweredTestUser' });
+
+			// Create a topic with no replies (unanswered)
+			const unansweredResult = await topics.post({
+				uid: testUid,
+				title: 'Unanswered Question',
+				content: 'This is an unanswered question',
+				cid: categoryObj.cid,
+			});
+			unansweredTid = unansweredResult.topicData.tid;
+
+			// Create a topic with a reply (answered)
+			const answeredResult = await topics.post({
+				uid: testUid,
+				title: 'Answered Question',
+				content: 'This is an answered question',
+				cid: categoryObj.cid,
+			});
+			answeredTid = answeredResult.topicData.tid;
+			await topics.reply({ uid: adminUid, tid: answeredTid, content: 'This is a reply' });
+		});
+
+		it('should fetch unanswered topics', async () => {
+			const result = await topics.getUnansweredTopics({ start: 0, stop: 19, uid: testUid });
+			assert(result);
+			assert(Array.isArray(result.topics));
+			assert(result.topics.length > 0);
+
+			// Check that unansweredTid is in the results
+			const unansweredInResults = result.topics.some(topic => topic.tid === unansweredTid);
+			assert(unansweredInResults, 'Unanswered topic should be in results');
+
+			// Check that answeredTid is NOT in the results
+			const answeredInResults = result.topics.some(topic => topic.tid === answeredTid);
+			assert(!answeredInResults, 'Answered topic should not be in results');
+		});
+
+		it('should return empty result when no unanswered topics exist', async () => {
+			// Reply to the unanswered topic
+			await topics.reply({ uid: adminUid, tid: unansweredTid, content: 'This is now answered' });
+
+			const result = await topics.getUnansweredTopics({ start: 0, stop: 19, uid: testUid });
+			assert(result);
+			assert(Array.isArray(result.topics));
+
+			// Check that previously unanswered topic is no longer in results
+			const unansweredInResults = result.topics.some(topic => topic.tid === unansweredTid);
+			assert(!unansweredInResults, 'Previously unanswered topic should not be in results after reply');
+		});
+
+		it('should have correct properties on returned topics', async () => {
+			// Create a new unanswered topic for this test
+			const newUnansweredResult = await topics.post({
+				uid: testUid,
+				title: 'Another Unanswered Question',
+				content: 'This is another unanswered question',
+				cid: categoryObj.cid,
+			});
+			const newUnansweredTid = newUnansweredResult.topicData.tid;
+
+			const result = await topics.getUnansweredTopics({ start: 0, stop: 19, uid: testUid });
+			assert(result);
+
+			const topicInResults = result.topics.find(topic => topic.tid === newUnansweredTid);
+			assert(topicInResults, 'New unanswered topic should be in results');
+			assert(topicInResults.title);
+			assert(topicInResults.uid);
+			assert(topicInResults.cid);
+		});
+	});
+
 	describe('tags', () => {
 		const socketTopics = require('../src/socket.io/topics');
 		const socketAdmin = require('../src/socket.io/admin');
