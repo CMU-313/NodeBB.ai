@@ -447,78 +447,79 @@ helpers.getHomePageRoutes = async function (uid) {
 	return data.routes;
 };
 
+// Refactored formatApiResponse function to reduce complexity
 helpers.formatApiResponse = async (statusCode, res, payload) => {
 	if (res.req.method === 'HEAD') {
 		return res.sendStatus(statusCode);
 	}
 
 	if (String(statusCode).startsWith('2')) {
-		if (res.req.loggedIn) {
-			res.set('cache-control', 'private');
-		}
-
-		let code = 'ok';
-		let message = 'OK';
-		switch (statusCode) {
-			case 202:
-				code = 'accepted';
-				message = 'Accepted';
-				break;
-
-			case 204:
-				code = 'no-content';
-				message = 'No Content';
-				break;
-		}
-
-		res.status(statusCode).json({
-			status: { code, message },
-			response: payload || {},
-		});
-	} else if (payload instanceof Error || typeof payload === 'string') {
-		const message = payload instanceof Error ? payload.message : payload;
-		const response = {};
-
-		// Update status code based on some common error codes
-		switch (message) {
-			case '[[error:user-banned]]':
-				Object.assign(response, await generateBannedResponse(res));
-				// intentional fall through
-
-			case '[[error:no-privileges]]':
-				statusCode = 403;
-				break;
-
-			case '[[error:invalid-uid]]':
-				statusCode = 401;
-				break;
-
-			case '[[error:no-topic]]':
-				statusCode = 404;
-				break;
-		}
-
-		if (message.startsWith('[[error:required-parameters-missing, ')) {
-			const params = message.slice('[[error:required-parameters-missing, '.length, -2).split(' ');
-			Object.assign(response, { params });
-		}
-
-		const returnPayload = await helpers.generateError(statusCode, message, res);
-		returnPayload.response = response;
-
-		if (global.env === 'development') {
-			returnPayload.stack = payload.stack;
-			process.stdout.write(`[${chalk.yellow('api')}] Exception caught, error with stack trace follows:\n`);
-			process.stdout.write(payload.stack);
-		}
-		res.status(statusCode).json(returnPayload);
-	} else {
-		// Non-2xx statusCode, generate predefined error
-		const message = payload ? String(payload) : null;
-		const returnPayload = await helpers.generateError(statusCode, message, res);
-		res.status(statusCode).json(returnPayload);
+		return handleSuccessResponse(statusCode, res, payload);
 	}
+
+	if (payload instanceof Error || typeof payload === 'string') {
+		return handleErrorPayload(statusCode, res, payload);
+	}
+
+	// Non-2xx statusCode, generate predefined error
+	const message = payload ? String(payload) : null;
+	const returnPayload = await helpers.generateError(statusCode, message, res);
+	res.status(statusCode).json(returnPayload);
 };
+
+async function handleSuccessResponse(statusCode, res, payload) {
+	if (res.req.loggedIn) {
+		res.set('cache-control', 'private');
+	}
+
+	const statusMap = {
+		202: { code: 'accepted', message: 'Accepted' },
+		204: { code: 'no-content', message: 'No Content' },
+	};
+
+	const { code = 'ok', message = 'OK' } = statusMap[statusCode] || {};
+	res.status(statusCode).json({
+		status: { code, message },
+		response: payload || {},
+	});
+}
+
+async function handleErrorPayload(statusCode, res, payload) {
+	const message = payload instanceof Error ? payload.message : payload;
+	const response = {};
+
+	const errorStatusMap = {
+		'[[error:user-banned]]': async () => {
+			Object.assign(response, await generateBannedResponse(res));
+			return 403;
+		},
+		'[[error:no-privileges]]': 403,
+		'[[error:invalid-uid]]': 401,
+		'[[error:no-topic]]': 404,
+	};
+
+	if (message in errorStatusMap) {
+		statusCode = typeof errorStatusMap[message] === 'function' ?
+			await errorStatusMap[message]() :
+			errorStatusMap[message];
+	}
+
+	if (message.startsWith('[[error:required-parameters-missing, ')) {
+		const params = message.slice('[[error:required-parameters-missing, '.length, -2).split(' ');
+		Object.assign(response, { params });
+	}
+
+	const returnPayload = await helpers.generateError(statusCode, message, res);
+	returnPayload.response = response;
+
+	if (global.env === 'development') {
+		returnPayload.stack = payload.stack;
+		process.stdout.write(`[${chalk.yellow('api')}] Exception caught, error with stack trace follows:\n`);
+		process.stdout.write(payload.stack);
+	}
+
+	res.status(statusCode).json(returnPayload);
+}
 
 async function generateBannedResponse(res) {
 	const response = {};
