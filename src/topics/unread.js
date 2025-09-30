@@ -420,8 +420,9 @@ module.exports = function (Topics) {
 			topics: [],
 		};
 
-		// Fetch topic IDs with zero replies
-		const tids = await db.getSortedSetRangeByScore('topics:posts', 0, 0, params.start, params.stop !== -1 ? params.stop + 1 : undefined);
+		// Fetch topic IDs with zero replies (score <= 1 means only initial post)
+		const count = params.stop - params.start + 1;
+		const tids = await db.getSortedSetRangeByScore('topics:posts', params.start, count, 0, 1);
 		if (!tids.length) {
 			return unansweredTopics;
 		}

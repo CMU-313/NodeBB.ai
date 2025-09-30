@@ -417,9 +417,5 @@ topicsController.getUnansweredTopics = async function (req, res) {
 	const { uid } = req;
 
 	const unansweredTopics = await topics.getUnansweredTopics({ start, stop, uid });
-	if (!unansweredTopics.topics.length) {
-		return helpers.formatApiResponse(404, res, new Error('[[error:no-unanswered-topics]]'));
-	}
-
 	helpers.formatApiResponse(200, res, unansweredTopics);
 };
