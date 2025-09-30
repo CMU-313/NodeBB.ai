@@ -154,3 +154,11 @@
 {{{ end }}}
 {{{ end }}}
 {{{ end }}}
+
+{{{ if posts.display_endorse_tool }}}
+<li>
+	<a class="dropdown-item rounded-1 d-flex align-items-center gap-2" component="post/endorse" role="menuitem" href="#">
+		<span class="menu-icon"><i class="fa fa-fw text-success fa-check"></i></span> [[topic:endorse]]
+	</a>
+</li>
+{{{ end }}}

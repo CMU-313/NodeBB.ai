@@ -115,6 +115,15 @@ module.exports = function (SocketPosts) {
 		await db.setAdd(`pid:${data.pid}:editors`, data.uids);
 	};
 
+	SocketPosts.endorsePost = async function (socket, data) {
+		if (!data || !data.pid) {
+			throw new Error('[[error:invalid-data]]');
+		}
+
+		const result = await posts.tools.endorse(socket.uid, data.pid);
+		return result;
+	};
+
 	async function checkEditorPrivilege(uid, pid) {
 		const cid = await posts.getCidByPid(pid);
 		const [isAdminOrMod, owner] = await Promise.all([
