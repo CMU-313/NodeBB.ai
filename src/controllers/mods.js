@@ -228,6 +228,18 @@ modsController.postQueue = async function (req, res, next) {
 	const page = parseInt(req.query.page, 10) || 1;
 	const postsPerPage = 20;
 
+	function canViewPost(post, categoriesData, isAdmin, isGlobalMod, moderatedCids, uid) {
+		if (!post) {
+			return false;
+		}
+		const matchesCategory = !categoriesData.selectedCids.length || 
+			categoriesData.selectedCids.includes(post.category.cid);
+		const hasPermission = isAdmin || isGlobalMod || 
+			moderatedCids.includes(Number(post.category.cid)) || 
+			uid === post.user.uid;
+		return matchesCategory && hasPermission;
+	}
+
 	let postData = await posts.getQueuedPosts({ id: id });
 	let [isAdmin, isGlobalMod, moderatedCids, categoriesData, _privileges] = await Promise.all([
 		user.isAdministrator(req.uid),
@@ -239,9 +251,7 @@ modsController.postQueue = async function (req, res, next) {
 	_privileges = { ..._privileges[0], ..._privileges[1] };
 
 	postData = postData
-		.filter(p => p &&
-			(!categoriesData.selectedCids.length || categoriesData.selectedCids.includes(p.category.cid)) &&
-			(isAdmin || isGlobalMod || moderatedCids.includes(Number(p.category.cid)) || req.uid === p.user.uid))
+		.filter(p => canViewPost(p, categoriesData, isAdmin, isGlobalMod, moderatedCids, req.uid))
 		.map((post) => {
 			const isSelf = post.user.uid === req.uid;
 			post.canAccept = !isSelf && (isAdmin || isGlobalMod || !!moderatedCids.length);
