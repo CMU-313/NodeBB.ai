@@ -103,7 +103,16 @@ function loadConfig(configFile) {
 		if (!nconf.get('asset_base_url')) {
 			nconf.set('asset_base_url', `${relativePath}/assets`);
 		}
-		nconf.set('port', nconf.get('PORT') || nconf.get('port') || urlObject.port || (nconf.get('PORT_ENV_VAR') ? nconf.get(nconf.get('PORT_ENV_VAR')) : false) || 4567);
+
+		// Refactor the complex binary expression for better readability
+		const portFromEnv = nconf.get('PORT');
+		const portFromConfig = nconf.get('port');
+		const portFromUrl = urlObject.port;
+		const portFromEnvVar = nconf.get('PORT_ENV_VAR') ? nconf.get(nconf.get('PORT_ENV_VAR')) : false;
+		const defaultPort = 4567;
+
+		const resolvedPort = portFromEnv || portFromConfig || portFromUrl || portFromEnvVar || defaultPort;
+		nconf.set('port', resolvedPort);
 
 		// cookies don't provide isolation by port: http://stackoverflow.com/a/16328399/122353
 		const domain = nconf.get('cookieDomain') || urlObject.hostname;
