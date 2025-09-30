@@ -330,7 +330,12 @@ inbox.announce = async (req) => {
 				pid = id;
 				tid = await posts.getPostField(id, 'tid');
 
-				socketHelpers.sendNotificationToPostOwner(pid, actor, 'announce', 'notifications:activitypub.announce');
+				socketHelpers.sendNotificationToPostOwner({
+					pid: pid,
+					fromuid: actor,
+					command: 'announce',
+					notification: 'notifications:activitypub.announce',
+				});
 			} else { // Remote object
 				// Follower check
 				if (!cid) {

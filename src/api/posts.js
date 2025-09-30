@@ -9,8 +9,7 @@ const user = require('../user');
 const posts = require('../posts');
 const topics = require('../topics');
 const groups = require('../groups');
-const plugins = require('../plugins');
-const meta = require('../meta');
+const plugins = require('../meta');
 const events = require('../events');
 const privileges = require('../privileges');
 const activitypub = require('../activitypub');
@@ -322,7 +321,12 @@ postsAPI.move = async function (caller, data) {
 	]);
 
 	if (!postDeleted && !topicDeleted) {
-		socketHelpers.sendNotificationToPostOwner(data.pid, caller.uid, 'move', 'notifications:moved-your-post');
+		socketHelpers.sendNotificationToPostOwner({
+			pid: data.pid,
+			fromuid: caller.uid,
+			command: 'move',
+			notification: 'notifications:moved-your-post',
+		});
 
 		// ideally we should federate a "move" activity instead, then can capture remote posts too. tbd
 		if (utils.isNumber(data.pid)) {

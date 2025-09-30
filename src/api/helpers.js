@@ -139,7 +139,12 @@ async function executeCommand(caller, command, eventName, notification, data) {
 		socketHelpers.upvote(result, notification);
 		await api.activitypub.like.note(caller, { pid: data.pid });
 	} else if (result && notification) {
-		socketHelpers.sendNotificationToPostOwner(data.pid, caller.uid, command, notification);
+		socketHelpers.sendNotificationToPostOwner({
+			pid: data.pid,
+			fromuid: caller.uid,
+			command: command,
+			notification: notification,
+		});
 	} else if (result && command === 'unvote') {
 		socketHelpers.rescindUpvoteNotification(data.pid, caller.uid);
 		await api.activitypub.undo.like(caller, { pid: data.pid });
