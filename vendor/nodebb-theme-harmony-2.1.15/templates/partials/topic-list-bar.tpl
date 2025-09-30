@@ -26,6 +26,17 @@
 				{{{ end }}}
 				<!-- IMPORT partials/category/tools-dropdown-left.tpl -->
 
+				{{{ if template.category }}}
+				<div class="category-search-container d-flex align-items-center">
+					<div class="input-group" style="max-width: 300px;">
+						<input type="text" class="form-control form-control-sm" id="category-search-input" placeholder="[[search:search-posts-in-category]]" aria-label="Search posts in category">
+						<button class="btn btn-outline-secondary btn-sm" type="button" id="category-search-button" title="[[search:search]]">
+							<i class="fa fa-search"></i>
+						</button>
+					</div>
+				</div>
+				{{{ end }}}
+
 				{{{ if (!feeds:disableRSS && rssFeedUrl) }}}
 				<a class="btn btn-ghost btn-sm d-none d-lg-flex align-items-center align-self-stretch" target="_blank" href="{rssFeedUrl}" itemprop="item" title="[[global:rss-feed]]"><i class="fa fa-rss text-primary"></i></a>
 				{{{ end }}}
