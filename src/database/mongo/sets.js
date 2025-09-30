@@ -1,6 +1,7 @@
 'use strict';
 
 module.exports = function (module) {
+	const winston = require('winston');
 	const _ = require('lodash');
 	const helpers = require('./helpers');
 	const { secureRandom } = require('../../utils');
@@ -28,7 +29,7 @@ module.exports = function (module) {
 			});
 		} catch (err) {
 			if (err && err.message.includes('E11000 duplicate key error')) {
-				console.log(new Error('e11000').stack, key, value);
+				winston.error('E11000 duplicate key error', { stack: new Error('e11000').stack, key, value });
 				return await module.setAdd(key, value);
 			}
 			throw err;
@@ -61,7 +62,7 @@ module.exports = function (module) {
 			await bulk.execute();
 		} catch (err) {
 			if (err && err.message.includes('E11000 duplicate key error')) {
-				console.log(new Error('e11000').stack, keys, value);
+				winston.error('E11000 duplicate key error', { stack: new Error('e11000').stack, keys, value });
 				return await module.setsAdd(keys, value);
 			}
 			throw err;
