@@ -446,5 +446,54 @@ define('forum/topic/posts', [
 		});
 	};
 
+	// Add a checkbox for anonymous posting in the post creation UI
+	function addAnonymousOption() {
+		const postForm = document.querySelector('#post-form');
+		if (postForm) {
+			const anonymousCheckbox = document.createElement('div');
+			anonymousCheckbox.innerHTML = `
+				<div class="form-check">
+					<input class="form-check-input" type="checkbox" id="anonymousPost" name="anonymousPost">
+					<label class="form-check-label" for="anonymousPost">
+						Post Anonymously
+					</label>
+				</div>
+			`;
+			postForm.appendChild(anonymousCheckbox);
+		}
+	}
+
+	document.addEventListener('DOMContentLoaded', addAnonymousOption);
+
+	// Modify the post submission logic to include the anonymous option
+	function modifyPostSubmission() {
+		const postForm = document.querySelector('#post-form');
+		if (postForm) {
+			postForm.addEventListener('submit', (event) => {
+				const anonymousCheckbox = document.querySelector('#anonymousPost');
+				if (anonymousCheckbox && anonymousCheckbox.checked) {
+					const formData = new FormData(postForm);
+					formData.append('anonymous', true);
+
+					// Example: Modify the form submission to include the anonymous flag
+					fetch(postForm.action, {
+						method: 'POST',
+						body: formData,
+					}).then(response => {
+						if (response.ok) {
+							window.location.reload();
+						} else {
+							console.error('Failed to submit post');
+						}
+					});
+
+					event.preventDefault(); // Prevent default form submission
+				}
+			});
+		}
+	}
+
+	document.addEventListener('DOMContentLoaded', modifyPostSubmission);
+
 	return Posts;
 });
