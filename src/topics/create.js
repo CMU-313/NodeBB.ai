@@ -37,6 +37,21 @@ module.exports = function (Topics) {
 			viewcount: 0,
 		};
 
+		// Optional: restrict topic visibility to specific groups (array or JSON string)
+		if (data.restrictedGroups) {
+			let groupsList = data.restrictedGroups;
+			if (typeof groupsList === 'string') {
+				try {
+					groupsList = JSON.parse(groupsList);
+				} catch (err) {
+					groupsList = groupsList.split(',').map(s => s.trim()).filter(Boolean);
+				}
+			}
+			if (Array.isArray(groupsList) && groupsList.length) {
+				topicData.restrictedGroups = JSON.stringify(groupsList.map(String));
+			}
+		}
+
 		if (Array.isArray(data.tags) && data.tags.length) {
 			topicData.tags = data.tags.join(',');
 		}

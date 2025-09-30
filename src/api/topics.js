@@ -43,6 +43,22 @@ topicsAPI.get = async function (caller, data) {
 		privileges.topics.get(data.tid, caller.uid),
 		topics.getTopicData(data.tid),
 	]);
+	// Enforce restrictedGroups visibility
+	if (topic && topic.restrictedGroups) {
+		let groupsList = [];
+		try {
+			groupsList = JSON.parse(topic.restrictedGroups);
+		} catch (err) {
+			groupsList = String(topic.restrictedGroups).split(',').map(s => s.trim()).filter(Boolean);
+		}
+		if (groupsList.length) {
+			const isMember = await require('../groups').isMemberOfAny(caller.uid, groupsList);
+			if (!isMember) {
+				return null;
+			}
+		}
+	}
+
 	if (
 		!topic ||
 		!userPrivileges.read ||
