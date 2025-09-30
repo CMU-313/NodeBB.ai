@@ -67,49 +67,89 @@ async function getGroups(req, sort, page) {
 	return [groupData, pageCount];
 }
 
-groupsController.details = async function (req, res, next) {
+async function handleSlugNormalization(req, res) {
 	const lowercaseSlug = req.params.slug.toLowerCase();
 	if (req.params.slug !== lowercaseSlug) {
 		if (res.locals.isAPI) {
 			req.params.slug = lowercaseSlug;
 		} else {
-			return res.redirect(`${nconf.get('relative_path')}/groups/${lowercaseSlug}`);
+			return { shouldRedirect: true, redirectUrl: `${nconf.get('relative_path')}/groups/${lowercaseSlug}` };
 		}
 	}
+	return { shouldRedirect: false, slug: lowercaseSlug };
+}
+
+async function validateGroupAccess(groupName, uid) {
+	const [exists, isHidden, isAdmin, isGlobalMod] = await Promise.all([
+		groups.exists(groupName),
+		groups.isHidden(groupName),
+		privileges.admin.can('admin:groups', uid),
+		user.isGlobalModerator(uid),
+	]);
+
+	if (!exists) {
+		return { hasAccess: false };
+	}
+
+	if (isHidden && !isAdmin && !isGlobalMod) {
+		const [isMember, isInvited] = await Promise.all([
+			groups.isMember(uid, groupName),
+			groups.isInvited(uid, groupName),
+		]);
+		if (!isMember && !isInvited) {
+			return { hasAccess: false };
+		}
+	}
+
+	return { hasAccess: true, isAdmin, isGlobalMod };
+}
+
+async function fetchGroupData(groupName, uid) {
+	const [groupData, posts] = await Promise.all([
+		groups.get(groupName, {
+			uid: uid,
+			truncateUserList: true,
+			userListCount: 20,
+		}),
+		groups.getLatestMemberPosts(groupName, 10, uid),
+	]);
+
+	if (!groupData) {
+		return null;
+	}
+
+	return { groupData, posts };
+}
+
+groupsController.details = async function (req, res, next) {
+	console.log('mmingus'); // Temporary log for testing
+	
+	// Handle slug normalization
+	const slugResult = await handleSlugNormalization(req, res);
+	if (slugResult.shouldRedirect) {
+		return res.redirect(slugResult.redirectUrl);
+	}
+	const lowercaseSlug = slugResult.slug || req.params.slug.toLowerCase();
+
+	// Get group name and validate it exists
 	const groupName = await groups.getGroupNameByGroupSlug(req.params.slug);
 	if (!groupName) {
 		return next();
 	}
-	const [exists, isHidden, isAdmin, isGlobalMod] = await Promise.all([
-		groups.exists(groupName),
-		groups.isHidden(groupName),
-		privileges.admin.can('admin:groups', req.uid),
-		user.isGlobalModerator(req.uid),
-	]);
-	if (!exists) {
-		return next();
-	}
-	if (isHidden && !isAdmin && !isGlobalMod) {
-		const [isMember, isInvited] = await Promise.all([
-			groups.isMember(req.uid, groupName),
-			groups.isInvited(req.uid, groupName),
-		]);
-		if (!isMember && !isInvited) {
-			return next();
-		}
-	}
-	const [groupData, posts] = await Promise.all([
-		groups.get(groupName, {
-			uid: req.uid,
-			truncateUserList: true,
-			userListCount: 20,
-		}),
-		groups.getLatestMemberPosts(groupName, 10, req.uid),
-	]);
-	if (!groupData) {
+
+	// Validate access permissions
+	const accessResult = await validateGroupAccess(groupName, req.uid);
+	if (!accessResult.hasAccess) {
 		return next();
 	}
 
+	// Fetch group data and posts
+	const dataResult = await fetchGroupData(groupName, req.uid);
+	if (!dataResult) {
+		return next();
+	}
+
+	// Set canonical link
 	res.locals.linkTags = [
 		{
 			rel: 'canonical',
@@ -117,14 +157,18 @@ groupsController.details = async function (req, res, next) {
 		},
 	];
 
+	// Render the page
 	res.render('groups/details', {
-		title: `[[pages:group, ${groupData.displayName}]]`,
-		group: groupData,
-		posts: posts,
-		isAdmin: isAdmin,
-		isGlobalMod: isGlobalMod,
+		title: `[[pages:group, ${dataResult.groupData.displayName}]]`,
+		group: dataResult.groupData,
+		posts: dataResult.posts,
+		isAdmin: accessResult.isAdmin,
+		isGlobalMod: accessResult.isGlobalMod,
 		allowPrivateGroups: meta.config.allowPrivateGroups,
-		breadcrumbs: helpers.buildBreadcrumbs([{ text: '[[pages:groups]]', url: '/groups' }, { text: groupData.displayName }]),
+		breadcrumbs: helpers.buildBreadcrumbs([
+			{ text: '[[pages:groups]]', url: '/groups' }, 
+			{ text: dataResult.groupData.displayName },
+		]),
 	});
 };
 
