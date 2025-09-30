@@ -35,7 +35,7 @@ Posts.exists = async function (pids) {
 	);
 };
 
-Posts.getPidsFromSet = async function (set, start, stop, reverse) {
+Posts.getPidsFromSet = async function ({ set, start, stop, reverse }) {
 	if (isNaN(start) || isNaN(stop)) {
 		return [];
 	}
@@ -56,7 +56,7 @@ Posts.getPostsByPids = async function (pids, uid) {
 	return data.posts.filter(Boolean);
 };
 
-Posts.getPostSummariesFromSet = async function (set, uid, start, stop) {
+Posts.getPostSummariesFromSet = async function ({ set, uid, start, stop }) {
 	let pids = await db.getSortedSetRevRange(set, start, stop);
 	pids = await privileges.posts.filter('topics:read', pids, uid);
 	const posts = await Posts.getPostSummaryByPids(pids, uid, { stripTags: false });
