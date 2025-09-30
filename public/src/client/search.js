@@ -16,6 +16,7 @@ define('forum/search', [
 	let selectedTags = [];
 	let selectedCids = [];
 	let searchFilters = {};
+	let selectedRoles = [];
 	Search.init = function () {
 		const searchIn = $('#search-in');
 		searchIn.on('change', function () {
@@ -39,6 +40,7 @@ define('forum/search', [
 		categoryFilterDropdown(ajaxify.data.selectedCids);
 		userFilterDropdown($('[component="user/filter"]'), ajaxify.data.userFilterSelected);
 		tagFilterDropdown($('[component="tag/filter"]'), ajaxify.data.tagFilterSelected);
+		roleFilterInit();
 
 		$('[component="search/filters"]').on('hidden.bs.dropdown', '.dropdown', function () {
 			const updateFns = {
@@ -134,6 +136,17 @@ define('forum/search', [
 			searchData.showAs = form.find('#show-results-as').val();
 		}
 
+		// author role filter
+		const roles = [];
+		$('#results [component="search/filters"] input[type=checkbox][id^="role-"]').each(function () {
+			if ($(this).is(':checked')) {
+				roles.push($(this).val());
+			}
+		});
+		if (roles.length) {
+			searchData.authorGroups = roles;
+		}
+
 		hooks.fire('action:search.getSearchDataFromDOM', {
 			form: form,
 			data: searchData,
@@ -212,6 +225,14 @@ define('forum/search', [
 				form: formData,
 			});
 		}
+
+		// fill out roles if provided
+		if (formData.authorGroups) {
+			formData.authorGroups = Array.isArray(formData.authorGroups) ? formData.authorGroups : [formData.authorGroups];
+			formData.authorGroups.forEach(function (role) {
+				$('#role-' + role).prop('checked', true);
+			});
+		}
 	}
 
 	function handleSavePreferences() {
@@ -246,6 +267,29 @@ define('forum/search', [
 			categoryFilterDropdown([]);
 			alerts.success('[[search:search-preferences-cleared]]');
 			return false;
+		});
+	}
+
+	function roleFilterInit() {
+		$('[data-filter-name="role"]').on('hidden.bs.dropdown', function () {
+			const selected = [];
+			$('#results [component="search/filters"] input[type=checkbox][id^="role-"]').each(function () {
+				if ($(this).is(':checked')) {
+					selected.push($(this).val());
+				}
+			});
+			selectedRoles = selected;
+			const isActive = selectedRoles.length > 0;
+			let labelText = '[[search:author-role]]';
+			if (isActive) {
+				labelText = selectedRoles.join(', ');
+			}
+			$('[component="role/filter/button"]').toggleClass('active-filter', isActive).find('.filter-label').text(labelText);
+			const searchFiltersNew = getSearchDataFromDOM();
+			if (JSON.stringify(searchFilters) !== JSON.stringify(searchFiltersNew)) {
+				searchFilters = searchFiltersNew;
+				searchModule.query(searchFilters);
+			}
 		});
 	}
 

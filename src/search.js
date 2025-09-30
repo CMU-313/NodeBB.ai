@@ -12,6 +12,7 @@ const plugins = require('./plugins');
 const privileges = require('./privileges');
 const activitypub = require('./activitypub');
 const utils = require('./utils');
+const groups = require('./groups');
 
 const search = module.exports;
 
@@ -417,10 +418,37 @@ async function getChildrenCids(data) {
 }
 
 async function getSearchUids(data) {
-	if (!data.postedBy) {
-		return [];
+	// Support filtering by exact usernames (postedBy) and/or by authorGroups (group names)
+	const { postedBy, authorGroups } = data;
+	let postedUids = [];
+	let groupUids = [];
+
+	if (postedBy) {
+		postedUids = await user.getUidsByUsernames(Array.isArray(postedBy) ? postedBy : [postedBy]);
 	}
-	return await user.getUidsByUsernames(Array.isArray(data.postedBy) ? data.postedBy : [data.postedBy]);
+
+	if (authorGroups) {
+		const groupNames = Array.isArray(authorGroups) ? authorGroups : [authorGroups];
+		// groups.getMembersOfGroups returns an array of arrays of uids per group
+		const membersPerGroup = await groups.getMembersOfGroups(groupNames);
+		groupUids = _.uniq(_.flatten(membersPerGroup)).map(String);
+	}
+
+	if (postedUids.length && groupUids.length) {
+		// If both postedBy and authorGroups are provided, intersect them (AND semantics)
+		const set = new Set(groupUids);
+		return postedUids.map(String).filter(uid => set.has(String(uid)));
+	}
+
+	if (postedUids.length) {
+		return postedUids.map(String);
+	}
+
+	if (groupUids.length) {
+		return groupUids;
+	}
+
+	return [];
 }
 
 require('./promisify')(search);
