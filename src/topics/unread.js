@@ -1,4 +1,3 @@
-
 'use strict';
 
 const async = require('async');
@@ -412,5 +411,41 @@ module.exports = function (Topics) {
 	Topics.filterUnrepliedTids = async function (tids) {
 		const scores = await db.sortedSetScores('topics:posts', tids);
 		return tids.filter((tid, index) => tid && scores[index] !== null && scores[index] <= 1);
+	};
+
+	Topics.setFollowUp = async function (tid, uid) {
+		const followUpKey = `topic:${tid}:followUp`;
+		await db.setObject(followUpKey, {
+			uid: uid,
+			timestamp: Date.now(),
+			status: 'requested',
+		});
+	};
+
+	Topics.getFollowUp = async function (tid) {
+		const followUpKey = `topic:${tid}:followUp`;
+		return await db.getObject(followUpKey);
+	};
+
+	Topics.resolveFollowUp = async function (tid, uid) {
+		const followUpKey = `topic:${tid}:followUp`;
+		const followUp = await db.getObject(followUpKey);
+		if (followUp && followUp.uid === uid) {
+			await db.setObjectField(followUpKey, 'status', 'resolved');
+			await db.setObjectField(followUpKey, 'resolvedTimestamp', Date.now());
+		}
+	};
+
+	Topics.canRequestFollowUp = async function (uid, tid) {
+		const userPrivileges = await privileges.topics.can('topics:followUp', tid, uid);
+		if (!userPrivileges) {
+			throw new Error('[[error:no-privileges]]');
+		}
+
+		const followUpKey = `topic:${tid}:followUp`;
+		const followUp = await db.getObject(followUpKey);
+		if (followUp && followUp.status === 'requested' && Date.now() - followUp.timestamp < 60000) {
+			throw new Error('[[error:follow-up-cooldown]]');
+		}
 	};
 };
