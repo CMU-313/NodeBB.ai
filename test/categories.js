@@ -335,6 +335,36 @@ describe('Categories', () => {
 			cid = category.cid;
 		});
 
+		it('should allow instructors group members to create categories', async () => {
+			const apiCategories = require('../src/api/categories');
+			const User = require('../src/user');
+			const groups = require('../src/groups');
+			// create a user and make them an instructor (not an admin)
+			const instrUid = await User.create({ username: 'instr' });
+			await groups.create({ name: 'instructors' });
+			await groups.join('instructors', instrUid);
+
+			// should be able to create category
+			const category = await apiCategories.create({ uid: instrUid }, {
+				name: 'Instructor Category',
+				description: 'Created by instructor',
+			});
+			assert(category && category.cid);
+
+			// cleanup: remove instructor from group to avoid polluting other tests
+			try {
+				await groups.leave('instructors', instrUid);
+			} catch (e) {
+				// ignore cleanup errors in tests
+			}
+			try {
+				const User = require('../src/user');
+				await User.delete(adminUid, instrUid);
+			} catch (e) {
+				// ignore deletion errors
+			}
+		});
+
 		it('should return error with invalid data', async () => {
 			let err;
 			try {
@@ -658,8 +688,20 @@ describe('Categories', () => {
 		});
 
 		it('should filter uids by privilege', (done) => {
-			privileges.categories.filterUids('find', categoryObj.cid, [1, 2, 3, 4], (err, uids) => {
+			privileges.categories.filterUids('find', categoryObj.cid, [1, 2, 3, 4], async (err, uids) => {
 				assert.ifError(err);
+				console.log('DEBUG: filterUids returned ->', uids);
+				// additional debug info about each uid
+				const User = require('../src/user');
+				const Groups = require('../src/groups');
+				const info = await Promise.all([1,2,3,4].map(async (id) => {
+					const username = await User.getUserField(id, 'username').catch(() => null);
+					const isAdmin = await User.isAdministrator(id).catch(() => false);
+					const isRegistered = await Groups.isMember(id, 'registered-users').catch(() => false);
+					const isInstructors = await Groups.isMember(id, 'instructors').catch(() => false);
+					return { id, username, isAdmin, isRegistered, isInstructors };
+				}));
+				console.log('DEBUG: uid info ->', info);
 				assert.deepEqual(uids, [1, 2]);
 				done();
 			});

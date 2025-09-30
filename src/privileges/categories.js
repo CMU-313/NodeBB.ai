@@ -192,6 +192,13 @@ privsCategories.filterUids = async function (privilege, cid, uids) {
 		helpers.isUsersAllowedTo(privilege, uids, cid),
 		user.isAdministrator(uids),
 	]);
+
+	// DEBUG: inspect why certain uids are allowed
+	try {
+		console.log('[DEBUG privs.filterUids] privilege=%s cid=%s uids=%o allowedTo=%o isAdmins=%o', privilege, cid, uids, allowedTo, isAdmins);
+	} catch (e) {
+		// ignore logging errors
+	}
 	return uids.filter((uid, index) => allowedTo[index] || isAdmins[index]);
 };
 

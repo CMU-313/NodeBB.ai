@@ -15,9 +15,20 @@ const categoriesAPI = module.exports;
 
 const hasAdminPrivilege = async (uid, privilege = 'categories') => {
 	const ok = await privileges.admin.can(`admin:${privilege}`, uid);
-	if (!ok) {
-		throw new Error('[[error:no-privileges]]');
+	if (ok) {
+		return;
 	}
+
+	// Allow members of the 'instructors' group to create categories (but not all admin actions)
+	// Only apply this leniency for the 'categories' privilege specifically
+	if (privilege === 'categories') {
+		const isInstructor = await groups.isMember(uid, 'instructors');
+		if (isInstructor) {
+			return;
+		}
+	}
+
+	throw new Error('[[error:no-privileges]]');
 };
 
 categoriesAPI.list = async (caller) => {
