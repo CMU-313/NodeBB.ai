@@ -260,6 +260,35 @@ module.exports = function (Topics) {
 		postData.display_move_tools = true;
 		postData.selfPost = false;
 		posts.overrideGuestHandle(postData, handle);
+
+		// Update posting streak for the post owner (count of consecutive days with >=1 post)
+		if (parseInt(postOwner, 10) > 0) {
+			try {
+				const DAY = Math.floor(Date.now() / 86400000); // days since epoch (UTC)
+				const [lastDayRaw, streakRaw] = await Promise.all([
+					user.getUserField(postOwner, 'lastPostDay'),
+					user.getUserField(postOwner, 'postingStreak'),
+				]);
+				const lastDay = lastDayRaw ? parseInt(lastDayRaw, 10) : null;
+				let streak = streakRaw ? parseInt(streakRaw, 10) : 0;
+				if (lastDay === DAY) {
+					// already posted today; do nothing
+				} else if (lastDay === DAY - 1) {
+					// consecutive day
+					streak = (streak || 0) + 1;
+				} else {
+					// reset streak
+					streak = 1;
+				}
+				await user.setUserFields(postOwner, {
+					postingStreak: streak,
+					lastPostDay: DAY,
+				});
+			} catch (err) {
+				winston.error(`Failed to update posting streak for uid:${postOwner} - ${err.stack}`);
+			}
+		}
+
 		return postData;
 	}
 
