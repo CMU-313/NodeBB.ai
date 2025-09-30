@@ -54,10 +54,26 @@ module.exports = function (User) {
 		if (searchBy === 'uid') {
 			return [query];
 		}
+
+		let uids = [];
 		if (!data.findUids && data.uid) {
-			return await handleActivityPub(data, query);
+			uids = await handleActivityPub(data, query);
 		}
-		return await findUids(query, searchBy, data.hardCap);
+
+		if (!uids.length) {
+			const searchMethod = data.findUids || findUids;
+			uids = await searchMethod(query, searchBy, data.hardCap);
+
+			const mapping = {
+				username: 'ap.preferredUsername',
+				fullname: 'ap.name',
+			};
+			if (meta.config.activitypubEnabled && mapping.hasOwnProperty(searchBy)) {
+				uids = uids.concat(await searchMethod(query, mapping[searchBy], data.hardCap));
+			}
+		}
+
+		return uids;
 	}
 
 	async function handleActivityPub(data, query) {
