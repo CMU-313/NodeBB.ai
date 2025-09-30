@@ -10,6 +10,9 @@
 				{{{ if (template.popular || template.top)}}}
 				<!-- IMPORT partials/topic-terms.tpl -->
 				{{{ end }}}
+				{{{ if (template.recent || template.popular || template.top) }}}
+				<!-- IMPORT partials/category/sort.tpl -->
+				{{{ end }}}
 				{{{ if (template.unread || (template.recent || (template.popular || template.top))) }}}
 				<!-- IMPORT partials/topic-filters.tpl -->
 				<!-- IMPORT partials/category/filter-dropdown-left.tpl -->
