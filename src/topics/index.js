@@ -56,6 +56,36 @@ Topics.getTopics = async function (tids, options) {
 	}
 
 	tids = await privileges.topics.filterTids('topics:read', tids, uid);
+	// Filter out topics restricted to specific groups when caller is not a member
+	if (tids.length) {
+		const topicData = await Topics.getTopicsData(tids);
+		const restrictedTids = topicData
+			.filter(t => t && t.restrictedGroups)
+			.map(t => t.tid);
+		if (restrictedTids.length) {
+			const restrictedTopics = topicData.filter(t => t && t.restrictedGroups);
+			const groupChecks = [];
+			const mapping = [];
+			restrictedTopics.forEach((t) => {
+				try {
+					const groupsList = JSON.parse(t.restrictedGroups);
+					if (Array.isArray(groupsList) && groupsList.length) {
+						mapping.push({ tid: t.tid, groupsList });
+						groupChecks.push(require('../groups').isMemberOfAny(uid, groupsList));
+					}
+				} catch (err) {
+					// ignore parse errors and treat as unrestricted
+				}
+			});
+			const results = await Promise.all(groupChecks);
+			results.forEach((isMember, i) => {
+				if (!isMember) {
+					const removeTid = mapping[i].tid;
+					tids = tids.filter(tid => String(tid) !== String(removeTid));
+				}
+			});
+		}
+	}
 	return await Topics.getTopicsByTids(tids, options);
 };
 

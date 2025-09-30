@@ -30,6 +30,25 @@ postsAPI.get = async function (caller, data) {
 	]);
 	const userPrivilege = userPrivileges[0];
 
+	// Check topic restrictedGroups
+	if (post) {
+		const topicData = await require('../topics').getTopicFields(post.tid, ['restrictedGroups']);
+		if (topicData && topicData.restrictedGroups) {
+			let groupsList = [];
+			try {
+				groupsList = JSON.parse(topicData.restrictedGroups);
+			} catch (err) {
+				groupsList = String(topicData.restrictedGroups).split(',').map(s => s.trim()).filter(Boolean);
+			}
+			if (groupsList.length) {
+				const isMember = await require('../groups').isMemberOfAny(caller.uid, groupsList);
+				if (!isMember) {
+					return null;
+				}
+			}
+		}
+	}
+
 	if (!post || !userPrivilege.read || !userPrivilege['topics:read']) {
 		return null;
 	}
@@ -58,6 +77,23 @@ postsAPI.getIndex = async (caller, { pid, sort }) => {
 postsAPI.getSummary = async (caller, { pid }) => {
 	const tid = await posts.getPostField(pid, 'tid');
 	const topicPrivileges = await privileges.topics.get(tid, caller.uid);
+
+	// Check topic restrictedGroups
+	const topicData = await require('../topics').getTopicFields(tid, ['restrictedGroups']);
+	if (topicData && topicData.restrictedGroups) {
+		let groupsList = [];
+		try {
+			groupsList = JSON.parse(topicData.restrictedGroups);
+		} catch (err) {
+			groupsList = String(topicData.restrictedGroups).split(',').map(s => s.trim()).filter(Boolean);
+		}
+		if (groupsList.length) {
+			const isMember = await require('../groups').isMemberOfAny(caller.uid, groupsList);
+			if (!isMember) {
+				return null;
+			}
+		}
+	}
 	if (!topicPrivileges.read || !topicPrivileges['topics:read']) {
 		return null;
 	}
@@ -73,7 +109,23 @@ postsAPI.getRaw = async (caller, { pid }) => {
 	if (!userPrivilege['topics:read']) {
 		return null;
 	}
-
+	// Check topic restrictedGroups
+	const tid = await posts.getPostField(pid, 'tid');
+	const topicData = await require('../topics').getTopicFields(tid, ['restrictedGroups']);
+	if (topicData && topicData.restrictedGroups) {
+		let groupsList = [];
+		try {
+			groupsList = JSON.parse(topicData.restrictedGroups);
+		} catch (err) {
+			groupsList = String(topicData.restrictedGroups).split(',').map(s => s.trim()).filter(Boolean);
+		}
+		if (groupsList.length) {
+			const isMember = await require('../groups').isMemberOfAny(caller.uid, groupsList);
+			if (!isMember) {
+				return null;
+			}
+		}
+	}
 	const postData = await posts.getPostFields(pid, ['content', 'deleted']);
 	const selfPost = caller.uid && caller.uid === parseInt(postData.uid, 10);
 
