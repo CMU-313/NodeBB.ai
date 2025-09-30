@@ -89,54 +89,21 @@ Digest.send = async function (data) {
 	}
 	let errorLogged = false;
 	const date = new Date();
+
 	await batch.processArray(data.subscribers, async (uids) => {
-		let userData = await user.getUsersFields(uids, [
-			'uid', 'email', 'email:confirmed', 'username', 'userslug', 'lastonline',
-		]);
-		userData = userData.filter(
-			u => u && u.email && (meta.config.includeUnverifiedEmails || u['email:confirmed'])
-		);
+		const userData = await getUserData(uids);
 		if (!userData.length) {
 			return;
 		}
 		const userSettings = await user.getMultipleUserSettings(userData.map(u => u.uid));
 		await Promise.all(userData.map(async (userObj, index) => {
 			const userSetting = userSettings[index];
-			const [publicRooms, notifications, topics] = await Promise.all([
-				getUnreadPublicRooms(userObj.uid),
-				user.notifications.getUnreadInterval(userObj.uid, data.interval),
-				getTermTopics(data.interval, userObj.uid),
-			]);
-			const unreadNotifs = notifications.filter(Boolean);
-			// If there are no notifications and no new topics and no unread chats, don't bother sending a digest
-			if (!unreadNotifs.length &&
-				!topics.top.length && !topics.popular.length && !topics.recent.length &&
-				!publicRooms.length) {
+			const digestContent = await getDigestContent(userObj.uid, data.interval);
+			if (!digestContent.hasContent) {
 				return;
 			}
-
-			unreadNotifs.forEach((n) => {
-				if (n.image && !n.image.startsWith('http')) {
-					n.image = baseUrl + n.image;
-				}
-				if (n.path) {
-					n.notification_url = n.path.startsWith('http') ? n.path : baseUrl + n.path;
-				}
-			});
-
 			emailsSent += 1;
-			await emailer.send('digest', userObj.uid, {
-				subject: `[[email:digest.subject, ${date.toLocaleDateString(userSetting.userLang)}]]`,
-				username: userObj.username,
-				userslug: userObj.userslug,
-				notifications: unreadNotifs,
-				publicRooms: publicRooms,
-				recent: topics.recent,
-				topTopics: topics.top,
-				popularTopics: topics.popular,
-				interval: data.interval,
-				showUnsubscribe: true,
-			}).catch((err) => {
+			await sendDigestEmail(userObj, userSetting, digestContent, data.interval, date).catch((err) => {
 				if (!errorLogged) {
 					winston.error(`[user/jobs] Could not send digest email\n[emailer.send] ${err.stack}`);
 					errorLogged = true;
@@ -144,8 +111,7 @@ Digest.send = async function (data) {
 			});
 		}));
 		if (data.interval !== 'alltime') {
-			const now = Date.now();
-			await db.sortedSetAdd('digest:delivery', userData.map(() => now), userData.map(u => u.uid));
+			await updateDeliveryTimes(userData);
 		}
 	}, {
 		interval: 1000,
@@ -154,6 +120,57 @@ Digest.send = async function (data) {
 	winston.info(`[user/jobs] Digest (${data.interval}) sending completed. ${emailsSent} emails sent.`);
 	return emailsSent;
 };
+
+async function getUserData(uids) {
+	const userData = await user.getUsersFields(uids, [
+		'uid', 'email', 'email:confirmed', 'username', 'userslug', 'lastonline',
+	]);
+	return userData.filter(u => u && u.email && (meta.config.includeUnverifiedEmails || u['email:confirmed']));
+}
+
+async function getDigestContent(uid, interval) {
+	const [publicRooms, notifications, topics] = await Promise.all([
+		getUnreadPublicRooms(uid),
+		user.notifications.getUnreadInterval(uid, interval),
+		getTermTopics(interval, uid),
+	]);
+	const unreadNotifs = notifications.filter(Boolean);
+	return {
+		hasContent: unreadNotifs.length || topics.top.length || topics.popular.length ||
+			topics.recent.length || publicRooms.length,
+		unreadNotifs,
+		publicRooms,
+		topics,
+	};
+}
+
+async function sendDigestEmail(userObj, userSetting, digestContent, interval, date) {
+	digestContent.unreadNotifs.forEach((n) => {
+		if (n.image && !n.image.startsWith('http')) {
+			n.image = baseUrl + n.image;
+		}
+		if (n.path) {
+			n.notification_url = n.path.startsWith('http') ? n.path : baseUrl + n.path;
+		}
+	});
+	return emailer.send('digest', userObj.uid, {
+		subject: `[[email:digest.subject, ${date.toLocaleDateString(userSetting.userLang)}]]`,
+		username: userObj.username,
+		userslug: userObj.userslug,
+		notifications: digestContent.unreadNotifs,
+		publicRooms: digestContent.publicRooms,
+		recent: digestContent.topics.recent,
+		topTopics: digestContent.topics.top,
+		popularTopics: digestContent.topics.popular,
+		interval: interval,
+		showUnsubscribe: true,
+	});
+}
+
+async function updateDeliveryTimes(userData) {
+	const now = Date.now();
+	await db.sortedSetAdd('digest:delivery', userData.map(() => now), userData.map(u => u.uid));
+}
 
 Digest.getDeliveryTimes = async (start, stop) => {
 	const count = await db.sortedSetCard('users:joindate');
