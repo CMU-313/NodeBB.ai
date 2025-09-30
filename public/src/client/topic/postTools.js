@@ -284,6 +284,23 @@ define('forum/topic/postTools', [
 				}
 				alerts.success('[[admin/manage/blacklist:ban-ip]]');
 			});
+
+			// Endorse / Unendorse handlers
+			postContainer.on('click', '[component="post/endorse"]', function () {
+				const btn = $(this);
+				const pid = getData(btn, 'data-pid');
+				const endorsed = btn.attr('data-endorsed') === 'true' || btn.attr('data-endorsed') === '1';
+				const method = endorsed ? 'del' : 'put';
+				api[method](`/posts/${encodeURIComponent(pid)}/endorse`, undefined, function (err) {
+					if (err) {
+						return alerts.error(err);
+					}
+					// optimistic UI update: toggle attribute and text
+					btn.attr('data-endorsed', (!endorsed).toString());
+					hooks.fire(`action:post.${endorsed ? 'unendorsed' : 'endorsed'}`, { pid: pid });
+				});
+				return false;
+			});
 		});
 
 		postContainer.on('click', '[component="post/chat"]', function () {

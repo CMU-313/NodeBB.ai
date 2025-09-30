@@ -8,6 +8,7 @@ const intFields = [
 	'uid', 'pid', 'tid', 'deleted', 'timestamp',
 	'upvotes', 'downvotes', 'deleterUid', 'edited',
 	'replies', 'bookmarks', 'announces',
+	'endorsed',
 ];
 
 module.exports = function (Posts) {
@@ -53,11 +54,32 @@ module.exports = function (Posts) {
 		await db.setObject(`post:${pid}`, data);
 		plugins.hooks.fire('action:post.setFields', { data: { ...data, pid } });
 	};
+
+	Posts.endorse = async function (pid, uid) {
+		const endorsedAt = Date.now();
+		await Posts.setPostFields(pid, { endorsed: 1, endorsedBy: uid, endorsedAt });
+		// Clear cache if available
+		if (typeof Posts.clearCachedPost === 'function') {
+			Posts.clearCachedPost(pid);
+		}
+		plugins.hooks.fire('action:post.endorsed', { pid, uid, endorsedAt });
+	};
+
+	Posts.unendorse = async function (pid) {
+		await Posts.setPostFields(pid, { endorsed: 0, endorsedBy: 0, endorsedAt: 0 });
+		if (typeof Posts.clearCachedPost === 'function') {
+			Posts.clearCachedPost(pid);
+		}
+		plugins.hooks.fire('action:post.unendorsed', { pid });
+	};
 };
 
 function modifyPost(post, fields) {
 	if (post) {
 		db.parseIntFields(post, intFields, fields);
+		if (post.hasOwnProperty('endorsed')) {
+			post.endorsed = Boolean(post.endorsed);
+		}
 		if (post.hasOwnProperty('upvotes') && post.hasOwnProperty('downvotes')) {
 			post.votes = post.upvotes - post.downvotes;
 		}

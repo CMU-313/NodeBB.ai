@@ -46,6 +46,8 @@ define('forum/topic/events', [
 
 		'event:new_notification': onNewNotification,
 		'event:new_post': posts.onNewPost,
+		'event:post_endorsed': onPostEndorsed,
+		'event:post_unendorsed': onPostUnendorsed,
 	};
 
 	Events.init = function () {
@@ -250,6 +252,33 @@ define('forum/topic/events', [
 		post.find('[component="post/downvote"]').filter(function (index, el) {
 			return $(el).closest('[data-pid]').attr('data-pid') === String(data.post.pid);
 		}).toggleClass('downvoted', data.downvote);
+	}
+
+	function onPostEndorsed(data) {
+		if (!data || !data.pid) {
+			return;
+		}
+		const postEl = components.get('post', 'pid', data.pid);
+		if (!postEl.length) {
+			return;
+		}
+		// add endorsed badge placeholder; server will send additional fetch if needed
+		postEl.find('[component="post/endorsed"]').remove();
+		const badge = $('<div class="ms-2"><span class="badge bg-success" component="post/endorsed">[[topic:endorsed-by]]</span></div>');
+		postEl.find('.post-header .d-flex').first().after(badge);
+		hooks.fire('action:posts.endorsed', data);
+	}
+
+	function onPostUnendorsed(data) {
+		if (!data || !data.pid) {
+			return;
+		}
+		const postEl = components.get('post', 'pid', data.pid);
+		if (!postEl.length) {
+			return;
+		}
+		postEl.find('[component="post/endorsed"]').remove();
+		hooks.fire('action:posts.unendorsed', data);
 	}
 
 	function onNewNotification(data) {

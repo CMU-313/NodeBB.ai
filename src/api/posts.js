@@ -344,6 +344,78 @@ postsAPI.unvote = async function (caller, data) {
 	return await apiHelpers.postCommand(caller, 'unvote', 'voted', '', data);
 };
 
+postsAPI.endorse = async function (caller, data) {
+	if (!data || !data.pid) {
+		throw new Error('[[error:invalid-data]]');
+	}
+	const { pid } = data;
+
+	// Only allow topic owner, admins or moderators to endorse
+	const topic = await posts.getTopicFields(pid, ['tid', 'cid']);
+	if (!topic || !topic.tid) {
+		throw new Error('[[error:no-post]]');
+	}
+	const [isAdmin, isMod, topicOwner] = await Promise.all([
+		privileges.users.isAdministrator(caller.uid),
+		privileges.users.isModerator(caller.uid, topic.cid),
+		topics.isAuthor(topic.tid, caller.uid),
+	]);
+
+	if (!(isAdmin || isMod || topicOwner)) {
+		throw new Error('[[error:no-privileges]]');
+	}
+
+	await posts.endorse(pid, caller.uid);
+
+	const postData = { pid, tid: topic.tid };
+	websockets.in(`topic_${topic.tid}`).emit('event:post_endorsed', postData);
+
+	await events.log({ type: 'post-endorse', uid: caller.uid, pid, tid: topic.tid, ip: caller.ip });
+
+	// Notify post owner
+	const post = await posts.getPostFields(pid, ['uid']);
+	if (post && post.uid && parseInt(post.uid, 10) !== parseInt(caller.uid, 10)) {
+		const notifData = {
+			type: 'post-endorse',
+			nid: `post-endorse-${post.uid}-${pid}`,
+			bodyShort: translator.compile('notifications:post-endorse'),
+			path: `/post/${pid}`,
+		};
+		if (parseInt(meta.config.postQueueNotificationUid, 10) > 0) {
+			notifData.from = meta.config.postQueueNotificationUid;
+		}
+		const notifObj = await notifications.create(notifData);
+		await notifications.push(notifObj, [post.uid]);
+	}
+
+	return { pid };
+};
+
+postsAPI.unendorse = async function (caller, data) {
+	if (!data || !data.pid) {
+		throw new Error('[[error:invalid-data]]');
+	}
+	const { pid } = data;
+	const topic = await posts.getTopicFields(pid, ['tid', 'cid']);
+	if (!topic || !topic.tid) {
+		throw new Error('[[error:no-post]]');
+	}
+	const [isAdmin, isMod, topicOwner] = await Promise.all([
+		privileges.users.isAdministrator(caller.uid),
+		privileges.users.isModerator(caller.uid, topic.cid),
+		topics.isAuthor(topic.tid, caller.uid),
+	]);
+
+	if (!(isAdmin || isMod || topicOwner)) {
+		throw new Error('[[error:no-privileges]]');
+	}
+
+	await posts.unendorse(pid);
+	websockets.in(`topic_${topic.tid}`).emit('event:post_unendorsed', { pid, tid: topic.tid });
+	await events.log({ type: 'post-unendorse', uid: caller.uid, pid, tid: topic.tid, ip: caller.ip });
+	return { pid };
+};
+
 postsAPI.getVoters = async function (caller, data) {
 	if (!data || !data.pid) {
 		throw new Error('[[error:invalid-data]]');
