@@ -68,14 +68,26 @@ module.exports = function (User) {
 	}
 
 	User.getFollowing = async function (uid, start, stop) {
-		return await getFollow(uid, 'following', start, stop);
+		return await getFollow({
+			uid,
+			type: 'following',
+			start,
+			stop,
+		});
 	};
 
 	User.getFollowers = async function (uid, start, stop) {
-		return await getFollow(uid, 'followers', start, stop);
+		return await getFollow({
+			uid,
+			type: 'followers',
+			start,
+			stop,
+		});
 	};
 
-	async function getFollow(uid, type, start, stop) {
+	async function getFollow(options) {
+		const { uid, type, start, stop } = options;
+		
 		if (parseInt(uid, 10) <= 0) {
 			return [];
 		}
