@@ -22,18 +22,24 @@ const authenticationController = module.exports;
 
 const UserRegistration = require('./registration/UserRegistration');
 
-const UserRegistration = require('./registration/UserRegistration');
-
 async function registerAndLoginUser(req, res, userData) {
 	const registration = new UserRegistration(req, res);
-	return registration
-		.setUserData(userData)
-		.then(reg => reg && reg.handleInterstitials())
-		.then(reg => reg && reg.checkQueue())
-		.then(reg => reg && reg.createUser())
-		.then(reg => reg && reg.processLogin())
-		.then(reg => reg && reg.handleInvitation())
-		.then(reg => reg && reg.finalizeRegistration());
+	registration.setUserData(userData);
+
+	let result = await registration.handleInterstitials();
+	if (!result) {
+		return;
+	}
+
+	result = await result.checkQueue();
+	if (result && result.message) {
+		return result;
+	}
+
+	await result.createUser();
+	await result.processLogin();
+	await result.handleInvitation();
+	return await result.finalizeRegistration();
 }
 
 authenticationController.register = async function (req, res) {
@@ -88,21 +94,6 @@ authenticationController.register = async function (req, res) {
 	}
 };
 
-async function addToApprovalQueue(req, userData) {
-	userData.ip = req.ip;
-	await user.addToApprovalQueue(userData);
-	let message = '[[register:registration-added-to-queue]]';
-	if (meta.config.showAverageApprovalTime) {
-		const average_time = await db.getObjectField('registration:queue:approval:times', 'average');
-		if (average_time > 0) {
-			message += ` [[register:registration-queue-average-time, ${Math.floor(average_time / 60)}, ${Math.floor(average_time % 60)}]]`;
-		}
-	}
-	if (meta.config.autoApproveTime > 0) {
-		message += ` [[register:registration-queue-auto-approve-time, ${meta.config.autoApproveTime}]]`;
-	}
-	return { message: message };
-}
 
 authenticationController.registerComplete = async function (req, res) {
 	try {
