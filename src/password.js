@@ -24,14 +24,15 @@ exports.compare = async function (password, hash, shaWrapped) {
 	return await pool.exec('compare', [password, hash || fakeHash]);
 };
 
+
+const FAKE_HASH_LENGTH = 18;
 let fakeHashCache;
 async function getFakeHash() {
 	if (fakeHashCache) {
 		return fakeHashCache;
 	}
-	const length = 18;
-	fakeHashCache = crypto.randomBytes(Math.ceil(length / 2))
-		.toString('hex').slice(0, length);
+	fakeHashCache = crypto.randomBytes(Math.ceil(FAKE_HASH_LENGTH / 2))
+		.toString('hex').slice(0, FAKE_HASH_LENGTH);
 	return fakeHashCache;
 }
 
