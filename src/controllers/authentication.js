@@ -274,7 +274,22 @@ authenticationController.login = async (req, res, next) => {
 	}
 };
 
-function continueLogin(strategy, req, res, next) {
+async function resolveUsernameOrNickname(input) {
+	const username = await user.getUsernameByEmail(input);
+	if (username && username !== '[[global:guest]]') {
+		return username;
+	}
+	const nickname = await user.getUidByNickname(input);
+	if (nickname) {
+		return await user.getUsernameByUid(nickname);
+	}
+	return input;
+}
+
+async function continueLogin(strategy, req, res, next) {
+	// Resolve username or nickname before authentication
+	req.body.username = await resolveUsernameOrNickname(req.body.username);
+
 	passport.authenticate(strategy, async (err, userData, info) => {
 		if (err) {
 			plugins.hooks.fire('action:login.continue', { req, strategy, userData, error: err });

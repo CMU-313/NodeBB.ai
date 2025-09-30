@@ -31,6 +31,11 @@
 							{{{ end }}}
 						</div>
 
+						<div class="mb-2 d-flex flex-column gap-2">
+							<label for="nickname">[[login:nickname]]</label>
+							<input class="form-control" type="text" placeholder="[[login:nickname-placeholder]]" name="nickname" id="nickname" autocorrect="off" autocapitalize="off" autocomplete="off" value="{nickname}" aria-required="false"/>
+						</div>
+
 						{{{ each loginFormEntry }}}
 						<div class="mb-2 loginFormEntry d-flex flex-column gap-2 {./styleName}">
 							<label for="{./inputId}">{./label}</label>

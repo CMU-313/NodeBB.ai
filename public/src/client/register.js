@@ -13,6 +13,7 @@ define('forum/register', [
 		const password = $('#password');
 		const password_confirm = $('#password-confirm');
 		const register = $('#register');
+		const nickname = $('#nickname');
 
 		handleLanguageOverride();
 
@@ -43,6 +44,12 @@ define('forum/register', [
 		password_confirm.on('blur', function () {
 			if (password_confirm.val().length) {
 				validatePasswordConfirm(password.val(), password_confirm.val());
+			}
+		});
+
+		nickname.on('blur', function () {
+			if (nickname.val().length) {
+				validateNickname(nickname.val());
 			}
 		});
 
@@ -179,6 +186,16 @@ define('forum/register', [
 			showError(passwordConfirmInput, password_confirm_notify, '[[user:change-password-error-match]]');
 		} else {
 			showSuccess(passwordConfirmInput, password_confirm_notify, successIcon);
+		}
+	}
+
+	function validateNickname(nickname) {
+		// Add validation logic for nickname (e.g., length, special characters, etc.)
+		if (nickname.length < 3 || nickname.length > 20) {
+			bootbox.alert('Nickname must be between 3 and 20 characters.');
+			validationError = true;
+		} else {
+			validationError = false;
 		}
 	}
 

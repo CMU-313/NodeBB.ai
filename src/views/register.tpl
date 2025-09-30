@@ -40,6 +40,14 @@
 							</div>
 						</div>
 
+						<div class="mb-2 d-flex flex-column gap-2">
+							<label for="nickname">[[register:nickname]]</label>
+							<div class="d-flex flex-column">
+								<input class="form-control" type="text" placeholder="[[register:nickname-placeholder]]" name="nickname" id="nickname" autocorrect="off" autocapitalize="off" autocomplete="off" aria-required="false" aria-describedby="nickname-notify"/>
+								<span class="register-feedback text-xs text-danger" id="nickname-notify" aria-live="polite"></span>
+							</div>
+						</div>
+
 						{{{ each regFormEntry }}}
 						<div class="mb-2 regFormEntry d-flex flex-column gap-2 {./styleName}">
 							<label for="{./inputId}">{./label}</label>
