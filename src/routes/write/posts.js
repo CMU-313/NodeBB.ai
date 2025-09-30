@@ -41,6 +41,10 @@ module.exports = function () {
 
 	setupApiRoute(router, 'get', '/:pid/replies', [middleware.assert.post], controllers.write.posts.getReplies);
 
+	setupApiRoute(router, 'put', '/:pid/endorse', middlewares, controllers.write.posts.endorse);
+	setupApiRoute(router, 'delete', '/:pid/endorse', middlewares, controllers.write.posts.unendorse);
+	setupApiRoute(router, 'get', '/:pid/endorse', [middleware.assert.post], controllers.write.posts.getEndorsement);
+
 	setupApiRoute(router, 'post', '/queue/:id', controllers.write.posts.acceptQueuedPost);
 	setupApiRoute(router, 'delete', '/queue/:id', controllers.write.posts.removeQueuedPost);
 	setupApiRoute(router, 'put', '/queue/:id', controllers.write.posts.editQueuedPost);

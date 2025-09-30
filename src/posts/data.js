@@ -7,7 +7,8 @@ const utils = require('../utils');
 const intFields = [
 	'uid', 'pid', 'tid', 'deleted', 'timestamp',
 	'upvotes', 'downvotes', 'deleterUid', 'edited',
-	'replies', 'bookmarks', 'announces',
+	'replies', 'bookmarks', 'announces', 'endorsed',
+	'endorsedBy', 'endorsedTimestamp',
 ];
 
 module.exports = function (Posts) {
@@ -66,6 +67,9 @@ function modifyPost(post, fields) {
 		}
 		if (post.hasOwnProperty('edited')) {
 			post.editedISO = post.edited !== 0 ? utils.toISOString(post.edited) : '';
+		}
+		if (post.hasOwnProperty('endorsedTimestamp') && post.endorsedTimestamp) {
+			post.endorsedTimestampISO = utils.toISOString(post.endorsedTimestamp);
 		}
 		if (!fields.length || fields.includes('attachments')) {
 			post.attachments = (post.attachments || '').split(',').filter(Boolean);

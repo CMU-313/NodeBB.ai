@@ -653,6 +653,19 @@ async function logQueueEvent(caller, result, type) {
 	await events.log(eventData);
 }
 
+postsAPI.endorse = async function (caller, data) {
+	return await posts.endorse(data.pid, caller.uid);
+};
+
+postsAPI.unendorse = async function (caller, data) {
+	return await posts.unendorse(data.pid, caller.uid);
+};
+
+postsAPI.getEndorsement = async function (caller, data) {
+	const endorsementData = await posts.getEndorsementData([data.pid]);
+	return endorsementData[0] || { endorsed: false };
+};
+
 async function sendQueueNotification(type, targetUid, path, notificationText) {
 	const bodyShort = notificationText ?
 		translator.compile(`notifications:${type}`, notificationText) :

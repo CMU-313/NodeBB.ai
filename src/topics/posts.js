@@ -124,6 +124,7 @@ module.exports = function (Topics) {
 			userData,
 			editors,
 			replies,
+			endorsementData,
 		] = await Promise.all([
 			posts.hasBookmarked(pids, uid),
 			posts.getVoteStatusByPostIDs(pids, uid),
@@ -131,6 +132,7 @@ module.exports = function (Topics) {
 			getPostUserData('editor', async uids => await user.getUsersFields(uids, ['uid', 'username', 'userslug'])),
 			getPostReplies(postData, uid),
 			Topics.addParentPosts(postData, uid),
+			posts.getEndorsementData(pids),
 		]);
 
 		postData.forEach((postObj, i) => {
@@ -143,6 +145,7 @@ module.exports = function (Topics) {
 				postObj.votes = postObj.votes || 0;
 				postObj.replies = replies[i];
 				postObj.selfPost = parseInt(uid, 10) > 0 && parseInt(uid, 10) === postObj.uid;
+				postObj.endorsement = endorsementData[i] || { endorsed: false };
 
 				// Username override for guests, if enabled
 				if (meta.config.allowGuestHandles && postObj.uid === 0 && postObj.handle) {
@@ -168,6 +171,7 @@ module.exports = function (Topics) {
 				post.display_delete_tools = topicPrivileges.isAdminOrMod || (post.selfPost && topicPrivileges['posts:delete']);
 				post.display_moderator_tools = post.display_edit_tools || post.display_delete_tools;
 				post.display_move_tools = topicPrivileges.isAdminOrMod && post.index !== 0;
+				post.display_endorse_tools = (topicPrivileges.isAdmin || topicPrivileges.isInstructor) && !post.selfPost;
 				post.display_post_menu = topicPrivileges.isAdminOrMod ||
 					(post.selfPost && !topicData.locked && !post.deleted) ||
 					(post.selfPost && post.deleted && parseInt(post.deleterUid, 10) === parseInt(topicPrivileges.uid, 10)) ||

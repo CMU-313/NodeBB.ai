@@ -238,6 +238,23 @@ privsPosts.canPurge = async function (pid, uid) {
 	return (results.purge && (results.owner || results.isModerator)) || results.isAdmin;
 };
 
+privsPosts.canEndorse = async function (pid, uid) {
+	if (parseInt(uid, 10) <= 0) {
+		return false;
+	}
+	
+	const results = await utils.promiseParallel({
+		isAdmin: user.isAdministrator(uid),
+		isInstructor: user.isInstructor(uid),
+		postData: posts.getPostFields(pid, ['uid']),
+	});
+
+	// Only admins and instructors can endorse posts
+	// And they cannot endorse their own posts
+	return (results.isAdmin || results.isInstructor) && 
+		   parseInt(results.postData.uid, 10) !== parseInt(uid, 10);
+};
+
 async function isAdminOrMod(pid, uid) {
 	if (parseInt(uid, 10) <= 0) {
 		return false;
