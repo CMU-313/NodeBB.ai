@@ -37,6 +37,14 @@ module.exports = function (Topics) {
 			viewcount: 0,
 		};
 
+		// Optional comments visibility settings provided by composer UI
+		if (data.commentsVisibility) {
+			topicData.commentsVisibility = data.commentsVisibility;
+		}
+		if (data.commentsSpecific) {
+			topicData.commentsSpecific = data.commentsSpecific;
+		}
+
 		if (Array.isArray(data.tags) && data.tags.length) {
 			topicData.tags = data.tags.join(',');
 		}
