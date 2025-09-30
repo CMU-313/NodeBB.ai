@@ -101,13 +101,16 @@
 								{{{ end }}}
 							</div>
 							<div class="small">
-								{{{ if posts.user.userslug}}}
+								{{{ if posts.user.anonymous }}}
+								<span class="text-decoration-none">{buildAvatar({"uid":0,"username":"[[global:anonymous]]","userslug":"","displayname":"[[global:anonymous]]","picture":"","anonymous":true}, "24px", true, "not-responsive")} [[global:anonymous]]</span>
+								{{{ else if posts.user.userslug}}}
 								<a class="text-decoration-none" href="{config.relative_path}/uid/{posts.user.uid}">{buildAvatar(posts.user, "24px", true, "not-responsive")} {posts.user.username}</a>
 								{{{ else }}}
 								{posts.user.username}
 								{{{ end }}}
 							</div>
 							<div>
+								{{{ if !posts.user.anonymous }}}
 								<span class="badge text-body border border-gray-300 stats text-xs">
 									<span title="{posts.user.postcount}" class="fw-bold">{humanReadableNumber(posts.user.postcount)}</span>
 									<span class="text-lowercase fw-normal">[[global:posts]]</span>
@@ -118,6 +121,10 @@
 								</span>
 								<span class="badge text-body border border-gray-300 stats text-xs">
 									<span class="text-lowercase fw-normal">[[user:joined]]</span>
+								{{{ else }}}
+								<span class="badge text-body border border-gray-300 stats text-xs">
+									<span class="text-lowercase fw-normal">[[global:anonymous]]</span>
+								{{{ end }}}
 									<span title="{posts.user.joindateISO}" class="timeago fw-bold"></span>
 								</span>
 							</div>

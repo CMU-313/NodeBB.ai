@@ -10,6 +10,13 @@
 {{{ end }}}
 <div class="d-flex align-items-start gap-3 post-container-parent">
 	<div class="bg-body d-none d-sm-block rounded-circle" style="outline: 2px solid var(--bs-body-bg);">
+		{{{ if ./anonymous }}}
+		<div class="d-inline-block position-relative text-decoration-none">
+			<div class="d-flex align-items-center justify-content-center bg-secondary text-white rounded-circle" style="width: 48px; height: 48px;">
+				<i class="fa fa-user-secret"></i>
+			</div>
+		</div>
+		{{{ else }}}
 		<a class="d-inline-block position-relative text-decoration-none" href="{{{ if ./user.userslug }}}{config.relative_path}/user/{./user.userslug}{{{ else }}}#{{{ end }}}" aria-label="[[aria:profile-page-for, {./user.displayname}]]">
 			{buildAvatar(posts.user, "48px", true, "", "user/picture")}
 			{{{ if ./user.isLocal }}}
@@ -21,15 +28,27 @@
 			</span>
 			{{{ end }}}
 		</a>
+		{{{ end }}}
 	</div>
 	<div class="post-container d-flex gap-2 flex-grow-1 flex-column w-100" style="min-width:0;">
 		<div class="d-flex align-items-start justify-content-between gap-1 flex-nowrap w-100 post-header" itemprop="author" itemscope itemtype="https://schema.org/Person">
 			<div class="d-flex gap-1 flex-wrap align-items-center text-truncate">
+				{{{ if ./anonymous }}}
+				<meta itemprop="name" content="Anonymous">
+				{{{ else }}}
 				<meta itemprop="name" content="{./user.displayname}">
 				{{{ if ./user.userslug }}}<meta itemprop="url" content="{config.relative_path}/user/{./user.userslug}">{{{ end }}}
+				{{{ end }}}
 
 				<div class="d-flex flex-nowrap gap-1 align-items-center text-truncate">
 					<div class="bg-body d-sm-none">
+						{{{ if ./anonymous }}}
+						<div class="d-inline-block position-relative text-decoration-none">
+							<div class="d-flex align-items-center justify-content-center bg-secondary text-white rounded-circle" style="width: 20px; height: 20px;">
+								<i class="fa fa-user-secret" style="font-size: 10px;"></i>
+							</div>
+						</div>
+						{{{ else }}}
 						<a class="d-inline-block position-relative text-decoration-none" href="{{{ if ./user.userslug }}}{config.relative_path}/user/{./user.userslug}{{{ else }}}#{{{ end }}}">
 							{buildAvatar(posts.user, "20px", true, "", "user/picture")}
 							{{{ if ./user.isLocal }}}
@@ -41,11 +60,17 @@
 							</span>
 							{{{ end }}}
 						</a>
+						{{{ end }}}
 					</div>
 
+					{{{ if ./anonymous }}}
+					<span class="fw-bold text-nowrap text-truncate text-muted">[[topic:anonymous]]</span>
+					{{{ else }}}
 					<a class="fw-bold text-nowrap text-truncate" href="{{{ if ./user.userslug }}}{config.relative_path}/user/{./user.userslug}{{{ else }}}#{{{ end }}}" data-username="{posts.user.username}" data-uid="{posts.user.uid}">{posts.user.displayname}</a>
+					{{{ end }}}
 				</div>
 
+				{{{ if !./anonymous }}}
 				{{{ each posts.user.selectedGroups }}}
 				{{{ if posts.user.selectedGroups.slug }}}
 				<!-- IMPORT partials/groups/badge.tpl -->
@@ -55,6 +80,7 @@
 				{{{ if posts.user.banned }}}
 				<span class="badge bg-danger rounded-1">[[user:banned]]</span>
 				{{{ end }}}
+				{{{ end }}}
 
 				<div class="d-flex gap-1 align-items-center">
 					<span class="text-muted">{generateWrote(@value, config.timeagoCutoff)}</span>
@@ -63,7 +89,7 @@
 					<span data-editor="{posts.editor.userslug}" component="post/editor" class="visually-hidden">[[global:last-edited-by, {posts.editor.username}]] <span class="timeago" title="{isoTimeToLocaleString(posts.editedISO, config.userLang)}"></span></span>
 				</div>
 
-				{{{ if posts.user.custom_profile_info.length }}}
+				{{{ if !./anonymous && posts.user.custom_profile_info.length }}}
 				<div>
 					<span>
 						&#124;
@@ -85,7 +111,7 @@
 		</div>
 
 		<div component="post/footer" class="post-footer border-bottom pb-2">
-			{{{ if posts.user.signature }}}
+			{{{ if !./anonymous && posts.user.signature }}}
 			<div component="post/signature" data-uid="{posts.user.uid}" class="text-xs text-muted mt-2">{posts.user.signature}</div>
 			{{{ end }}}
 

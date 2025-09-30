@@ -135,17 +135,41 @@ module.exports = function (Topics) {
 
 		postData.forEach((postObj, i) => {
 			if (postObj) {
-				postObj.user = postObj.uid ? userData[postObj.uid] : { ...userData[postObj.uid] };
+				// Handle anonymous posts
+				if (postObj.anonymous) {
+					postObj.user = {
+						uid: 0,
+						username: '[[global:anonymous]]',
+						userslug: '',
+						displayname: '[[global:anonymous]]',
+						picture: '',
+						icon: '',
+						status: 'offline',
+						reputation: 0,
+						postcount: 0,
+						topiccount: 0,
+						banned: 0,
+						mutedUntil: 0,
+						signature: '',
+						fullname: undefined,
+						selectedGroups: [],
+						custom_profile_info: [],
+						anonymous: true,
+					};
+				} else {
+					postObj.user = postObj.uid ? userData[postObj.uid] : { ...userData[postObj.uid] };
+				}
+				
 				postObj.editor = postObj.editor ? editors[postObj.editor] : null;
 				postObj.bookmarked = bookmarks[i];
 				postObj.upvoted = voteData.upvotes[i];
 				postObj.downvoted = voteData.downvotes[i];
 				postObj.votes = postObj.votes || 0;
 				postObj.replies = replies[i];
-				postObj.selfPost = parseInt(uid, 10) > 0 && parseInt(uid, 10) === postObj.uid;
+				postObj.selfPost = parseInt(uid, 10) > 0 && parseInt(uid, 10) === postObj.uid && !postObj.anonymous;
 
-				// Username override for guests, if enabled
-				if (meta.config.allowGuestHandles && postObj.uid === 0 && postObj.handle) {
+				// Username override for guests, if enabled (not for anonymous posts)
+				if (!postObj.anonymous && meta.config.allowGuestHandles && postObj.uid === 0 && postObj.handle) {
 					postObj.user.username = validator.escape(String(postObj.handle));
 					postObj.user.displayname = postObj.user.username;
 				}
@@ -192,7 +216,7 @@ module.exports = function (Topics) {
 		const pidToPrivs = _.zipObject(parentPids, postPrivileges);
 
 		parentPids = parentPids.filter(p => pidToPrivs[p]['topics:read']);
-		const parentPosts = await posts.getPostsFields(parentPids, ['uid', 'pid', 'timestamp', 'content', 'sourceContent', 'deleted']);
+		const parentPosts = await posts.getPostsFields(parentPids, ['uid', 'pid', 'timestamp', 'content', 'sourceContent', 'deleted', 'anonymous']);
 		const parentUids = _.uniq(parentPosts.map(postObj => postObj && postObj.uid));
 		const userData = await user.getUsersFields(parentUids, ['username', 'userslug', 'picture']);
 
@@ -214,7 +238,24 @@ module.exports = function (Topics) {
 
 		const parents = {};
 		parentPosts.forEach((post, i) => {
-			if (usersMap[post.uid]) {
+			if (post.anonymous) {
+				parents[parentPids[i]] = {
+					uid: post.uid,
+					pid: post.pid,
+					content: post.content,
+					anonymous: true,
+					user: {
+						uid: 0,
+						username: '[[global:anonymous]]',
+						userslug: '',
+						displayname: '[[global:anonymous]]',
+						picture: '',
+						anonymous: true,
+					},
+					timestamp: post.timestamp,
+					timestampISO: post.timestampISO,
+				};
+			} else if (usersMap[post.uid]) {
 				parents[parentPids[i]] = {
 					uid: post.uid,
 					pid: post.pid,
