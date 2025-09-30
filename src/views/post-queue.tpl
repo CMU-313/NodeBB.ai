@@ -216,3 +216,12 @@
 
 	<!-- IMPORT partials/paginator.tpl -->
 </div>
+
+<div class="form-group">
+	<label for="post-visibility">Post Visibility</label>
+	<select id="post-visibility" name="visibility" class="form-control">
+		<option value="public">Public</option>
+		<option value="instructors">Instructors Only</option>
+		<option value="private">Private</option>
+	</select>
+</div>
