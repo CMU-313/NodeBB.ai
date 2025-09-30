@@ -10,6 +10,7 @@ const user = require('../user');
 const plugins = require('../plugins');
 const categories = require('../categories');
 const utils = require('../utils');
+const privileges = require('../privileges');
 
 module.exports = function (Posts) {
 	Posts.getPostSummaryByPids = async function (pids, uid, options) {
@@ -22,7 +23,7 @@ module.exports = function (Posts) {
 		options.escape = options.hasOwnProperty('escape') ? options.escape : false;
 		options.extraFields = options.hasOwnProperty('extraFields') ? options.extraFields : [];
 
-		const fields = ['pid', 'tid', 'toPid', 'url', 'content', 'sourceContent', 'uid', 'timestamp', 'deleted', 'upvotes', 'downvotes', 'replies', 'handle'].concat(options.extraFields);
+		const fields = ['pid', 'tid', 'toPid', 'url', 'content', 'sourceContent', 'uid', 'timestamp', 'deleted', 'upvotes', 'downvotes', 'replies', 'handle', 'private'].concat(options.extraFields);
 
 		let posts = await Posts.getPostsFields(pids, fields);
 		posts = posts.filter(Boolean);
@@ -65,7 +66,31 @@ module.exports = function (Posts) {
 			}
 		});
 
+		// Filter out posts attached to topics we couldn't resolve
 		posts = posts.filter(post => tidToTopic[post.tid]);
+
+		// Enforce private posts visibility: only allow owner, admins, or category moderators
+		posts = await Promise.all(posts.map(async (post) => {
+			if (!post || !post.private) {
+				return post;
+			}
+			// owner always allowed
+			if (post.uid && post.uid === uid) {
+				return post;
+			}
+			// check admin
+			if (await user.isAdministrator(uid)) {
+				return post;
+			}
+			// check if user is moderator for the category
+			const isAdminOrMod = await privileges.topics.isAdminOrMod(post.tid, uid);
+			if (isAdminOrMod) {
+				return post;
+			}
+			// otherwise hide the post by returning null
+			return null;
+		}));
+		posts = posts.filter(Boolean);
 
 		posts = await parsePosts(posts, options);
 		const result = await plugins.hooks.fire('filter:post.getPostSummaryByPids', { posts: posts, uid: uid });

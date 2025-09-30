@@ -37,6 +37,13 @@ module.exports = function (Topics) {
 			viewcount: 0,
 		};
 
+		// Support private topics (only visible to owner and admins/mods)
+		if (data.private) {
+			topicData.private = 1;
+		} else {
+			topicData.private = 0;
+		}
+
 		if (Array.isArray(data.tags) && data.tags.length) {
 			topicData.tags = data.tags.join(',');
 		}

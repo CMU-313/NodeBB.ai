@@ -30,6 +30,13 @@ module.exports = function (Posts) {
 		const pid = data.pid || await db.incrObjectField('global', 'nextPid');
 		let postData = { pid, uid, tid, content, sourceContent, timestamp };
 
+		// Preserve private flag on posts; used to hide content from others
+		if (data.private) {
+			postData.private = 1;
+		} else {
+			postData.private = 0;
+		}
+
 		if (data.toPid) {
 			postData.toPid = data.toPid;
 		}
