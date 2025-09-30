@@ -174,7 +174,7 @@ Topics.getTopicWithPosts = async function (topicData, set, uid, start, stop, rev
 		thumbs,
 		events,
 	] = await Promise.all([
-		Topics.getTopicPosts(topicData, set, start, stop, uid, reverse),
+		Topics.getTopicPosts(topicData, { set, start, stop, uid, reverse }),
 		categories.getCategoryData(topicData.cid),
 		categories.getTagWhitelist([topicData.cid]),
 		plugins.hooks.fire('filter:topic.thread_tools', { topic: topicData, uid: uid, tools: [] }),

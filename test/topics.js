@@ -567,27 +567,27 @@ describe('Topic\'s', () => {
 			});
 
 			it('should return empty array if first param is falsy', async () => {
-				const posts = await topics.getTopicPosts(null, `tid:${tid}:posts`, 0, 9, topic.userId, true);
+				const posts = await topics.getTopicPosts(null, { set: `tid:${tid}:posts`, start: 0, stop: 9, uid: topic.userId, reverse: true });
 				assert.deepStrictEqual(posts, []);
 			});
 
 			it('should only return main post', async () => {
 				const topicData = await topics.getTopicData(tid);
-				const postsData = await topics.getTopicPosts(topicData, `tid:${tid}:posts`, 0, 0, topic.userId, false);
+				const postsData = await topics.getTopicPosts(topicData, { set: `tid:${tid}:posts`, start: 0, stop: 0, uid: topic.userId, reverse: false });
 				assert.strictEqual(postsData.length, 1);
 				assert.strictEqual(postsData[0].content, 'main post');
 			});
 
 			it('should only return first reply', async () => {
 				const topicData = await topics.getTopicData(tid);
-				const postsData = await topics.getTopicPosts(topicData, `tid:${tid}:posts`, 1, 1, topic.userId, false);
+				const postsData = await topics.getTopicPosts(topicData, { set: `tid:${tid}:posts`, start: 1, stop: 1, uid: topic.userId, reverse: false });
 				assert.strictEqual(postsData.length, 1);
 				assert.strictEqual(postsData[0].content, 'topic reply 1');
 			});
 
 			it('should return main post and first reply', async () => {
 				const topicData = await topics.getTopicData(tid);
-				const postsData = await topics.getTopicPosts(topicData, `tid:${tid}:posts`, 0, 1, topic.userId, false);
+				const postsData = await topics.getTopicPosts(topicData, { set: `tid:${tid}:posts`, start: 0, stop: 1, uid: topic.userId, reverse: false });
 				assert.strictEqual(postsData.length, 2);
 				assert.strictEqual(postsData[0].content, 'main post');
 				assert.strictEqual(postsData[1].content, 'topic reply 1');
@@ -609,7 +609,7 @@ describe('Topic\'s', () => {
 
 			it('should return all posts in correct order', async () => {
 				const topicData = await topics.getTopicData(tid);
-				const postsData = await topics.getTopicPosts(topicData, `tid:${tid}:posts`, 0, -1, topic.userId, false);
+				const postsData = await topics.getTopicPosts(topicData, { set: `tid:${tid}:posts`, start: 0, stop: -1, uid: topic.userId, reverse: false });
 				assert.strictEqual(postsData.length, 31);
 				assert.strictEqual(postsData[0].content, 'main post');
 				for (let i = 1; i < 30; i++) {
