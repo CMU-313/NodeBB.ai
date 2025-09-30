@@ -22,7 +22,8 @@ module.exports = function (Topics) {
 		await Topics.addPostToTopic(postData.tid, postData);
 	};
 
-	Topics.getTopicPosts = async function (topicData, set, start, stop, uid, reverse) {
+	Topics.getTopicPosts = async function (options) {
+		const { topicData, set, start, stop, uid, reverse } = options;
 		if (!topicData) {
 			return [];
 		}
