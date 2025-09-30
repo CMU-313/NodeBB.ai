@@ -47,6 +47,9 @@ exports.post = async function (req, res) {
 		timestamp: Date.now(),
 		content: body.content,
 		handle: body.handle,
+		// custom comments visibility options from composer UI
+		commentsVisibility: body.commentsVisibility || null,
+		commentsSpecific: body.commentsSpecific || null,
 		fromQueue: false,
 	};
 	req.body.noscript = 'true';

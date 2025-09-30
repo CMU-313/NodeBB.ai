@@ -37,6 +37,40 @@ $(document).ready(function () {
 			$('[component="composer"]').css(css);
 		});
 
+		// Attach comments visibility data to composer params when creating posts/topics
+		hooks.on('action:composer.post.new', function (hookData) {
+			try {
+				const composerEl = $('[component="composer"]');
+				if (!composerEl.length) return hookData;
+				const select = composerEl.find('[component="composer/comments-visibility/select"]');
+				if (!select.length) return hookData;
+				hookData.commentsVisibility = select.val();
+				const specific = composerEl.find('[component="composer/comments-visibility/specific/input"]');
+				hookData.commentsSpecific = specific.length ? specific.val() : '';
+				return hookData;
+			} catch (e) {
+				console.error('error attaching comments visibility', e);
+				return hookData;
+			}
+		});
+
+		hooks.on('action:composer.topic.new', function (hookData) {
+			// also include for new topic composer
+			try {
+				const composerEl = $('[component="composer"]');
+				if (!composerEl.length) return hookData;
+				const select = composerEl.find('[component="composer/comments-visibility/select"]');
+				if (!select.length) return hookData;
+				hookData.commentsVisibility = select.val();
+				const specific = composerEl.find('[component="composer/comments-visibility/specific/input"]');
+				hookData.commentsSpecific = specific.length ? specific.val() : '';
+				return hookData;
+			} catch (e) {
+				console.error('error attaching comments visibility to topic', e);
+				return hookData;
+			}
+		});
+
 		hooks.on('filter:chat.openChat', function (hookData) {
 			// disables chat modals & goes straight to chat page based on user setting
 			hookData.modal = config.theme.chatModals && !utils.isMobile();
@@ -220,6 +254,47 @@ $(document).ready(function () {
 	function handleMobileNavigator() {
 		const paginationBlockEl = $('.pagination-block');
 		require(['hooks'], function (hooks) {
+			hooks.on('action:composer.open', function (hookData) {
+				try {
+					// Only show for the Comments & Feedback category (install/data/categories.json name)
+					const cid = hookData && hookData.cid;
+					if (!cid) return;
+					// Attempt to find category name on the page
+					const categoryName = $('.topic .category a, [component="topic/category"]').first().text().trim();
+					if (!/comments\s*&\s*feedback/i.test(categoryName)) return;
+
+					const composerEl = $('[component="composer"]');
+					if (!composerEl.length) return;
+
+					// Avoid adding duplicate control
+					if (composerEl.find('[component="composer/comments-visibility"]').length) return;
+
+					const html = `
+					<div component="composer/comments-visibility" class="composer-field my-2">
+						<label class="form-label mb-1">Comments visibility</label>
+						<select class="form-select" component="composer/comments-visibility/select">
+							<option value="everyone">Everyone</option>
+							<option value="instructors">Instructors only</option>
+							<option value="specific">Specific instructors</option>
+						</select>
+						<div component="composer/comments-visibility/specific" class="mt-2 hidden">
+							<label class="form-label mb-1">Specific instructors (comma-separated usernames)</label>
+							<input type="text" class="form-control" component="composer/comments-visibility/specific/input" placeholder="instructor1,instructor2" />
+						</div>
+					</div>`;
+
+					composerEl.find('.additional-options, [component="composer/additional"]').first().append(html);
+
+					// Wire up events
+					composerEl.off('change', '[component="composer/comments-visibility/select"]').on('change', '[component="composer/comments-visibility/select"]', function () {
+						const val = $(this).val();
+						composerEl.find('[component="composer/comments-visibility/specific"]').toggleClass('hidden', val !== 'specific');
+					});
+				} catch (e) {
+					// silently fail so composer still works
+					console.error('comments visibility control error', e);
+				}
+			});
 			hooks.on('action:ajaxify.end', function () {
 				paginationBlockEl.find('.dropdown-menu.show').removeClass('show');
 			});
