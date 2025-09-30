@@ -80,6 +80,7 @@
 							</li>
 							{{{ if (config.topicPostSort != "most_votes") }}}
 							{{{ each ./events}}}<!-- IMPORT partials/topic/event.tpl -->{{{ end }}}
+					            <!-- IMPORT partials/sidebar/suggested-topics.tpl -->
 							{{{ end }}}
 						{{{ end }}}
 						</ul>

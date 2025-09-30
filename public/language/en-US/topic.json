@@ -225,4 +225,6 @@
     "thumb-image": "Topic thumbnail image",
     "announcers": "Shares",
     "announcers-x": "Shares (%1)"
+    ,"suggested-topics":"Suggested topics",
+    "no-suggested-topics":"No suggested topics"
 }

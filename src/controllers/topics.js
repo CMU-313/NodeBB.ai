@@ -147,6 +147,20 @@ topicsController.get = async function getTopic(req, res, next) {
 		res.set('Link', `<${href}>; rel="alternate"; type="application/activity+json"`);
 	}
 
+	// Suggested topics for student discovery
+	try {
+		const maxRelated = parseInt(meta.config.maximumRelatedTopics, 10);
+		if (Number.isFinite(maxRelated) && maxRelated > 0) {
+			const stopRelated = maxRelated - 1;
+			topicData.suggestedTopics = await topics.getSuggestedTopics(tid, req.uid, 0, stopRelated);
+		} else {
+			topicData.suggestedTopics = [];
+		}
+	} catch (err) {
+		// Fail silently if suggested topics cannot be fetched
+		topicData.suggestedTopics = [];
+	}
+
 	res.render('topic', topicData);
 };
 
