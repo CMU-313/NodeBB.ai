@@ -52,7 +52,7 @@ exports.post = async function (req, res) {
 	req.body.noscript = 'true';
 
 	if (!data.content) {
-		return helpers.noScriptErrors(req, res, '[[error:invalid-data]]', 400);
+		return helpers.noScriptErrors(req, res, { error: '[[error:invalid-data]]', httpStatus: 400 });
 	}
 	async function queueOrPost(postFn, data) {
 		const shouldQueue = await posts.shouldQueue(req.uid, data);
@@ -92,6 +92,6 @@ exports.post = async function (req, res) {
 		}
 		res.redirect(path);
 	} catch (err) {
-		helpers.noScriptErrors(req, res, err.message, 400);
+		helpers.noScriptErrors(req, res, { error: err.message, httpStatus: 400 });
 	}
 };

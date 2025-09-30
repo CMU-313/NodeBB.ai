@@ -121,7 +121,7 @@ authenticationController.register = async function (req, res) {
 			res.json(data);
 		}
 	} catch (err) {
-		helpers.noScriptErrors(req, res, err.message, 400);
+		helpers.noScriptErrors(req, res, { error: err.message, httpStatus: 400 });
 	}
 };
 
@@ -278,7 +278,7 @@ function continueLogin(strategy, req, res, next) {
 	passport.authenticate(strategy, async (err, userData, info) => {
 		if (err) {
 			plugins.hooks.fire('action:login.continue', { req, strategy, userData, error: err });
-			return helpers.noScriptErrors(req, res, err.data || err.message, 403);
+			return helpers.noScriptErrors(req, res, { error: err.data || err.message, httpStatus: 403 });
 		}
 
 		if (!userData) {
@@ -289,7 +289,7 @@ function continueLogin(strategy, req, res, next) {
 			}
 
 			plugins.hooks.fire('action:login.continue', { req, strategy, userData, error: new Error(info) });
-			return helpers.noScriptErrors(req, res, info, 403);
+			return helpers.noScriptErrors(req, res, { error: info, httpStatus: 403 });
 		}
 
 		// Alter user cookie depending on passed-in option

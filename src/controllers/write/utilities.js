@@ -25,8 +25,8 @@ Utilities.login = (req, res) => {
 		const userData = (await user.getUsers([req.uid], req.uid)).pop();
 		helpers.formatApiResponse(200, res, userData);
 	};
-	res.locals.noScriptErrors = (req, res, err, statusCode) => {
-		helpers.formatApiResponse(statusCode, res, new Error(err));
+	res.locals.noScriptErrors = (req, res, options) => {
+		helpers.formatApiResponse(options.httpStatus, res, new Error(options.error));
 	};
 
 	authenticationController.login(req, res);

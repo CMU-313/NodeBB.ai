@@ -20,7 +20,8 @@ const helpers = module.exports;
 const relative_path = nconf.get('relative_path');
 const url = nconf.get('url');
 
-helpers.noScriptErrors = async function (req, res, error, httpStatus) {
+helpers.noScriptErrors = async function (req, res, options) {
+	const { error, httpStatus } = options;
 	if (req.body.noscript !== 'true') {
 		if (typeof error === 'string') {
 			return res.status(httpStatus).send(error);
