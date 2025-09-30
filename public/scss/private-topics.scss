@@ -1,0 +1,13 @@
+.topic.private {
+	border-left: 3px solid #ff9800;
+}
+
+.topic .private-indicator {
+	background: #ff9800;
+	color: white;
+	padding: 2px 8px;
+	border-radius: 3px;
+	font-size: 12px;
+	margin-right: 10px;
+	display: inline-block;
+}

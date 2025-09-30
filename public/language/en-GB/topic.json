@@ -10,6 +10,8 @@
 
 	"profile": "Profile",
 	"posted-by": "Posted by %1",
+	"make-private": "Make this question private",
+	"make-private-help": "Private questions are only visible to you and moderators, helping maintain academic integrity.",
 	"posted-by-guest": "Posted by Guest",
 	"chat": "Chat",
 	"notify-me": "Be notified of new replies in this topic",
