@@ -39,6 +39,56 @@
 </div>
 {{{ end }}}
 
+{{{ if pinnedTopicContents.length }}}
+<link rel="stylesheet" href="{config.relative_path}/css/pinned-topics.css">
+<div class="pinned-topics-content mb-4">
+	<div class="card border-0 shadow-sm">
+		<div class="card-header bg-primary text-white">
+			<h4 class="mb-0">
+				<i class="fa fa-thumb-tack me-2"></i>
+				[[category:pinned-topics]]
+			</h4>
+		</div>
+		<div class="card-body">
+			{{{ each pinnedTopicContents }}}
+			<div class="pinned-topic-item mb-3 pb-3 {{{ if !@last }}}border-bottom{{{ end }}}">
+				<div class="d-flex align-items-start gap-3">
+					<div class="flex-shrink-0">
+						{buildAvatar(pinnedTopicContents.user, "32px", true)}
+					</div>
+					<div class="flex-grow-1">
+						<h5 class="mb-2">
+							<a href="{config.relative_path}/topic/{pinnedTopicContents.slug}" class="text-decoration-none">
+								{pinnedTopicContents.title}
+							</a>
+						</h5>
+						<div class="pinned-content text-muted small">
+							{pinnedTopicContents.content}
+						</div>
+						<div class="mt-1">
+							<a href="{config.relative_path}/topic/{pinnedTopicContents.slug}" class="btn btn-sm btn-outline-primary">
+								<i class="fa fa-arrow-right me-1"></i>
+								Read More
+							</a>
+						</div>
+						<div class="mt-2">
+							<small class="text-muted">
+								<i class="fa fa-user me-1"></i>
+								{pinnedTopicContents.user.displayname}
+								<span class="mx-2">•</span>
+								<i class="fa fa-clock-o me-1"></i>
+								<span class="timeago" title="{pinnedTopicContents.timestampISO}"></span>
+							</small>
+						</div>
+					</div>
+				</div>
+			</div>
+			{{{ end }}}
+		</div>
+	</div>
+</div>
+{{{ end }}}
+
 
 <div class="row flex-fill mt-3">
 	<div class="category d-flex flex-column {{{if widgets.sidebar.length }}}col-lg-9 col-sm-12{{{ else }}}col-lg-12{{{ end }}}">
