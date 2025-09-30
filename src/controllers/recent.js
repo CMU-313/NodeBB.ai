@@ -12,6 +12,9 @@ const privileges = require('../privileges');
 
 const recentController = module.exports;
 const relative_path = nconf.get('relative_path');
+const validSorts = [
+	'recently_replied', 'recently_created', 'most_posts', 'most_votes', 'most_views',
+];
 
 recentController.get = async function (req, res, next) {
 	const data = await recentController.getData(req, 'recent', 'recent');
@@ -22,7 +25,7 @@ recentController.get = async function (req, res, next) {
 	res.render('recent', data);
 };
 
-recentController.getData = async function (req, url, sort) {
+recentController.getData = async function (req, url, defaultSort) {
 	const page = parseInt(req.query.page, 10) || 1;
 	let term = helpers.terms[req.query.term];
 	const { cid, tag } = req.query;
@@ -44,6 +47,9 @@ recentController.getData = async function (req, url, sort) {
 
 	const start = Math.max(0, (page - 1) * settings.topicsPerPage);
 	const stop = start + settings.topicsPerPage - 1;
+
+	// Handle sort parameter from query string, fallback to default sort
+	const sort = validSorts.includes(req.query.sort) ? req.query.sort : (defaultSort || 'recently_replied');
 
 	const data = await topics.getSortedTopics({
 		cids: cid,
@@ -90,6 +96,10 @@ recentController.getData = async function (req, url, sort) {
 	data.selectedFilter = data.filters.find(filter => filter && filter.selected);
 	data.terms = helpers.buildTerms(baseUrl, term, query);
 	data.selectedTerm = data.terms.find(term => term && term.selected);
+	
+	// Add sort information for the frontend
+	data.sort = sort;
+	data.sortOptionLabel = `[[topic:${sort.replace(/_/g, '-')}]]`;
 
 	const pageCount = Math.max(1, Math.ceil(data.topicCount / settings.topicsPerPage));
 	data.pagination = pagination.create(page, pageCount, req.query);
