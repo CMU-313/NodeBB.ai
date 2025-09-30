@@ -158,10 +158,11 @@ helpers.uploadFile = async function uploadFile(optsOrEndpoint, legacyFilePath, l
 		'x-csrf-token': csrfToken,
 	};
 
-	// Add cookie header if a jar is provided (same behavior as before)
-	if (jar && typeof jar.getCookieString === 'function') {
-		headers.cookie = await jar.getCookieString(endpoint);
+	// Always add cookie header; throw if jar is missing or invalid
+	if (!jar || typeof jar.getCookieString !== 'function') {
+		throw new Error('Cookie jar is required and must have a getCookieString method');
 	}
+	headers.cookie = await jar.getCookieString(endpoint);
 
 	const response = await fetch(endpoint, {
 		method: 'post',
