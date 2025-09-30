@@ -23,6 +23,12 @@ module.exports = function (Posts) {
 			fields: fields,
 		});
 		result.posts.forEach(post => modifyPost(post, fields));
+		// Add endorsement field if missing
+		result.posts.forEach((post) => {
+			if (!post.hasOwnProperty('endorsed')) {
+				post.endorsed = false;
+			}
+		});
 		return result.posts;
 	};
 
@@ -52,6 +58,13 @@ module.exports = function (Posts) {
 	Posts.setPostFields = async function (pid, data) {
 		await db.setObject(`post:${pid}`, data);
 		plugins.hooks.fire('action:post.setFields', { data: { ...data, pid } });
+	};
+
+	// Endorse a post (TA only)
+	Posts.endorsePost = async function (pid, taUid) {
+		// Optionally check TA privileges here
+		await Posts.setPostField(pid, 'endorsed', true);
+		plugins.hooks.fire('action:post.endorsed', { pid, taUid });
 	};
 };
 

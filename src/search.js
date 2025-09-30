@@ -239,6 +239,11 @@ async function filterAndSort(pids, data) {
 	postsData = filterByTimerange(postsData, data.timeRange, data.timeFilter);
 	postsData = filterByTags(postsData, data.hasTags);
 
+	// Filter for endorsed posts if requested
+	if (data.endorsedOnly) {
+		postsData = postsData.filter(post => post.endorsed === true);
+	}
+
 	sortPosts(postsData, data);
 
 	const result = await plugins.hooks.fire('filter:search.filterAndSort', { pids: pids, posts: postsData, data: data });
