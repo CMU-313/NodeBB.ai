@@ -22,21 +22,17 @@ prestart.loadConfig(configFile);
 const db = require('./src/database');
 const plugins = require('./src/plugins');
 
-module.exports = function (grunt) {
-	const args = [];
 
+function setupArgsAndLogLevel(grunt, args) {
 	if (!grunt.option('verbose')) {
 		args.push('--log-level=info');
 		nconf.set('log-level', 'info');
 	}
-	prestart.setupWinston();
+}
 
-	grunt.initConfig({
-		watch: {},
-	});
-
+function registerGruntTasks(grunt, args, run, addBaseThemes) {
+	grunt.initConfig({ watch: {} });
 	grunt.loadNpmTasks('grunt-contrib-watch');
-
 	grunt.registerTask('default', ['watch']);
 
 	grunt.registerTask('init', async function () {
@@ -72,9 +68,7 @@ module.exports = function (grunt) {
 					'public/scss/**/*.scss',
 					...styleUpdated_Client,
 				],
-				options: {
-					interval: interval,
-				},
+				options: { interval },
 			},
 			clientUpdated: {
 				files: [
@@ -83,9 +77,7 @@ module.exports = function (grunt) {
 					...clientUpdated,
 					'node_modules/benchpressjs/build/benchpress.js',
 				],
-				options: {
-					interval: interval,
-				},
+				options: { interval },
 			},
 			serverUpdated: {
 				files: [
@@ -98,18 +90,14 @@ module.exports = function (grunt) {
 					serverUpdated,
 					'!src/upgrades/**',
 				],
-				options: {
-					interval: interval,
-				},
+				options: { interval },
 			},
 			templatesUpdated: {
 				files: [
 					'src/views/**/*.tpl',
 					...templatesUpdated,
 				],
-				options: {
-					interval: interval,
-				},
+				options: { interval },
 			},
 			langUpdated: {
 				files: [
@@ -117,9 +105,7 @@ module.exports = function (grunt) {
 					'public/language/en-GB/**/*.json',
 					...langUpdated,
 				],
-				options: {
-					interval: interval,
-				},
+				options: { interval },
 			},
 		});
 		const build = require('./src/meta/build');
@@ -129,27 +115,9 @@ module.exports = function (grunt) {
 		run();
 		done();
 	});
+}
 
-	function run() {
-		if (worker) {
-			worker.kill();
-		}
-
-		const execArgv = [];
-		const inspect = process.argv.find(a => a.startsWith('--inspect'));
-
-		if (inspect) {
-			execArgv.push(inspect);
-		}
-
-		worker = fork('app.js', args, {
-			env,
-			execArgv,
-		});
-	}
-
-	grunt.task.run('init');
-
+function setupWatchEvent(grunt, run) {
 	grunt.event.removeAllListeners('watch');
 	grunt.event.on('watch', (action, filepath, target) => {
 		let compiling;
@@ -174,12 +142,36 @@ module.exports = function (grunt) {
 			}
 			if (worker) {
 				worker.send({
-					compiling: compiling,
+					compiling,
 					livereload: true, // Send livereload event via Socket.IO for instant browser refresh
 				});
 			}
 		});
 	});
+}
+
+function runWorker(args) {
+	if (worker) {
+		worker.kill();
+	}
+	const execArgv = [];
+	const inspect = process.argv.find(a => a.startsWith('--inspect'));
+	if (inspect) {
+		execArgv.push(inspect);
+	}
+	worker = fork('app.js', args, {
+		env,
+		execArgv,
+	});
+}
+
+module.exports = function (grunt) {
+	const args = [];
+	setupArgsAndLogLevel(grunt, args);
+	prestart.setupWinston();
+	registerGruntTasks(grunt, args, () => runWorker(args), addBaseThemes);
+	grunt.task.run('init');
+	setupWatchEvent(grunt, () => runWorker(args));
 };
 
 function addBaseThemes(pluginList) {
