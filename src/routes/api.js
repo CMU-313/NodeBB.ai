@@ -42,4 +42,5 @@ module.exports = function (app, middleware, controllers) {
 		middleware.canViewUsers,
 		middleware.checkAccountPermissions,
 	], helpers.tryRoute(controllers.accounts.edit.uploadPicture));
+	router.get('/unpopular', [...middlewares], helpers.tryRoute(controllers.api.getUnpopularTopics));
 };

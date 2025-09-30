@@ -31,4 +31,16 @@ navigation.get = async function (uid) {
 	return data.filter((navItem, i) => pass[i]);
 };
 
+navigation.addUnpopularTab = async function () {
+	const unpopularTab = {
+		route: '/unpopular',
+		text: 'Unpopular',
+		icon: 'fa-eye-slash',
+		enabled: true,
+		groups: [],
+	};
+
+	await admin.save(unpopularTab);
+};
+
 require('../promisify')(navigation);
