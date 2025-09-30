@@ -20,57 +20,20 @@ const sockets = require('../socket.io');
 
 const authenticationController = module.exports;
 
+const UserRegistration = require('./registration/UserRegistration');
+
+const UserRegistration = require('./registration/UserRegistration');
+
 async function registerAndLoginUser(req, res, userData) {
-	if (!userData.hasOwnProperty('email')) {
-		userData.updateEmail = true;
-	}
-
-	const data = await user.interstitials.get(req, userData);
-
-	// If interstitials are found, save registration attempt into session and abort
-	const deferRegistration = data.interstitials.length;
-	if (deferRegistration) {
-		userData.register = true;
-		req.session.registration = userData;
-
-		if (req.body?.noscript === 'true') {
-			res.redirect(`${nconf.get('relative_path')}/register/complete`);
-			return;
-		}
-		res.json({ next: `${nconf.get('relative_path')}/register/complete` });
-		return;
-	}
-
-	const queue = await user.shouldQueueUser(req.ip);
-	const result = await plugins.hooks.fire('filter:register.shouldQueue', { req: req, res: res, userData: userData, queue: queue });
-	if (result.queue) {
-		return await addToApprovalQueue(req, userData);
-	}
-
-	const uid = await user.create(userData);
-	if (res.locals.processLogin) {
-		const hasLoginPrivilege = await privileges.global.can('local:login', uid);
-		if (hasLoginPrivilege) {
-			await authenticationController.doLogin(req, uid);
-		}
-	}
-
-	// Distinguish registrations through invites from direct ones
-	if (userData.token) {
-		// Token has to be verified at this point
-		await Promise.all([
-			user.confirmIfInviteEmailIsUsed(userData.token, userData.email, uid),
-			user.joinGroupsFromInvitation(uid, userData.token),
-		]);
-	}
-	await user.deleteInvitationKey(userData.email, userData.token);
-	let next = req.session.returnTo || `${nconf.get('relative_path')}/`;
-	if (req.loggedIn && next === `${nconf.get('relative_path')}/login`) {
-		next = `${nconf.get('relative_path')}/`;
-	}
-	const complete = await plugins.hooks.fire('filter:register.complete', { uid: uid, next: next });
-	req.session.returnTo = complete.next;
-	return complete;
+	const registration = new UserRegistration(req, res);
+	return registration
+		.setUserData(userData)
+		.then(reg => reg && reg.handleInterstitials())
+		.then(reg => reg && reg.checkQueue())
+		.then(reg => reg && reg.createUser())
+		.then(reg => reg && reg.processLogin())
+		.then(reg => reg && reg.handleInvitation())
+		.then(reg => reg && reg.finalizeRegistration());
 }
 
 authenticationController.register = async function (req, res) {
