@@ -35,6 +35,7 @@ module.exports = function (Topics) {
 			lastposttime: 0,
 			postcount: 0,
 			viewcount: 0,
+			anonymous: data.anonymous ? 1 : 0,
 		};
 
 		if (Array.isArray(data.tags) && data.tags.length) {
@@ -84,10 +85,11 @@ module.exports = function (Topics) {
 		data = await plugins.hooks.fire('filter:topic.post', data);
 		const { uid } = data;
 
-		const [categoryExists, canCreate, canTag, isAdmin] = await Promise.all([
+		const [categoryExists, canCreate, canTag, canPostAnonymously, isAdmin] = await Promise.all([
 			parseInt(data.cid, 10) > 0 ? categories.exists(data.cid) : true,
 			privileges.categories.can('topics:create', data.cid, uid),
 			privileges.categories.can('topics:tag', data.cid, uid),
+			privileges.categories.can('posts:anonymous', data.cid, uid),
 			privileges.users.isAdministrator(uid),
 		]);
 
@@ -115,6 +117,10 @@ module.exports = function (Topics) {
 			throw new Error('[[error:no-privileges]]');
 		}
 
+		if (data.anonymous && !canPostAnonymously) {
+			throw new Error('[[error:no-privileges-anonymous]]');
+		}
+
 		await guestHandleValid(data);
 		if (!data.fromQueue) {
 			await user.isReadyToPost(uid, data.cid);
@@ -126,6 +132,7 @@ module.exports = function (Topics) {
 		postData.tid = tid;
 		postData.ip = data.req ? data.req.ip : null;
 		postData.isMain = true;
+		postData.anonymous = data.anonymous; // Pass anonymous flag to main post
 		postData = await posts.create(postData);
 		postData = await onNewPost(postData, data);
 
@@ -180,14 +187,20 @@ module.exports = function (Topics) {
 		data = await plugins.hooks.fire('filter:topic.reply', data);
 		const { tid, uid } = data;
 
-		const [topicData, isAdmin] = await Promise.all([
+		const [topicData, isAdmin, canPostAnonymously] = await Promise.all([
 			Topics.getTopicData(tid),
 			privileges.users.isAdministrator(uid),
+			privileges.categories.can('posts:anonymous', data.cid || 0, uid),
 		]);
 
 		await canReply(data, topicData);
 
 		data.cid = topicData.cid;
+
+		// Check anonymous privileges
+		if (data.anonymous && !canPostAnonymously) {
+			throw new Error('[[error:no-privileges-anonymous]]');
+		}
 
 		await guestHandleValid(data);
 		data.content = String(data.content || '').trimEnd();

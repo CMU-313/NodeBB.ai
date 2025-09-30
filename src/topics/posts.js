@@ -149,6 +149,22 @@ module.exports = function (Topics) {
 					postObj.user.username = validator.escape(String(postObj.handle));
 					postObj.user.displayname = postObj.user.username;
 				}
+
+				// Handle anonymous posts
+				if (postObj.anonymous) {
+					// Store real author info for administrative purposes
+					postObj.realUser = postObj.user;
+					postObj.user = {
+						uid: 0,
+						username: 'Anonymous',
+						userslug: '',
+						picture: '',
+						'icon:text': 'A',
+						'icon:bgColor': '#666666',
+						displayname: 'Anonymous',
+					};
+					postObj.selfPost = false; // Anonymous posts are never "self" posts
+				}
 			}
 		});
 
