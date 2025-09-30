@@ -27,7 +27,9 @@ widgets.render = async function (uid, options) {
 		config = await apiController.loadConfig(options.req);
 	}
 
-	const widgetData = await Promise.all(locations.map(location => renderLocation(location, data, uid, options, config)));
+	const widgetData = await Promise.all(
+		locations.map(location => renderLocation({ location, data, uid, options, config }))
+	);
 
 	const returnData = {};
 	locations.forEach((location, i) => {
@@ -39,7 +41,7 @@ widgets.render = async function (uid, options) {
 	return returnData;
 };
 
-async function renderLocation(location, data, uid, options, config) {
+async function renderLocation({ location, data, uid, options, config }) {
 	const widgetsAtLocation = (data[options.template][location] || []).concat(data.global[location] || []);
 
 	if (!widgetsAtLocation.length) {
@@ -47,12 +49,12 @@ async function renderLocation(location, data, uid, options, config) {
 	}
 
 	const renderedWidgets = await Promise.all(
-		widgetsAtLocation.map(widget => renderWidget(widget, uid, options, config, location))
+		widgetsAtLocation.map(widget => renderWidget({ widget, uid, options, config, location }))
 	);
 	return renderedWidgets;
 }
 
-async function renderWidget(widget, uid, options, config, location) {
+async function renderWidget({ widget, uid, options, config, location }) {
 	if (!widget || !widget.data || (!!widget.data['hide-mobile'] && options.req.useragent.isMobile)) {
 		return;
 	}
@@ -65,9 +67,9 @@ async function renderWidget(widget, uid, options, config, location) {
 	const templateData = _.assign({ }, options.templateData, { config: config });
 	try {
 		const data = await plugins.hooks.fire(`filter:widget.render:${widget.widget}`, {
-			uid: uid,
+			uid,
 			area: options,
-			templateData: templateData,
+			templateData,
 			data: widget.data,
 			req: options.req,
 			res: options.res,
