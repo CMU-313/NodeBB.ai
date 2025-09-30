@@ -242,7 +242,7 @@ async function generateSorted(options, req, res, next) {
 async function sendTopicsFeed(options, set, res, timestampField) {
 	const start = options.hasOwnProperty('start') ? options.start : 0;
 	const stop = options.hasOwnProperty('stop') ? options.stop : 19;
-	const topicData = await topics.getTopicsFromSet(set, options.uid, start, stop);
+	const topicData = await topics.getTopicsFromSet({ set, uid: options.uid, start, stop });
 	const feed = await generateTopicsFeed(options, topicData.topics, timestampField);
 	sendFeed(feed, res);
 }

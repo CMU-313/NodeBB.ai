@@ -107,7 +107,7 @@ const templateToData = {
 			};
 
 			if (!sort || !map[sort]) {
-				return await topics.getTopicsFromSet(set, req.uid, start, stop);
+				return await topics.getTopicsFromSet({ set, uid: req.uid, start, stop });
 			}
 			const sortSet = map[sort];
 			let tids = await db.getSortedSetRevRange(set, 0, -1);
