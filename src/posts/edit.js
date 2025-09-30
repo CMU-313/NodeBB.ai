@@ -109,16 +109,34 @@ module.exports = function (Posts) {
 
 		const isMain = String(data.pid) === String(topicData.mainPid);
 		if (!isMain) {
-			return {
-				tid: tid,
-				cid: topicData.cid,
-				title: topicData.title,
-				isMainPost: false,
-				renamed: false,
-				tagsupdated: false,
-			};
+			return createNonMainPostResult(tid, topicData);
 		}
 
+		const newTopicData = createNewTopicData(data, postData, topicData, title, tid);
+		const tagsupdated = await handleTagsUpdate(data, topicData, tid);
+		const updatedTopicData = await updateTopicInDatabase(newTopicData, data, tagsupdated, tid, topicData);
+		const tags = await topics.getTopicTagsObjects(tid);
+
+		await handleRescheduling(data, topicData, updatedTopicData);
+
+		const result = buildMainPostResult(data, postData, topicData, updatedTopicData, title, tagsupdated, tags);
+		plugins.hooks.fire('action:topic.edit', { topic: updatedTopicData, uid: data.uid });
+
+		return result;
+	}
+
+	function createNonMainPostResult(tid, topicData) {
+		return {
+			tid: tid,
+			cid: topicData.cid,
+			title: topicData.title,
+			isMainPost: false,
+			renamed: false,
+			tagsupdated: false,
+		};
+	}
+
+	function createNewTopicData(data, postData, topicData, title, tid) {
 		const newTopicData = {
 			tid: tid,
 			cid: topicData.cid,
@@ -126,11 +144,16 @@ module.exports = function (Posts) {
 			mainPid: data.pid,
 			timestamp: rescheduling(data, topicData) ? data.timestamp : topicData.timestamp,
 		};
+
 		if (title) {
 			newTopicData.title = title;
 			newTopicData.slug = `${tid}/${slugify(title) || 'topic'}`;
 		}
 
+		return newTopicData;
+	}
+
+	async function handleTagsUpdate(data, topicData, tid) {
 		const tagsupdated = Array.isArray(data.tags) &&
 			!_.isEqual(data.tags, topicData.tags.map(tag => tag.value));
 
@@ -142,32 +165,45 @@ module.exports = function (Posts) {
 			await topics.validateTags(data.tags, topicData.cid, data.uid, tid);
 		}
 
+		return tagsupdated;
+	}
+
+	async function updateTopicInDatabase(newTopicData, data, tagsupdated, tid, topicData) {
 		const results = await plugins.hooks.fire('filter:topic.edit', {
 			req: data.req,
 			topic: newTopicData,
 			data: data,
 		});
+
 		await db.setObject(`topic:${tid}`, results.topic);
+
 		if (tagsupdated) {
 			await topics.updateTopicTags(tid, data.tags);
 		}
-		const tags = await topics.getTopicTagsObjects(tid);
 
+		const updatedTopicData = { ...results.topic };
+		updatedTopicData.tags = data.tags;
+		updatedTopicData.oldTitle = topicData.title;
+
+		return updatedTopicData;
+	}
+
+	async function handleRescheduling(data, topicData, updatedTopicData) {
 		if (rescheduling(data, topicData)) {
-			await topics.scheduled.reschedule(newTopicData);
+			await topics.scheduled.reschedule(updatedTopicData);
 		}
+	}
 
-		newTopicData.tags = data.tags;
-		newTopicData.oldTitle = topicData.title;
+	function buildMainPostResult(data, postData, topicData, updatedTopicData, title, tagsupdated, tags) {
 		const renamed = title && translator.escape(validator.escape(String(title))) !== topicData.title;
-		plugins.hooks.fire('action:topic.edit', { topic: newTopicData, uid: data.uid });
+
 		return {
-			tid: tid,
-			cid: newTopicData.cid,
+			tid: postData.tid,
+			cid: updatedTopicData.cid,
 			uid: postData.uid,
 			title: validator.escape(String(title)),
 			oldTitle: topicData.title,
-			slug: newTopicData.slug || topicData.slug,
+			slug: updatedTopicData.slug || topicData.slug,
 			isMainPost: true,
 			renamed: renamed,
 			tagsupdated: tagsupdated,
