@@ -1,0 +1,18 @@
+{
+  "id": "nodebb-plugin-office-hours-voice",
+  "name": "Office Hours (Voice)",
+  "description": "Adds a one-click Office Hours voice room using an embeddable Jitsi Meet iframe.",
+  "url": "https://github.com/CMU-313/NodeBB.ai",
+  "library": "library.js",
+  "staticDirs": {
+    "static": "./static"
+  },
+  "hooks": [
+    {
+      "hook": "static:app.load",
+      "method": "init"
+    }
+  ],
+  "templates": "templates",
+  "version": "0.1.0"
+}
