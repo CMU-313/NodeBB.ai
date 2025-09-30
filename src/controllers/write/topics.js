@@ -3,6 +3,8 @@
 const db = require('../../database');
 const api = require('../../api');
 const topics = require('../../topics');
+const Notifications = require('../../notifications');
+const privileges = require('../../privileges');
 
 const helpers = require('../helpers');
 const middleware = require('../../middleware');
@@ -219,4 +221,44 @@ Topics.move = async (req, res) => {
 	await api.topics.move(req, { cid, ...req.params });
 
 	helpers.formatApiResponse(200, res);
+};
+
+Topics.requestFollowUp = async (req, res) => {
+	try {
+		await topics.canRequestFollowUp(req.uid, req.params.tid);
+		await topics.setFollowUp(req.params.tid, req.uid);
+
+		// Notify staff about the follow-up request
+		const staffUids = await privileges.getStaffUids();
+		const notification = await Notifications.create({
+			type: 'follow-up-request',
+			bodyShort: `[[notifications:follow-up-request, ${req.user.username}]]`,
+			path: `/topic/${req.params.tid}`,
+			from: req.user.uid,
+		});
+		await Notifications.push(notification, staffUids);
+
+		helpers.formatApiResponse(200, res, { message: 'Follow-up requested successfully.' });
+	} catch (err) {
+		helpers.formatApiResponse(400, res, err);
+	}
+};
+
+Topics.resolveFollowUp = async (req, res) => {
+	try {
+		await topics.resolveFollowUp(req.params.tid, req.uid);
+
+		// Notify the requester about the follow-up resolution
+		const notification = await Notifications.create({
+			type: 'follow-up-resolved',
+			bodyShort: `[[notifications:follow-up-resolved, ${req.user.username}]]`,
+			path: `/topic/${req.params.tid}`,
+			from: req.user.uid,
+		});
+		await Notifications.push(notification, [req.uid]);
+
+		helpers.formatApiResponse(200, res, { message: 'Follow-up resolved successfully.' });
+	} catch (err) {
+		helpers.formatApiResponse(400, res, err);
+	}
 };

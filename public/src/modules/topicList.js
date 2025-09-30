@@ -247,5 +247,20 @@ define('topicList', [
 		});
 	}
 
+	function addFollowUpBadges(topics) {
+		topics.forEach(topic => {
+			const topicEl = topicListEl.find(`[data-tid="${topic.tid}"]`);
+			if (topic.followUpStatus === 'requested') {
+				topicEl.append('<span class="badge bg-warning text-dark">Follow-Up Requested</span>');
+			} else if (topic.followUpStatus === 'resolved') {
+				topicEl.append('<span class="badge bg-success">Follow-Up Resolved</span>');
+			}
+		});
+	}
+
+	hooks.on('action:topics.loaded', function (data) {
+		addFollowUpBadges(data.topics);
+	});
+
 	return TopicList;
 });
