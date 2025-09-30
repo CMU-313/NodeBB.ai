@@ -74,6 +74,48 @@ Notifications.get = async function (nid) {
 	return Array.isArray(notifications) && notifications.length ? notifications[0] : null;
 };
 
+// Helper function to parse integer fields
+function parseIntFields(notification) {
+	intFields.forEach((field) => {
+		if (notification.hasOwnProperty(field)) {
+			notification[field] = utils.isNumber(notification[field]) ?
+				parseInt(notification[field], 10) || 0 :
+				notification[field];
+		}
+	});
+}
+
+// Helper function to update notification paths
+function updateNotificationPath(notification) {
+	if (notification.path && !notification.path.startsWith('http')) {
+		notification.path = nconf.get('relative_path') + notification.path;
+	}
+	notification.datetimeISO = utils.toISOString(notification.datetime);
+}
+
+// Helper function to process notification content
+function processNotificationContent(notification) {
+	if (notification.bodyLong) {
+		notification.bodyLong = utils.stripHTMLTags(notification.bodyLong, ['img', 'p', 'a']);
+	}
+}
+
+// Helper function to handle user data and images
+function processUserData(notification, userData) {
+	notification.user = userData;
+	if (notification.user && notification.from) {
+		notification.image = notification.user.picture || null;
+		if (notification.user.username === '[[global:guest]]') {
+			notification.bodyShort = notification.bodyShort.replace(
+				/([\s\S]*?),[\s\S]*?,([\s\S]*?)/,
+				'$1, [[global:guest]], $2'
+			);
+		}
+	} else if (notification.image === 'brand:logo' || !notification.image) {
+		notification.image = meta.config['brand:logo'] || `${nconf.get('relative_path')}/assets/logo.png`;
+	}
+}
+
 Notifications.getMultiple = async function (nids) {
 	if (!Array.isArray(nids) || !nids.length) {
 		return [];
@@ -87,37 +129,14 @@ Notifications.getMultiple = async function (nids) {
 
 	notifications.forEach((notification, index) => {
 		if (notification) {
-			intFields.forEach((field) => {
-				if (notification.hasOwnProperty(field)) {
-					notification[field] = utils.isNumber(notification[field]) ?
-						parseInt(notification[field], 10) || 0 :
-						notification[field];
-				}
-			});
-			if (notification.path && !notification.path.startsWith('http')) {
-				notification.path = nconf.get('relative_path') + notification.path;
-			}
-			notification.datetimeISO = utils.toISOString(notification.datetime);
-
-			if (notification.bodyLong) {
-				notification.bodyLong = utils.stripHTMLTags(notification.bodyLong, ['img', 'p', 'a']);
-			}
-
-			notification.user = usersData[index];
-			if (notification.user && notification.from) {
-				notification.image = notification.user.picture || null;
-				if (notification.user.username === '[[global:guest]]') {
-					notification.bodyShort = notification.bodyShort.replace(/([\s\S]*?),[\s\S]*?,([\s\S]*?)/, '$1, [[global:guest]], $2');
-				}
-			} else if (notification.image === 'brand:logo' || !notification.image) {
-				notification.image = meta.config['brand:logo'] || `${nconf.get('relative_path')}/assets/logo.png`;
-			}
+			parseIntFields(notification);
+			updateNotificationPath(notification);
+			processNotificationContent(notification);
+			processUserData(notification, usersData[index]);
 		}
 	});
 	return notifications;
-};
-
-Notifications.filterExists = async function (nids) {
+};Notifications.filterExists = async function (nids) {
 	const exists = await db.isSortedSetMembers('notifications', nids);
 	return nids.filter((nid, idx) => exists[idx]);
 };
