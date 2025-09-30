@@ -248,7 +248,20 @@ authenticationController.login = async (req, res, next) => {
 	}
 
 	const loginWith = meta.config.allowLoginWith || 'username-email';
-	req.body.username = String(req.body.username).trim();
+	req.body.username = String(req.body.username || '').trim();
+	req.body.nickname = String(req.body.nickname || '').trim();
+	
+	// If nickname is provided, use it as the username
+	if (req.body.nickname) {
+		const uid = await user.getUidByNickname(req.body.nickname);
+		if (uid) {
+			const username = await user.getUsernameByUid(uid);
+			if (username) {
+				req.body.username = username;
+			}
+		}
+	}
+	
 	const errorHandler = res.locals.noScriptErrors || helpers.noScriptErrors;
 	try {
 		await plugins.hooks.fire('filter:login.check', { req: req, res: res, userData: req.body });
@@ -274,22 +287,7 @@ authenticationController.login = async (req, res, next) => {
 	}
 };
 
-async function resolveUsernameOrNickname(input) {
-	const username = await user.getUsernameByEmail(input);
-	if (username && username !== '[[global:guest]]') {
-		return username;
-	}
-	const nickname = await user.getUidByNickname(input);
-	if (nickname) {
-		return await user.getUsernameByUid(nickname);
-	}
-	return input;
-}
-
 async function continueLogin(strategy, req, res, next) {
-	// Resolve username or nickname before authentication
-	req.body.username = await resolveUsernameOrNickname(req.body.username);
-
 	passport.authenticate(strategy, async (err, userData, info) => {
 		if (err) {
 			plugins.hooks.fire('action:login.continue', { req, strategy, userData, error: err });

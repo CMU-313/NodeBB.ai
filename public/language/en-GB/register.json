@@ -9,6 +9,8 @@
     "email-address-placeholder": "Enter Email Address",
     "username": "Username",
     "username-placeholder": "Enter Username",
+    "nickname": "Nickname",
+    "nickname-placeholder": "Enter Nickname (optional)",
     "password": "Password",
     "password-placeholder": "Enter Password",
     "confirm-password": "Confirm Password",

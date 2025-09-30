@@ -159,6 +159,49 @@ describe('authentication', () => {
 		assert(!sessionCount);
 	});
 
+	describe('nickname login', () => {
+		let nicknameUid;
+		let nicknameUser;
+		let nicknamePassword;
+
+		before(async () => {
+			nicknameUser = 'nicknameuser';
+			nicknamePassword = 'nicknamepassword';
+			nicknameUid = await user.create({ 
+				username: nicknameUser, 
+				password: nicknamePassword, 
+				nickname: 'TestNickname',
+			});
+		});
+
+		it('should allow login with nickname', async () => {
+			const oldValue = meta.config.allowLoginWith;
+			meta.config.allowLoginWith = 'username-email';
+			const { response, jar } = await helpers.loginUser('', nicknamePassword, { nickname: 'TestNickname' });
+			assert.strictEqual(response.statusCode, 200);
+			
+			const { body } = await request.get(`${nconf.get('url')}/api/self`, { jar });
+			assert(body);
+			assert.equal(body.username, nicknameUser);
+			meta.config.allowLoginWith = oldValue;
+		});
+
+		it('should fail to login with invalid nickname', async () => {
+			const { response, body } = await helpers.loginUser('', nicknamePassword, { nickname: 'InvalidNickname' });
+			assert.strictEqual(response.statusCode, 403);
+		});
+
+		it('should retrieve uid by nickname', async () => {
+			const uid = await user.getUidByNickname('TestNickname');
+			assert.strictEqual(uid, nicknameUid);
+		});
+
+		it('should retrieve username by uid', async () => {
+			const username = await user.getUsernameByUid(nicknameUid);
+			assert.strictEqual(username, nicknameUser);
+		});
+	});
+
 	describe('login', () => {
 		let username;
 		let password;

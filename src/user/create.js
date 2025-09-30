@@ -50,7 +50,7 @@ module.exports = function (User) {
 			lastonline: timestamp,
 			status: 'online',
 		};
-		['picture', 'fullname', 'birthday'].forEach((field) => {
+		['picture', 'fullname', 'nickname', 'birthday'].forEach((field) => {
 			if (data[field]) {
 				userData[field] = data[field];
 			}
@@ -91,6 +91,10 @@ module.exports = function (User) {
 
 		if (userData.fullname) {
 			bulkAdd.push(['fullname:sorted', 0, `${userData.fullname.toLowerCase()}:${userData.uid}`]);
+		}
+
+		if (userData.nickname) {
+			bulkAdd.push(['nickname:uid', userData.uid, userData.nickname]);
 		}
 
 		await Promise.all([
