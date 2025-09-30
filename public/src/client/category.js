@@ -27,7 +27,16 @@ define('forum/category', [
 
 		topicList.init('category', loadTopicsAfter);
 
-		sort.handleSort('categoryTopicSort', 'category/' + ajaxify.data.slug);
+		sort.handleSort('categoryTopicSort', 'category/' + ajaxify.data.slug, {
+			unanswered: function () {
+				api.get('/topics/unanswered', { start: 0, stop: 19 }, function (err, data) {
+					if (err) {
+						return alerts.error(err);
+					}
+					topicList.replace(data.topics);
+				});
+			},
+		});
 
 		if (!config.usePagination) {
 			navigator.init('[component="category/topic"]', ajaxify.data.topic_count, Category.toTop, Category.toBottom);

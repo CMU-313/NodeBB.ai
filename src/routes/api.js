@@ -22,6 +22,7 @@ module.exports = function (app, middleware, controllers) {
 	router.get('/unread/total', [...middlewares, middleware.ensureLoggedIn], helpers.tryRoute(controllers.unread.unreadTotal));
 	router.get('/topic/teaser/:topic_id', [...middlewares], helpers.tryRoute(controllers.topics.teaser));
 	router.get('/topic/pagination/:topic_id', [...middlewares], helpers.tryRoute(controllers.topics.pagination));
+	router.get('/topics/unanswered', [...middlewares, middleware.ensureLoggedIn], helpers.tryRoute(controllers.topics.getUnansweredTopics));
 
 	const multipart = require('connect-multiparty');
 	const multipartMiddleware = multipart();
