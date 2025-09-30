@@ -58,6 +58,10 @@ Categories.getTopics = async (req, res) => {
 	helpers.formatApiResponse(200, res, result);
 };
 
+Categories.sections = async (req, res) => {
+	helpers.formatApiResponse(200, res, await api.categories.listSections(req));
+};
+
 Categories.setWatchState = async (req, res) => {
 	const { cid } = req.params;
 	let { uid, state } = req.body;

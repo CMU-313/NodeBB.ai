@@ -156,6 +156,40 @@ categoriesAPI.getTopics = async (caller, data) => {
 	return { ...result, privileges: userPrivileges };
 };
 
+// Return categories marked as sections (isSection) and a small sample of topics per section
+categoriesAPI.listSections = async (caller) => {
+	// Only show categories the caller can read
+	const cids = await categories.getCidsByPrivilege('categories:cid', caller.uid, 'find');
+	const categoriesData = await categories.getCategoriesData(cids);
+	const isAdmin = await user.isAdministrator(caller.uid);
+
+	// Filter to sections
+	const sections = categoriesData.filter(category => category && category.isSection && (!category.disabled || isAdmin));
+
+	// Batch fetch topics for each section (limit 5) to avoid awaiting inside for..of
+	const topicPromises = sections.map(section => categories.getCategoryTopics({
+		cid: section.cid,
+		uid: caller.uid,
+		start: 0,
+		stop: 4,
+	}).catch(() => ({ topics: [] })));
+
+	const topicsResults = await Promise.all(topicPromises);
+
+	const result = sections.map((section, idx) => {
+		const topicsArr = (topicsResults[idx] && topicsResults[idx].topics) ? topicsResults[idx].topics : [];
+		return {
+			cid: section.cid,
+			name: section.name,
+			slug: section.slug,
+			topic_count: section.topic_count,
+			topics: topicsArr.map(t => ({ tid: t.tid, title: t.title, slug: t.slug })),
+		};
+	});
+
+	return { sections: result };
+};
+
 categoriesAPI.setWatchState = async (caller, { cid, state, uid }) => {
 	let targetUid = caller.uid;
 	let cids = Array.isArray(cid) ? cid : [cid];
