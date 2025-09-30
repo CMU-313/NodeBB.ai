@@ -67,6 +67,56 @@ async function getGroups(req, sort, page) {
 	return [groupData, pageCount];
 }
 
+// Helper: load group information and permissions for the details view.
+// Returns null when the request should be forwarded (i.e. 404 or unauthorized for hidden groups).
+async function loadGroupDetails(req) {
+	const groupName = await groups.getGroupNameByGroupSlug(req.params.slug);
+	if (!groupName) {
+		return null;
+	}
+
+	const [exists, isHidden, isAdmin, isGlobalMod] = await Promise.all([
+		groups.exists(groupName),
+		groups.isHidden(groupName),
+		privileges.admin.can('admin:groups', req.uid),
+		user.isGlobalModerator(req.uid),
+	]);
+
+	if (!exists) {
+		return null;
+	}
+
+	if (isHidden && !isAdmin && !isGlobalMod) {
+		const [isMember, isInvited] = await Promise.all([
+			groups.isMember(req.uid, groupName),
+			groups.isInvited(req.uid, groupName),
+		]);
+		if (!isMember && !isInvited) {
+			return null;
+		}
+	}
+
+	const [groupData, posts] = await Promise.all([
+		groups.get(groupName, {
+			uid: req.uid,
+			truncateUserList: true,
+			userListCount: 20,
+		}),
+		groups.getLatestMemberPosts(groupName, 10, req.uid),
+	]);
+
+	if (!groupData) {
+		return null;
+	}
+
+	return {
+		groupData,
+		posts,
+		isAdmin,
+		isGlobalMod,
+	};
+}
+
 groupsController.details = async function (req, res, next) {
 	const lowercaseSlug = req.params.slug.toLowerCase();
 	if (req.params.slug !== lowercaseSlug) {
@@ -76,39 +126,13 @@ groupsController.details = async function (req, res, next) {
 			return res.redirect(`${nconf.get('relative_path')}/groups/${lowercaseSlug}`);
 		}
 	}
-	const groupName = await groups.getGroupNameByGroupSlug(req.params.slug);
-	if (!groupName) {
+
+	const details = await loadGroupDetails(req);
+	if (!details) {
 		return next();
 	}
-	const [exists, isHidden, isAdmin, isGlobalMod] = await Promise.all([
-		groups.exists(groupName),
-		groups.isHidden(groupName),
-		privileges.admin.can('admin:groups', req.uid),
-		user.isGlobalModerator(req.uid),
-	]);
-	if (!exists) {
-		return next();
-	}
-	if (isHidden && !isAdmin && !isGlobalMod) {
-		const [isMember, isInvited] = await Promise.all([
-			groups.isMember(req.uid, groupName),
-			groups.isInvited(req.uid, groupName),
-		]);
-		if (!isMember && !isInvited) {
-			return next();
-		}
-	}
-	const [groupData, posts] = await Promise.all([
-		groups.get(groupName, {
-			uid: req.uid,
-			truncateUserList: true,
-			userListCount: 20,
-		}),
-		groups.getLatestMemberPosts(groupName, 10, req.uid),
-	]);
-	if (!groupData) {
-		return next();
-	}
+
+	const { groupData, posts, isAdmin, isGlobalMod } = details;
 
 	res.locals.linkTags = [
 		{
