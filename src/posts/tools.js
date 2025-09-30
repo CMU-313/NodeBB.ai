@@ -13,6 +13,30 @@ module.exports = function (Posts) {
 		return await togglePostDelete(uid, pid, false);
 	};
 
+	Posts.tools.createAnonymousPost = async function (data) {
+		const { content, tid } = data; // Removed unused 'uid'
+
+		// Validate content and topic ID
+		if (!content || !tid) {
+			throw new Error('[[error:invalid-post-data]]');
+		}
+
+		// Create the post with an anonymous flag
+		const post = {
+			uid: null, // No user ID associated
+			content,
+			tid,
+			anonymous: true,
+			timestamp: Date.now(),
+		};
+
+		// Save the post (assuming Posts.save is a method to save posts)
+		const savedPost = await Posts.save(post);
+
+		// Return the saved post
+		return savedPost;
+	};
+
 	async function togglePostDelete(uid, pid, isDelete) {
 		const [postData, canDelete] = await Promise.all([
 			Posts.getPostData(pid),

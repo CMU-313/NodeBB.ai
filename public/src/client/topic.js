@@ -480,6 +480,38 @@ define('forum/topic', [
 		}
 	}
 
+	// Add anonymous posting toggle
+	function addAnonymousToggle() {
+		const composer = $('[component="composer"]');
+		const anonymousToggle = $(
+			'<div class="anonymous-toggle">' +
+			'<label><input type="checkbox" id="anonymous-post"> Post Anonymously</label>' +
+			'</div>'
+		);
+		composer.append(anonymousToggle);
+	}
+
+	// Modify post submission to include anonymous flag
+	function modifyPostSubmission() {
+		$(document).on('click', '[component="composer/post"]', function () {
+			const isAnonymous = $('#anonymous-post').is(':checked');
+			if (isAnonymous) {
+				const postData = { content: $('[component="composer/editor"]').val(), anonymous: true };
+				api.post(`/topics/${tid}/posts`, postData, function (err) { // Removed unused 'data' parameter
+					if (err) {
+						alerts.error(err.message);
+					} else {
+						alerts.success('Anonymous post submitted!');
+					}
+				});
+				return false; // Prevent default submission
+			}
+		});
+	}
+
+	addAnonymousToggle();
+	modifyPostSubmission();
+
 
 	return Topic;
 });
