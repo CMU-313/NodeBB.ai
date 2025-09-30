@@ -320,6 +320,13 @@ module.exports = function (utils, Benchpress, relative_path) {
 			output += `<img${attr2String(attributes)} alt="${userObj.displayname}" loading="lazy" component="${component || 'avatar/picture'}" src="${userObj.picture}" style="${styles.join(' ')}" onError="this.remove()" itemprop="image" />`;
 		}
 		output += `<span${attr2String(attributes)} component="${component || 'avatar/icon'}" style="${styles.join(' ')} background-color: ${userObj['icon:bgColor']}">${userObj['icon:text']}</span>`;
+
+		// Identification rank badge
+		if (userObj['identification:rank']) {
+			const rank = userObj['identification:rank'];
+			const badgeStyle = `display:inline-block;margin-left:6px;padding:2px 6px;border-radius:10px;font-size:0.7em;color:${rank.textColor || '#fff'};background:${rank.color || '#000'};vertical-align:middle;`;
+			output += `<span class="identification-badge" title="${rank.name || ''}" style="${badgeStyle}">${rank.name || ''}</span>`;
+		}
 		return output;
 	}
 
