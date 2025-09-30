@@ -6,8 +6,8 @@
         "dockerfile": "Dockerfile",
         "context": ".."
     },
-    "postCreateCommand": "./nodebb setup && npm install",
-    "postStartCommand": "redis-server --daemonize yes",
+    "postCreateCommand": "redis-server --daemonize yes && ./nodebb setup && npm install",
+    "postStartCommand": "redis-server --daemonize yes || exit 0",
 
     "forwardPorts": [4567],
     "portsAttributes": {
