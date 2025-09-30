@@ -17,6 +17,32 @@ const api = require('../../src/api');
 
 const helpers = require('./helpers');
 
+// Helper functions to simplify complex binary expressions
+function isAnnounceCreate(activity) {
+	return activity.type === 'Announce' &&
+		activity.object && activity.object.type === 'Create';
+}
+
+function isAnnounceCreateArticle(activity) {
+	return isAnnounceCreate(activity) &&
+		activity.object.object && activity.object.object.type === 'Article';
+}
+
+function isAnnounceCreateNote(activity) {
+	return isAnnounceCreate(activity) &&
+		activity.object.object && activity.object.object.type === 'Note';
+}
+
+function isAnnounceArticle(activity) {
+	return activity.type === 'Announce' &&
+		activity.object && activity.object.type === 'Article';
+}
+
+function isAnnounceNote(activity) {
+	return activity.type === 'Announce' &&
+		activity.object && activity.object.type === 'Note';
+}
+
 describe.skip('FEPs', () => {
 	before(async () => {
 		meta.config.activitypubEnabled = 1;
@@ -68,15 +94,12 @@ describe.skip('FEPs', () => {
 
 					const test1 = activities.some((activity) => {
 						[, activity] = activity;
-						return activity.type === 'Announce' &&
-							activity.object && activity.object.type === 'Create' &&
-							activity.object.object && activity.object.object.type === 'Article';
+						return isAnnounceCreateArticle(activity);
 					});
 
 					const test2 = activities.some((activity) => {
 						[, activity] = activity;
-						return activity.type === 'Announce' &&
-							activity.object && activity.object.type === 'Article';
+						return isAnnounceArticle(activity);
 					});
 
 					assert(test1 && test2);
@@ -92,9 +115,7 @@ describe.skip('FEPs', () => {
 
 					assert(activities.some((activity) => {
 						[, activity] = activity;
-						return activity.type === 'Announce' &&
-							activity.object && activity.object.type === 'Create' &&
-							activity.object.object && activity.object.object.type === 'Note';
+						return isAnnounceCreateNote(activity);
 					}));
 				});
 
@@ -170,15 +191,12 @@ describe.skip('FEPs', () => {
 
 					const test1 = activities.some((activity) => {
 						[, activity] = activity;
-						return activity.type === 'Announce' &&
-							activity.object && activity.object.type === 'Create' &&
-							activity.object.object && activity.object.object.type === 'Note';
+						return isAnnounceCreateNote(activity);
 					});
 
 					const test2 = activities.some((activity) => {
 						[, activity] = activity;
-						return activity.type === 'Announce' &&
-							activity.object && activity.object.type === 'Note';
+						return isAnnounceNote(activity);
 					});
 
 					assert(test1 && test2);
@@ -197,9 +215,7 @@ describe.skip('FEPs', () => {
 
 					assert(activities.some((activity) => {
 						[, activity] = activity;
-						return activity.type === 'Announce' &&
-							activity.object && activity.object.type === 'Create' &&
-							activity.object.object && activity.object.object.type === 'Note';
+						return isAnnounceCreateNote(activity);
 					}));
 				});
 
