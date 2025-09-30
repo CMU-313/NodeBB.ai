@@ -24,6 +24,7 @@ const _mounts = {
 	feed: require('./feeds'),
 	'well-known': require('./well-known'),
 	activitypub: require('./activitypub'),
+	resources: require('./resources'),
 };
 
 _mounts.main = (app, middleware, controllers) => {
@@ -161,6 +162,7 @@ function addCoreRoutes(app, router, middleware, mounts) {
 	_mounts.mod(router, middleware, controllers);
 	_mounts.globalMod(router, middleware, controllers);
 	_mounts['well-known'](router, middleware, controllers);
+	_mounts.resources(router, middleware, controllers);
 
 	addRemountableRoutes(app, router, middleware, mounts);
 

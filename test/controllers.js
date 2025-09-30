@@ -894,6 +894,25 @@ describe('Controllers', () => {
 	});
 
 
+	describe('resources', () => {
+		it('should render resources page', async () => {
+			const { response, body } = await request.get(`${nconf.get('url')}/api/resources`);
+			assert.equal(response.statusCode, 200);
+			assert(body);
+			assert(Array.isArray(body.resources));
+			assert(body.resources.length > 0);
+		});
+
+		it('should include required fields in resources', async () => {
+			const { response, body } = await request.get(`${nconf.get('url')}/api/resources`);
+			assert.equal(response.statusCode, 200);
+			assert(body.resources[0].title);
+			assert(body.resources[0].url);
+			assert(body.resources[0].description);
+		});
+	});
+
+
 	describe('maintenance mode', () => {
 		before((done) => {
 			meta.config.maintenanceMode = 1;
