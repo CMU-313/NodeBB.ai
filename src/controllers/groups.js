@@ -68,36 +68,32 @@ async function getGroups(req, sort, page) {
 }
 
 groupsController.details = async function (req, res, next) {
-	const lowercaseSlug = req.params.slug.toLowerCase();
-	if (req.params.slug !== lowercaseSlug) {
-		if (res.locals.isAPI) {
-			req.params.slug = lowercaseSlug;
-		} else {
-			return res.redirect(`${nconf.get('relative_path')}/groups/${lowercaseSlug}`);
-		}
+	// Ensure slug is lowercase (redirect for non-API requests)
+	if (!(await ensureLowercaseSlug(req, res))) {
+		return;
 	}
+
 	const groupName = await groups.getGroupNameByGroupSlug(req.params.slug);
 	if (!groupName) {
 		return next();
 	}
+
 	const [exists, isHidden, isAdmin, isGlobalMod] = await Promise.all([
 		groups.exists(groupName),
 		groups.isHidden(groupName),
 		privileges.admin.can('admin:groups', req.uid),
 		user.isGlobalModerator(req.uid),
 	]);
+
 	if (!exists) {
 		return next();
 	}
-	if (isHidden && !isAdmin && !isGlobalMod) {
-		const [isMember, isInvited] = await Promise.all([
-			groups.isMember(req.uid, groupName),
-			groups.isInvited(req.uid, groupName),
-		]);
-		if (!isMember && !isInvited) {
-			return next();
-		}
+
+	// If the group is hidden, verify the requesting user has access
+	if (!(await canAccessHiddenGroup(req, groupName, { isHidden, isAdmin, isGlobalMod }))) {
+		return next();
 	}
+
 	const [groupData, posts] = await Promise.all([
 		groups.get(groupName, {
 			uid: req.uid,
@@ -106,6 +102,7 @@ groupsController.details = async function (req, res, next) {
 		}),
 		groups.getLatestMemberPosts(groupName, 10, req.uid),
 	]);
+
 	if (!groupData) {
 		return next();
 	}
@@ -113,7 +110,7 @@ groupsController.details = async function (req, res, next) {
 	res.locals.linkTags = [
 		{
 			rel: 'canonical',
-			href: `${url}/groups/${lowercaseSlug}`,
+			href: `${url}/groups/${req.params.slug}`,
 		},
 	];
 
@@ -127,6 +124,42 @@ groupsController.details = async function (req, res, next) {
 		breadcrumbs: helpers.buildBreadcrumbs([{ text: '[[pages:groups]]', url: '/groups' }, { text: groupData.displayName }]),
 	});
 };
+
+// Helper: ensure slug is lowercase; for non-API requests, redirect and return false
+async function ensureLowercaseSlug(req, res) {
+	const lowercaseSlug = req.params.slug.toLowerCase();
+	if (req.params.slug !== lowercaseSlug) {
+		if (res.locals.isAPI) {
+			req.params.slug = lowercaseSlug;
+			return true;
+		}
+
+		res.redirect(`${nconf.get('relative_path')}/groups/${lowercaseSlug}`);
+		return false;
+	}
+
+	return true;
+}
+
+// Helper: determine whether the requester can access a hidden group
+async function canAccessHiddenGroup(req, groupName, options) {
+	const { isHidden, isAdmin, isGlobalMod } = options || {};
+
+	if (!isHidden) {
+		return true;
+	}
+
+	if (isAdmin || isGlobalMod) {
+		return true;
+	}
+
+	const [isMember, isInvited] = await Promise.all([
+		groups.isMember(req.uid, groupName),
+		groups.isInvited(req.uid, groupName),
+	]);
+
+	return Boolean(isMember || isInvited);
+}
 
 groupsController.members = async function (req, res, next) {
 	const page = parseInt(req.query.page, 10) || 1;
