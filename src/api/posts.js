@@ -37,6 +37,12 @@ postsAPI.get = async function (caller, data) {
 	Object.assign(post, voted);
 	post.ip = userPrivilege.isAdminOrMod ? post.ip : undefined;
 
+	// Hide author if isAnonymous, unless staff
+	if (post.isAnonymous && !userPrivilege.isAdminOrMod) {
+		post.uid = null;
+		post.username = 'Anonymous';
+	}
+
 	const selfPost = caller.uid && caller.uid === parseInt(post.uid, 10);
 	if (post.deleted && !(userPrivilege.isAdminOrMod || selfPost)) {
 		post.content = '[[topic:post-is-deleted]]';

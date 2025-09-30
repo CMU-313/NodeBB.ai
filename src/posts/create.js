@@ -29,6 +29,10 @@ module.exports = function (Posts) {
 
 		const pid = data.pid || await db.incrObjectField('global', 'nextPid');
 		let postData = { pid, uid, tid, content, sourceContent, timestamp };
+		// Add isAnonymous flag if present
+		if (typeof data.isAnonymous === 'boolean') {
+			postData.isAnonymous = data.isAnonymous;
+		}
 
 		if (data.toPid) {
 			postData.toPid = data.toPid;
