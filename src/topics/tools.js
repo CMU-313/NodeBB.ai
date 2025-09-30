@@ -313,4 +313,24 @@ module.exports = function (Topics) {
 			db.sortedSetAdd(set, timestamp, tid),
 		]);
 	};
+
+	// Enable or disable anonymous posting on a per-topic basis
+	topicTools.setAnonymousDisabled = async function (tid, uid, disabled) {
+		const topicData = await Topics.getTopicFields(tid, ['tid', 'uid', 'cid']);
+		if (!topicData || !topicData.cid) {
+			throw new Error('[[error:no-topic]]');
+		}
+		// Only category admins/mods (instructors) may change this setting
+		const isAdminOrMod = await privileges.categories.isAdminOrMod(topicData.cid, uid);
+		if (!isAdminOrMod) {
+			throw new Error('[[error:no-privileges]]');
+		}
+
+		await Topics.setTopicField(tid, 'anonymousDisabled', disabled ? 1 : 0);
+		topicData.anonymousDisabled = disabled ? 1 : 0;
+		topicData.events = await Topics.events.log(tid, { type: disabled ? 'anonymous_disabled' : 'anonymous_enabled', uid });
+
+		plugins.hooks.fire(`action:topic.anonymous${disabled ? 'Disabled' : 'Enabled'}`, { topic: _.clone(topicData), uid });
+		return topicData;
+	};
 };

@@ -160,6 +160,22 @@ topicsAPI.unpin = async function (caller, data) {
 	});
 };
 
+topicsAPI.disableAnonymous = async function (caller, data) {
+	const { tids } = data;
+	if (!Array.isArray(tids)) {
+		throw new Error('[[error:invalid-tid]]');
+	}
+	return await Promise.all(tids.map(tid => topics.tools.setAnonymousDisabled(tid, caller.uid, true)));
+};
+
+topicsAPI.enableAnonymous = async function (caller, data) {
+	const { tids } = data;
+	if (!Array.isArray(tids)) {
+		throw new Error('[[error:invalid-tid]]');
+	}
+	return await Promise.all(tids.map(tid => topics.tools.setAnonymousDisabled(tid, caller.uid, false)));
+};
+
 topicsAPI.lock = async function (caller, data) {
 	await doTopicAction('lock', 'event:topic_locked', caller, {
 		tids: data.tids,

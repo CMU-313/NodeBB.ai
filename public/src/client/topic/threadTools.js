@@ -148,6 +148,16 @@ define('forum/topic/threadTools', [
 			});
 		});
 
+		topicContainer.on('click', '[component="topic/anonymous/disable"]', function () {
+			topicCommand('put', '/anonymous', 'disable');
+			return false;
+		});
+
+		topicContainer.on('click', '[component="topic/anonymous/enable"]', function () {
+			topicCommand('del', '/anonymous', 'enable');
+			return false;
+		});
+
 		topicContainer.on('click', '[component="topic/following"]', function () {
 			changeWatching('follow');
 		});
@@ -384,6 +394,31 @@ define('forum/topic/threadTools', [
 			));
 		}
 		ajaxify.data.pinned = data.pinned;
+
+		posts.addTopicEvents(data.events);
+	};
+
+	ThreadTools.setAnonymousState = function (data) {
+		const threadEl = components.get('topic');
+		if (String(data.tid) !== threadEl.attr('data-tid')) {
+			return;
+		}
+
+		// Toggle menu items
+		components.get('topic/anonymous/disable').toggleClass('hidden', data.anonymousDisabled).parent().attr('hidden', data.anonymousDisabled ? '' : null);
+		components.get('topic/anonymous/enable').toggleClass('hidden', !data.anonymousDisabled).parent().attr('hidden', !data.anonymousDisabled ? '' : null);
+
+		// Show a label in topic labels area
+		const anonLabel = $('[component="topic/labels"] [component="topic/anonymous-disabled"]');
+		if (data.anonymousDisabled) {
+			if (!anonLabel.length) {
+				$('[component="topic/labels"]').append('<span component="topic/anonymous-disabled" class="badge badge border border-gray-300 text-body"><i class="fa fa-user-slash"></i> [[topic:anonymous-disabled-label]]</span>');
+			}
+		} else if (anonLabel.length) {
+			anonLabel.remove();
+		}
+
+		ajaxify.data.anonymousDisabled = data.anonymousDisabled;
 
 		posts.addTopicEvents(data.events);
 	};

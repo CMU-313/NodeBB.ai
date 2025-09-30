@@ -54,6 +54,15 @@
 	<a component="topic/restore" href="#" class="dropdown-item rounded-1 d-flex align-items-center gap-2 {{{ if !deleted }}}hidden{{{ end }}}" role="menuitem"><i class="fa fa-fw fa-history text-secondary"></i> [[topic:thread-tools.restore]]</a>
 </li>
 {{{ end }}}
+{{{ if privileges.isAdminOrMod }}}
+<li {{{ if !anonymousDisabled }}}hidden{{{ end }}}>
+	<a component="topic/anonymous/disable" href="#" class="dropdown-item rounded-1 d-flex align-items-center gap-2 {{{ if !anonymousDisabled }}}hidden{{{ end }}}" role="menuitem"><i class="fa fa-fw fa-user-secret text-secondary"></i> [[topic:thread-tools.disable-anonymous]]</a>
+</li>
+
+<li {{{ if anonymousDisabled }}}hidden{{{ end }}}>
+	<a component="topic/anonymous/enable" href="#" class="dropdown-item rounded-1 d-flex align-items-center gap-2 {{{ if anonymousDisabled }}}hidden{{{ end }}}" role="menuitem"><i class="fa fa-fw fa-user text-secondary"></i> [[topic:thread-tools.enable-anonymous]]</a>
+</li>
+{{{ end }}}
 
 {{{ if privileges.purge }}}
 <li {{{ if !deleted }}}hidden{{{ end }}}>
