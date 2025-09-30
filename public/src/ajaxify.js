@@ -33,6 +33,9 @@ ajaxify.widgets = { render: render };
 		 */
 		let urlObj;
 		let pathname = item instanceof Element ? item.getAttribute('href') : undefined;
+		// result will hold the final return value: true (ajaxify OK), false (browser default), null (no action)
+		let result = true;
+		let done = false; // when true, skip further checks
 		try {
 			urlObj = new URL(item, `${document.location.origin}${config.relative_path}`);
 			if (!pathname) {
@@ -40,47 +43,55 @@ ajaxify.widgets = { render: render };
 			}
 		} catch (err) {
 			console.error(err);
-			return false;
+			result = false;
+			done = true;
 		}
 
-		const internalLink = utils.isInternalURI(urlObj, window.location, config.relative_path);
+		if (!done) {
+			const internalLink = utils.isInternalURI(urlObj, window.location, config.relative_path);
 
-		const hrefEmpty = href => href === undefined || href === '' || href === 'javascript:;';
+			const hrefEmpty = href => href === undefined || href === '' || href === 'javascript:;';
 
-		if (item instanceof Element) {
-			if (item.getAttribute('data-ajaxify') === 'false') {
-				if (!internalLink) {
-					return false;
+			if (item instanceof Element) {
+				if (item.getAttribute('data-ajaxify') === 'false') {
+					if (!internalLink) {
+						result = false;
+					} else {
+						result = null;
+					}
+					done = true;
 				}
 
-				return null;
+				if (!done && (hrefEmpty(urlObj.href) || urlObj.protocol === 'javascript:' || pathname === '#' || pathname === '')) {
+					result = null;
+					done = true;
+				}
 			}
 
-			if (hrefEmpty(urlObj.href) || urlObj.protocol === 'javascript:' || pathname === '#' || pathname === '') {
-				return null;
+			if (!done && internalLink) {
+				// Default behaviour for rss feeds
+				if (pathname.endsWith('.rss')) {
+					result = false;
+					done = true;
+				}
+
+				// Default behaviour for sitemap
+				if (!done && String(pathname).startsWith(config.relative_path + '/sitemap') && pathname.endsWith('.xml')) {
+					result = false;
+					done = true;
+				}
+
+				// Default behaviour for uploads and direct links to API urls
+				if (!done && ['/uploads', '/assets/', '/api/'].some(function (prefix) {
+					return String(pathname).startsWith(config.relative_path + prefix);
+				})) {
+					result = false;
+					done = true;
+				}
 			}
 		}
 
-		if (internalLink) {
-			// Default behaviour for rss feeds
-			if (pathname.endsWith('.rss')) {
-				return false;
-			}
-
-			// Default behaviour for sitemap
-			if (String(pathname).startsWith(config.relative_path + '/sitemap') && pathname.endsWith('.xml')) {
-				return false;
-			}
-
-			// Default behaviour for uploads and direct links to API urls
-			if (['/uploads', '/assets/', '/api/'].some(function (prefix) {
-				return String(pathname).startsWith(config.relative_path + prefix);
-			})) {
-				return false;
-			}
-		}
-
-		return true;
+		return result;
 	};
 
 	ajaxify.go = function (url, callback, quiet) {
