@@ -1,4 +1,3 @@
-
 'use strict';
 
 const async = require('async');
@@ -412,5 +411,30 @@ module.exports = function (Topics) {
 	Topics.filterUnrepliedTids = async function (tids) {
 		const scores = await db.sortedSetScores('topics:posts', tids);
 		return tids.filter((tid, index) => tid && scores[index] !== null && scores[index] <= 1);
+	};
+
+	Topics.getUnansweredTopics = async function (params) {
+		const unansweredTopics = {
+			showSelect: true,
+			nextStart: 0,
+			topics: [],
+		};
+
+		// Fetch topic IDs with zero replies
+		const tids = await db.getSortedSetRangeByScore('topics:posts', 0, 0, params.start, params.stop !== -1 ? params.stop + 1 : undefined);
+		if (!tids.length) {
+			return unansweredTopics;
+		}
+
+		// Fetch topic data
+		const topicData = await Topics.getTopicsByTids(tids, params.uid);
+		if (!topicData.length) {
+			return unansweredTopics;
+		}
+
+		Topics.calculateTopicIndices(topicData, params.start);
+		unansweredTopics.topics = topicData;
+		unansweredTopics.nextStart = params.stop + 1;
+		return unansweredTopics;
 	};
 };

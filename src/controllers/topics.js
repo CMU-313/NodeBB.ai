@@ -410,3 +410,16 @@ topicsController.pagination = async function (req, res, next) {
 
 	res.json({ pagination: paginationData });
 };
+
+topicsController.getUnansweredTopics = async function (req, res) {
+	const start = parseInt(req.query.start, 10) || 0;
+	const stop = parseInt(req.query.stop, 10) || 19;
+	const { uid } = req;
+
+	const unansweredTopics = await topics.getUnansweredTopics({ start, stop, uid });
+	if (!unansweredTopics.topics.length) {
+		return helpers.formatApiResponse(404, res, new Error('[[error:no-unanswered-topics]]'));
+	}
+
+	helpers.formatApiResponse(200, res, unansweredTopics);
+};
