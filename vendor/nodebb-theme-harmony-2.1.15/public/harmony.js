@@ -141,16 +141,22 @@ $(document).ready(function () {
 	}
 
 	function setupDrafts() {
-		require(['composer/drafts', 'bootbox'], function (drafts, bootbox) {
-			const draftsEl = $('[component="sidebar/drafts"]');
+    require(['composer/drafts', 'bootbox'], function (drafts, bootbox) {
+        const draftsEl = $('[component="sidebar/drafts"]');
+        updateBadgeCount(drafts, draftsEl);
+    });
+}
 
-			function updateBadgeCount() {
-				const count = drafts.getAvailableCount();
-				if (count > 0) {
-					draftsEl.removeClass('hidden');
-				}
-				$('[component="drafts/count"]').toggleClass('hidden', count <= 0).text(count);
-			}
+function updateBadgeCount(drafts, draftsEl) {
+    const count = drafts.getAvailableCount();
+    if (count > 0) {
+        draftsEl.removeClass('hidden');
+    }
+    $('[component="drafts/count"]')
+        .toggleClass('hidden', count <= 0)
+        .text(count);
+}
+
 
 			async function renderDraftList() {
 				const draftListEl = $('[component="drafts/list"]');
