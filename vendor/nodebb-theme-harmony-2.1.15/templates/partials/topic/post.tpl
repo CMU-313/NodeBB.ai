@@ -10,6 +10,13 @@
 {{{ end }}}
 <div class="d-flex align-items-start gap-3 post-container-parent">
 	<div class="bg-body d-none d-sm-block rounded-circle" style="outline: 2px solid var(--bs-body-bg);">
+		{{{ if ./user.isAnonymous }}}
+		<div class="d-inline-block position-relative" aria-label="[[anonymous:anonymous-user]]">
+			<div class="bg-secondary rounded-circle d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
+				<i class="fa fa-user text-white"></i>
+			</div>
+		</div>
+		{{{ else }}}
 		<a class="d-inline-block position-relative text-decoration-none" href="{{{ if ./user.userslug }}}{config.relative_path}/user/{./user.userslug}{{{ else }}}#{{{ end }}}" aria-label="[[aria:profile-page-for, {./user.displayname}]]">
 			{buildAvatar(posts.user, "48px", true, "", "user/picture")}
 			{{{ if ./user.isLocal }}}
@@ -21,6 +28,7 @@
 			</span>
 			{{{ end }}}
 		</a>
+		{{{ end }}}
 	</div>
 	<div class="post-container d-flex gap-2 flex-grow-1 flex-column w-100" style="min-width:0;">
 		<div class="d-flex align-items-start justify-content-between gap-1 flex-nowrap w-100 post-header" itemprop="author" itemscope itemtype="https://schema.org/Person">
@@ -30,6 +38,13 @@
 
 				<div class="d-flex flex-nowrap gap-1 align-items-center text-truncate">
 					<div class="bg-body d-sm-none">
+						{{{ if ./user.isAnonymous }}}
+						<div class="d-inline-block position-relative" aria-label="[[anonymous:anonymous-user]]">
+							<div class="bg-secondary rounded-circle d-flex align-items-center justify-content-center" style="width: 20px; height: 20px;">
+								<i class="fa fa-user text-white" style="font-size: 10px;"></i>
+							</div>
+						</div>
+						{{{ else }}}
 						<a class="d-inline-block position-relative text-decoration-none" href="{{{ if ./user.userslug }}}{config.relative_path}/user/{./user.userslug}{{{ else }}}#{{{ end }}}">
 							{buildAvatar(posts.user, "20px", true, "", "user/picture")}
 							{{{ if ./user.isLocal }}}
@@ -41,9 +56,14 @@
 							</span>
 							{{{ end }}}
 						</a>
+						{{{ end }}}
 					</div>
 
+					{{{ if ./user.isAnonymous }}}
+					<span class="fw-bold text-nowrap text-truncate text-muted" data-username="Anonymous" data-uid="0">Anonymous</span>
+					{{{ else }}}
 					<a class="fw-bold text-nowrap text-truncate" href="{{{ if ./user.userslug }}}{config.relative_path}/user/{./user.userslug}{{{ else }}}#{{{ end }}}" data-username="{posts.user.username}" data-uid="{posts.user.uid}">{posts.user.displayname}</a>
+					{{{ end }}}
 				</div>
 
 				{{{ each posts.user.selectedGroups }}}
