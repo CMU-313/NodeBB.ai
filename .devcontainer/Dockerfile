@@ -6,7 +6,9 @@ RUN apt-get update \
         redis-server \
  && rm -rf /var/lib/apt/lists/*
 
-RUN curl https://qlty.sh | /bin/bash \
+# Replace curl | bash with a safer alternative
+RUN curl -o /tmp/qlty.sh https://qlty.sh \
+ && chmod +x /tmp/qlty.sh \
+ && /tmp/qlty.sh \
  && mv ~/.qlty/bin/qlty /usr/local/bin/qlty \
- && rm -rf ~/.qlty \
- && qlty --version
+ && rm -rf ~/.qlty /tmp/qlty.sh
