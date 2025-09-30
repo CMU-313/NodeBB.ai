@@ -20,7 +20,7 @@ helpers.request = async function (method, uri, options = {}) {
 	const ignoreMethods = ['GET', 'HEAD', 'OPTIONS'];
 	const lowercaseMethod = String(method).toLowerCase();
 	let csrf_token;
-	if (!ignoreMethods.some(method => method.toLowerCase() === lowercaseMethod)) {
+	if (!ignoreMethods.some((m) => m.toLowerCase() === lowercaseMethod)) {
 		csrf_token = await helpers.getCsrfToken(options.jar);
 	}
 
@@ -38,7 +38,7 @@ helpers.loginUser = async (username, password, payload = {}) => {
 	const csrf_token = await helpers.getCsrfToken(jar);
 	const { response, body } = await request.post(`${nconf.get('url')}/login`, {
 		body: data,
-		jar: jar,
+		jar,
 		headers: {
 			'x-csrf-token': csrf_token,
 		},
@@ -83,17 +83,70 @@ helpers.connectSocketIO = function (res, csrf_token) {
 
 		socket.on('error', (err) => {
 			error = err;
+			// keep console for test debug visibility
 			console.log('socket.io error', err.stack);
 			reject(err);
 		});
 	});
 };
 
-helpers.uploadFile = async function (uploadEndPoint, filePath, data, jar, csrf_token) {
+/**
+ * Upload a file using a single options object to avoid many parameters.
+ *
+ * Preferred usage:
+ *   await helpers.uploadFile({
+ *     endpoint: 'http://host/api/upload',
+ *     filePath: '/tmp/image.png',
+ *     data: { params: '{"foo":"bar"}' }, // optional
+ *     jar,
+ *     csrfToken
+ *   });
+ *
+ * Backward-compatible usage (deprecated):
+ *   await helpers.uploadFile(uploadEndPoint, filePath, data, jar, csrf_token)
+ *
+ * @param {object|string} optsOrEndpoint - Options object or legacy endpoint string
+ * @param {string} [legacyFilePath]
+ * @param {object} [legacyData]
+ * @param {import('../../src/request').CookieJar} [legacyJar]
+ * @param {string} [legacyCsrf]
+ * @returns {Promise<{body:any, 
+ * response:{status:number,statusCode:number,statusText:string,headers:Record<string,string>}}>}
+ */
+helpers.uploadFile = async function uploadFile(optsOrEndpoint, legacyFilePath, legacyData, legacyJar, legacyCsrf) {
+	const usingLegacySignature = typeof optsOrEndpoint === 'string';
+
+	/** @type {{endpoint:string,filePath:string,data?:any,jar?:any,csrfToken?:string}} */
+	const opts = usingLegacySignature ? {
+		endpoint: optsOrEndpoint,
+		filePath: legacyFilePath,
+		data: legacyData,
+		jar: legacyJar,
+		csrfToken: legacyCsrf,
+	} : optsOrEndpoint || {};
+
+	if (usingLegacySignature) {
+		// eslint-disable-next-line no-console
+		console.warn('[helpers.uploadFile] DEPRECATED signature used. Please pass a single options object.');
+	}
+
+	const { endpoint, filePath, data, jar, csrfToken } = opts;
+
+	if (!endpoint) {
+		throw new Error('uploadFile: "endpoint" is required');
+	}
+	if (!filePath) {
+		throw new Error('uploadFile: "filePath" is required');
+	}
+
 	const mime = require('mime');
+	// FormData/Blob/fetch are provided by Node >=18 test runtime
 	const form = new FormData();
+
 	const file = await fs.promises.readFile(filePath);
-	const blob = new Blob([file], { type: mime.getType(filePath) });
+	const mimeType = mime.getType(filePath);
+	const blobOptions = mimeType ? { type: mimeType } : {};
+	const blob = new Blob([file], blobOptions);
 
 	form.append('files', blob, path.basename(filePath));
 
@@ -101,13 +154,20 @@ helpers.uploadFile = async function (uploadEndPoint, filePath, data, jar, csrf_t
 		form.append('params', data.params);
 	}
 
-	const response = await fetch(uploadEndPoint, {
+	const headers = {
+		'x-csrf-token': csrfToken,
+	};
+
+	// Always add cookie header; throw if jar is missing or invalid
+	if (!jar || typeof jar.getCookieString !== 'function') {
+		throw new Error('Cookie jar is required and must have a getCookieString method');
+	}
+	headers.cookie = await jar.getCookieString(endpoint);
+
+	const response = await fetch(endpoint, {
 		method: 'post',
 		body: form,
-		headers: {
-			'x-csrf-token': csrf_token,
-			cookie: await jar.getCookieString(uploadEndPoint),
-		},
+		headers,
 	});
 	const body = await response.json();
 	return {
@@ -125,7 +185,7 @@ helpers.registerUser = async function (data) {
 	const jar = request.jar();
 	const csrf_token = await helpers.getCsrfToken(jar);
 
-	if (!data.hasOwnProperty('password-confirm')) {
+	if (!Object.prototype.hasOwnProperty.call(data, 'password-confirm')) {
 		data['password-confirm'] = data.password;
 	}
 
@@ -166,7 +226,7 @@ helpers.copyFile = function (source, target, callback) {
 
 helpers.invite = async function (data, uid, jar, csrf_token) {
 	return await request.post(`${nconf.get('url')}/api/v3/users/${uid}/invites`, {
-		jar: jar,
+		jar,
 		body: data,
 		headers: {
 			'x-csrf-token': csrf_token,
@@ -174,11 +234,11 @@ helpers.invite = async function (data, uid, jar, csrf_token) {
 	});
 };
 
-helpers.createFolder = async function (path, folderName, jar, csrf_token) {
+helpers.createFolder = async function (pathValue, folderName, jar, csrf_token) {
 	return await request.put(`${nconf.get('url')}/api/v3/files/folder`, {
 		jar,
 		body: {
-			path,
+			path: pathValue,
 			folderName,
 		},
 		headers: {
