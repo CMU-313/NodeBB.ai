@@ -70,6 +70,74 @@ module.exports = function (Topics) {
 		};
 	}
 
+	// Add support for audience when pinning
+	topicTools.pin = async function (tid, uid, audience = ['all']) {
+		return await togglePin(tid, uid, true, audience);
+	};
+
+	topicTools.unpin = async function (tid, uid) {
+		return await togglePin(tid, uid, false);
+	};
+
+	// Modified togglePin
+	async function togglePin(tid, uid, pin, audience = ['all']) {
+		const topicData = await Topics.getTopicData(tid);
+		if (!topicData) {
+			throw new Error('[[error:no-topic]]');
+		}
+
+		if (topicData.scheduled) {
+			throw new Error('[[error:cant-pin-scheduled]]');
+		}
+
+		if (uid !== 'system' && !await privileges.topics.isAdminOrMod(tid, uid)) {
+			throw new Error('[[error:no-privileges]]');
+		}
+
+		const promises = [
+			Topics.setTopicField(tid, 'pinned', pin ? 1 : 0),
+			Topics.events.log(tid, { type: pin ? 'pin' : 'unpin', uid }),
+		];
+
+		if (pin) {
+		// Save audience metadata (JSON array)
+			promises.push(Topics.setTopicField(tid, 'pinAudience', JSON.stringify(audience)));
+
+			promises.push(db.sortedSetAdd(`cid:${topicData.cid}:tids:pinned`, Date.now(), tid));
+			promises.push(db.sortedSetsRemove([
+				`cid:${topicData.cid}:tids`,
+				`cid:${topicData.cid}:tids:create`,
+				`cid:${topicData.cid}:tids:posts`,
+				`cid:${topicData.cid}:tids:votes`,
+				`cid:${topicData.cid}:tids:views`,
+			], tid));
+		} else {
+			promises.push(db.sortedSetRemove(`cid:${topicData.cid}:tids:pinned`, tid));
+			promises.push(Topics.deleteTopicField(tid, 'pinExpiry'));
+			promises.push(Topics.deleteTopicField(tid, 'pinAudience')); // remove audience on unpin
+			promises.push(db.sortedSetAddBulk([
+				[`cid:${topicData.cid}:tids`, topicData.lastposttime, tid],
+				[`cid:${topicData.cid}:tids:create`, topicData.timestamp, tid],
+				[`cid:${topicData.cid}:tids:posts`, topicData.postcount, tid],
+				[`cid:${topicData.cid}:tids:votes`, parseInt(topicData.votes, 10) || 0, tid],
+				[`cid:${topicData.cid}:tids:views`, topicData.viewcount, tid],
+			]));
+			topicData.pinExpiry = undefined;
+			topicData.pinExpiryISO = undefined;
+		}
+
+		const results = await Promise.all(promises);
+
+		topicData.isPinned = pin; // deprecated v2.0
+		topicData.pinned = pin;
+		topicData.pinAudience = pin ? audience : undefined;
+		topicData.events = results[1];
+
+		plugins.hooks.fire('action:topic.pin', { topic: _.clone(topicData), uid });
+
+		return topicData;
+	}
+
 	topicTools.purge = async function (tid, uid) {
 		const topicData = await Topics.getTopicData(tid);
 		if (!topicData) {

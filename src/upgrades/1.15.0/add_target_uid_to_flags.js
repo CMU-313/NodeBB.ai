@@ -11,7 +11,7 @@ module.exports = {
 		const { progress } = this;
 
 		await batch.processSortedSet(
-			'flags:datetime',
+			'flags:datetime'
 			async (flagIds) => {
 				progress.incr(flagIds.length);
 				const flagData = await db.getObjects(
