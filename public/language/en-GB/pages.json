@@ -44,6 +44,8 @@
 
 	"world": "World",
 
+	"resources": "Resources",
+
 	"account/edit": "Editing \"%1\"",
 	"account/edit/password": "Editing password of \"%1\"",
 	"account/edit/username": "Editing username of \"%1\"",
