@@ -66,6 +66,23 @@ module.exports = function (Posts) {
 		}
 	};
 
+	Posts.hideAnonymousUser = function (postData) {
+		if (postData && postData.isAnonymous && parseInt(postData.uid, 10) > 0) {
+			postData.user = {
+				uid: 0,
+				username: '[[global:anonymous]]',
+				userslug: '',
+				fullname: '',
+				displayname: '[[global:anonymous]]',
+				picture: '/assets/uploads/system/avatar-anonymous.png',
+				status: 'offline',
+				signature: '',
+				selectedGroups: [],
+				isLocal: true,
+			};
+		}
+	};
+
 	async function checkGroupMembership(uid, groupTitleArray) {
 		if (!Array.isArray(groupTitleArray) || !groupTitleArray.length) {
 			return null;

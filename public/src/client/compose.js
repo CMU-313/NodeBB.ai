@@ -1,7 +1,7 @@
 'use strict';
 
 
-define('forum/compose', ['hooks'], function (hooks) {
+define('forum/compose', ['hooks', 'forum/anonymous-posting'], function (hooks, anonymousPosting) {
 	const Compose = {};
 
 	Compose.init = function () {
@@ -12,6 +12,9 @@ define('forum/compose', ['hooks'], function (hooks) {
 				container: container,
 			});
 		}
+
+		// Initialize anonymous posting functionality
+		anonymousPosting.init();
 	};
 
 	return Compose;
