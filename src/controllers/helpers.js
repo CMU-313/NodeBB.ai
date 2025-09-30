@@ -448,77 +448,86 @@ helpers.getHomePageRoutes = async function (uid) {
 };
 
 helpers.formatApiResponse = async (statusCode, res, payload) => {
-	if (res.req.method === 'HEAD') {
-		return res.sendStatus(statusCode);
-	}
+    if (res.req.method === 'HEAD') {
+        return res.sendStatus(statusCode);
+    }
 
-	if (String(statusCode).startsWith('2')) {
-		if (res.req.loggedIn) {
-			res.set('cache-control', 'private');
-		}
+    const isSuccess = String(statusCode).startsWith('2');
 
-		let code = 'ok';
-		let message = 'OK';
-		switch (statusCode) {
-			case 202:
-				code = 'accepted';
-				message = 'Accepted';
-				break;
+    if (isSuccess) {
+        return sendSuccess(statusCode, res, payload);
+    }
 
-			case 204:
-				code = 'no-content';
-				message = 'No Content';
-				break;
-		}
+    // Error branches
+    if (payload instanceof Error || typeof payload === 'string') {
+        return sendErrorWithPayload(statusCode, res, payload);
+    }
 
-		res.status(statusCode).json({
-			status: { code, message },
-			response: payload || {},
-		});
-	} else if (payload instanceof Error || typeof payload === 'string') {
-		const message = payload instanceof Error ? payload.message : payload;
-		const response = {};
-
-		// Update status code based on some common error codes
-		switch (message) {
-			case '[[error:user-banned]]':
-				Object.assign(response, await generateBannedResponse(res));
-				// intentional fall through
-
-			case '[[error:no-privileges]]':
-				statusCode = 403;
-				break;
-
-			case '[[error:invalid-uid]]':
-				statusCode = 401;
-				break;
-
-			case '[[error:no-topic]]':
-				statusCode = 404;
-				break;
-		}
-
-		if (message.startsWith('[[error:required-parameters-missing, ')) {
-			const params = message.slice('[[error:required-parameters-missing, '.length, -2).split(' ');
-			Object.assign(response, { params });
-		}
-
-		const returnPayload = await helpers.generateError(statusCode, message, res);
-		returnPayload.response = response;
-
-		if (global.env === 'development') {
-			returnPayload.stack = payload.stack;
-			process.stdout.write(`[${chalk.yellow('api')}] Exception caught, error with stack trace follows:\n`);
-			process.stdout.write(payload.stack);
-		}
-		res.status(statusCode).json(returnPayload);
-	} else {
-		// Non-2xx statusCode, generate predefined error
-		const message = payload ? String(payload) : null;
-		const returnPayload = await helpers.generateError(statusCode, message, res);
-		res.status(statusCode).json(returnPayload);
-	}
+    // Generic predefined error (payload maybe object/null providing optional message)
+    const message = payload ? String(payload) : null;
+    const returnPayload = await helpers.generateError(statusCode, message, res);
+    return res.status(statusCode).json(returnPayload);
 };
+
+// --- Internal helpers (non-exported) ---
+
+function successCodeMap(statusCode) {
+    switch (statusCode) {
+        case 202: return { code: 'accepted', message: 'Accepted' };
+        case 204: return { code: 'no-content', message: 'No Content' };
+        default: return { code: 'ok', message: 'OK' };
+    }
+}
+
+async function sendSuccess(statusCode, res, payload) {
+    if (res.req.loggedIn) {
+        res.set('cache-control', 'private');
+    }
+    const { code, message } = successCodeMap(statusCode);
+    return res.status(statusCode).json({
+        status: { code, message },
+        response: payload || {},
+    });
+}
+
+async function sendErrorWithPayload(statusCode, res, rawPayload) {
+    const message = rawPayload instanceof Error ? rawPayload.message : rawPayload;
+    const response = {};
+    let finalStatus = statusCode;
+
+    // Map specific messages to HTTP status adjustments & augment response
+    switch (message) {
+        case '[[error:user-banned]]':
+            Object.assign(response, await generateBannedResponse(res));
+            // intentional fallthrough
+        // eslint-disable-next-line no-fallthrough
+        case '[[error:no-privileges]]':
+            finalStatus = 403;
+            break;
+        case '[[error:invalid-uid]]':
+            finalStatus = 401;
+            break;
+        case '[[error:no-topic]]':
+            finalStatus = 404;
+            break;
+    }
+
+    if (message.startsWith('[[error:required-parameters-missing, ')) {
+        const params = message.slice('[[error:required-parameters-missing, '.length, -2).split(' ');
+        Object.assign(response, { params });
+    }
+
+    const returnPayload = await helpers.generateError(finalStatus, message, res);
+    returnPayload.response = response;
+
+    if (global.env === 'development' && rawPayload instanceof Error && rawPayload.stack) {
+        returnPayload.stack = rawPayload.stack;
+        process.stdout.write(`[${chalk.yellow('api')}] Exception caught, error with stack trace follows:\n`);
+        process.stdout.write(rawPayload.stack);
+    }
+
+    return res.status(finalStatus).json(returnPayload);
+}
 
 async function generateBannedResponse(res) {
 	const response = {};
