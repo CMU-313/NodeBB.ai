@@ -1058,3 +1058,24 @@ async function mergeUsernameEmailChanges(history, targetUid, uids) {
 }
 
 require('./promisify')(Flags);
+
+// Add a new method to manage flagged keywords
+Flags.getFlaggedKeywords = async function () {
+	const keywords = await meta.settings.get('flags:keywords');
+	return keywords ? keywords.split(',').map(k => k.trim()) : [];
+};
+
+Flags.checkForFlaggedKeywords = async function (content) {
+	const keywords = await Flags.getFlaggedKeywords();
+	return keywords.find(keyword => content.includes(keyword));
+};
+
+// Extend the flag creation logic to handle keyword-based flagging
+Flags.createForKeywords = async function (type, id, uid, content) {
+	const flaggedKeyword = await Flags.checkForFlaggedKeywords(content);
+	if (flaggedKeyword) {
+		await Flags.create(type, id, uid, `Contains flagged keyword: ${flaggedKeyword}`);
+		return true;
+	}
+	return false;
+};
