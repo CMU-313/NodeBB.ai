@@ -1173,7 +1173,7 @@ describe('Post\'s', () => {
 				assert(events);
 				assert.strictEqual(events.length, 1);
 				assert(backlinks);
-				assert(backlinks.includes('1'));
+				assert.strictEqual(backlinks.includes('1'), true);
 			});
 
 			it('should remove the backlink (but keep the event) if the post no longer contains a link to a topic', async () => {
@@ -1272,5 +1272,45 @@ describe('Posts\'', async () => {
 		files.forEach((filePath) => {
 			require(filePath);
 		});
+	});
+});
+
+describe('emoji reactions', () => {
+	let pid;
+	const voterUid = 1; // Mock user ID for the voter
+	const globalModUid = 2; // Mock user ID for the global moderator
+	const cid = 1; // Mock category ID
+
+	before(async () => {
+		const topic = await topics.post({
+			uid: voterUid,
+			cid: cid,
+			title: 'Topic for emoji reactions',
+			content: 'Testing emoji reactions',
+		});
+		pid = topic.postData.pid;
+	});
+
+	it('should add a reaction to a post', async () => {
+		await apiPosts.addReaction({ uid: voterUid }, { pid, reaction: '👍' });
+		const reactions = await apiPosts.getReactions({ uid: voterUid }, { pid });
+		assert.strictEqual(reactions.length, 1);
+		assert.strictEqual(reactions[0].emoji, '👍');
+		assert.strictEqual(reactions[0].uid, voterUid.toString());
+	});
+
+	it('should remove a reaction from a post', async () => {
+		await apiPosts.removeReaction({ uid: voterUid }, { pid, reaction: '👍' });
+		const reactions = await apiPosts.getReactions({ uid: voterUid }, { pid });
+		assert.strictEqual(reactions.length, 0);
+	});
+
+	it('should fetch reactions for a post', async () => {
+		await apiPosts.addReaction({ uid: voterUid }, { pid, reaction: '❤️' });
+		await apiPosts.addReaction({ uid: globalModUid }, { pid, reaction: '❤️' });
+		const reactions = await apiPosts.getReactions({ uid: voterUid }, { pid });
+		assert.strictEqual(reactions.length, 2);
+		assert(reactions.some(r => r.emoji === '❤️' && r.uid === voterUid.toString()));
+		assert(reactions.some(r => r.emoji === '❤️' && r.uid === globalModUid.toString()));
 	});
 });
