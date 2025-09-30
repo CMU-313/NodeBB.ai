@@ -10,28 +10,38 @@ module.exports = {
 	method: async function () {
 		const { progress } = this;
 
-		await batch.processSortedSet('flags:datetime', async (flagIds) => {
-			progress.incr(flagIds.length);
-			const flagData = await db.getObjects(flagIds.map(id => `flag:${id}`));
-			for (const flagObj of flagData) {
-				/* eslint-disable no-await-in-loop */
-				if (flagObj) {
-					const { targetId } = flagObj;
-					if (targetId) {
-						if (flagObj.type === 'post') {
+		await batch.processSortedSet(
+			'flags:datetime'
+			async (flagIds) => {
+				progress.incr(flagIds.length);
+				const flagData = await db.getObjects(
+					flagIds.map(id => `flag:${id}`)
+				);
+
+				// Collect async operations
+				const ops = flagData
+					.filter(flagObj => flagObj && flagObj.targetId)
+					.map(async (flagObj) => {
+						const { targetId, type, flagId } = flagObj;
+
+						if (type === 'post') {
 							const targetUid = await posts.getPostField(targetId, 'uid');
-							if (targetUid) {
-								await db.setObjectField(`flag:${flagObj.flagId}`, 'targetUid', targetUid);
-							}
-						} else if (flagObj.type === 'user') {
-							await db.setObjectField(`flag:${flagObj.flagId}`, 'targetUid', targetId);
+							if (!targetUid) return;
+							return db.setObjectField(`flag:${flagId}`, 'targetUid', targetUid);
 						}
-					}
-				}
+
+						if (type === 'user') {
+							return db.setObjectField(`flag:${flagId}`, 'targetUid', targetId);
+						}
+					});
+
+				// Run all in parallel
+				await Promise.all(ops);
+			},
+			{
+				progress,
+				batch: 500,
 			}
-		}, {
-			progress: progress,
-			batch: 500,
-		});
+		);
 	},
 };

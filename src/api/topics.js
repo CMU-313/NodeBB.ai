@@ -55,6 +55,71 @@ topicsAPI.get = async function (caller, data) {
 	return topic;
 };
 
+topicsAPI.pin = async function (caller, { tids, expiry, pinAudience }) {
+	await doTopicAction('pin', 'event:topic_pinned', caller, { tids });
+
+	// Set expiry if provided
+	if (expiry) {
+		await Promise.all(
+			tids.map(async tid => topics.tools.setPinExpiry(tid, expiry, caller.uid))
+		);
+	}
+
+	// Set pinAudience if provided
+	if (pinAudience) {
+		if (!['all', 'students', 'instructors'].includes(pinAudience)) {
+			throw new Error('[[error:invalid-data]]');
+		}
+
+		await Promise.all(
+			tids.map(async tid => {
+				const cid = await topics.getTopicField(tid, 'cid');
+				const canManage = await privileges.categories.isAdminOrMod(cid, caller.uid);
+				if (!canManage) {
+					throw new Error('[[error:no-privileges]]');
+				}
+				await topics.setTopicField(tid, 'pinAudience', pinAudience);
+			})
+		);
+	}
+};
+
+topicsAPI.get = async function (caller, data) {
+	const [userPrivileges, topic] = await Promise.all([
+		privileges.topics.get(data.tid, caller.uid),
+		topics.getTopicData(data.tid),
+	]);
+
+	if (
+		!topic ||
+		!userPrivileges.read ||
+		!userPrivileges['topics:read'] ||
+		!privileges.topics.canViewDeletedScheduled(topic, userPrivileges)
+	) {
+		return null;
+	}
+
+	// Ensure pinAudience always has a value
+	if (!topic.pinAudience) {
+		topic.pinAudience = 'all';
+	}
+
+	return topic;
+};
+
+topicsAPI.unpin = async function (caller, data) {
+	await doTopicAction('unpin', 'event:topic_unpinned', caller, {
+		tids: data.tids,
+	});
+
+	// Reset pinAudience since it's no longer pinned
+	await Promise.all(
+		data.tids.map(async tid => {
+			await topics.deleteTopicField(tid, 'pinAudience');
+		})
+	);
+};
+
 topicsAPI.create = async function (caller, data) {
 	if (!data) {
 		throw new Error('[[error:invalid-data]]');
