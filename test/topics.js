@@ -25,6 +25,26 @@ const apiTopics = require('../src/api/topics');
 const apiPosts = require('../src/api/posts');
 const request = require('../src/request');
 
+// Helper function to create test topics
+function createTestTopic({ done, setVars = {} }) {
+    topics.post({
+        uid: topic.userId,
+        title: topic.title,
+        content: topic.content,
+        cid: topic.categoryId,
+    }, (err, result) => {
+        if (err) {
+            return done(err);
+        }
+
+        Object.assign(setVars, {
+            topicData: result.topicData,
+            postData: result.postData
+        });
+        done();
+    });
+}
+
 describe('Topic\'s', () => {
 	let topic;
 	let categoryObj;
@@ -243,20 +263,13 @@ describe('Topic\'s', () => {
 		let newPost;
 
 		before((done) => {
-			topics.post({
-				uid: topic.userId,
-				title: topic.title,
-				content: topic.content,
-				cid: topic.categoryId,
-			}, (err, result) => {
-				if (err) {
-					return done(err);
-				}
-
-				newTopic = result.topicData;
-				newPost = result.postData;
-				done();
+			const vars = {};
+			createTestTopic({
+				done,
+				setVars: vars
 			});
+			newTopic = vars.topicData;
+			newPost = vars.postData;
 		});
 
 		it('should create a new reply with proper parameters', (done) => {
@@ -381,20 +394,13 @@ describe('Topic\'s', () => {
 		let newPost;
 
 		before((done) => {
-			topics.post({
-				uid: topic.userId,
-				title: topic.title,
-				content: topic.content,
-				cid: topic.categoryId,
-			}, (err, result) => {
-				if (err) {
-					return done(err);
-				}
-
-				newTopic = result.topicData;
-				newPost = result.postData;
-				done();
+			const vars = {};
+			createTestTopic({
+				done,
+				setVars: vars
 			});
+			newTopic = vars.topicData;
+			newPost = vars.postData;
 		});
 
 
