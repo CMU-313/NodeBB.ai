@@ -669,3 +669,64 @@ async function sendQueueNotification(type, targetUid, path, notificationText) {
 	const notifObj = await notifications.create(notifData);
 	await notifications.push(notifObj, [targetUid]);
 }
+
+postsAPI.addReaction = async function (caller, data) {
+	if (!data || !data.pid || !data.reaction) {
+		throw new Error('[[error:invalid-data]]');
+	}
+	if (!caller.uid) {
+		throw new Error('[[error:not-logged-in]]');
+	}
+
+	const canReact = await privileges.posts.can('topics:read', data.pid, caller.uid);
+	if (!canReact) {
+		throw new Error('[[error:no-privileges]]');
+	}
+
+	await db.sortedSetAdd(`pid:${data.pid}:reactions`, Date.now(), `${caller.uid}:${data.reaction}`);
+	websockets.in(`topic_${data.tid}`).emit('event:reaction_added', {
+		pid: data.pid,
+		reaction: data.reaction,
+		uid: caller.uid,
+	});
+};
+
+postsAPI.removeReaction = async function (caller, data) {
+	if (!data || !data.pid || !data.reaction) {
+		throw new Error('[[error:invalid-data]]');
+	}
+	if (!caller.uid) {
+		throw new Error('[[error:not-logged-in]]');
+	}
+
+	const canReact = await privileges.posts.can('topics:read', data.pid, caller.uid);
+	if (!canReact) {
+		throw new Error('[[error:no-privileges]]');
+	}
+
+	await db.sortedSetRemove(`pid:${data.pid}:reactions`, `${caller.uid}:${data.reaction}`);
+	websockets.in(`topic_${data.tid}`).emit('event:reaction_removed', {
+		pid: data.pid,
+		reaction: data.reaction,
+		uid: caller.uid,
+	});
+};
+
+postsAPI.getReactions = async function (caller, data) {
+	if (!data || !data.pid) {
+		throw new Error('[[error:invalid-data]]');
+	}
+
+	const canRead = await privileges.posts.can('topics:read', data.pid, caller.uid);
+	if (!canRead) {
+		throw new Error('[[error:no-privileges]]');
+	}
+
+	const reactions = await db.getSortedSetRange(`pid:${data.pid}:reactions`, 0, -1);
+	const parsedReactions = reactions.map((reaction) => {
+		const [uid, emoji] = reaction.split(':');
+		return { uid, emoji };
+	});
+
+	return parsedReactions;
+};

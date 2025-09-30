@@ -11,7 +11,11 @@ define('forum/topic/posts', [
 	'translator',
 	'hooks',
 	'helpers',
-], function (pagination, infinitescroll, postTools, images, navigator, components, translator, hooks, helpers) {
+	'api',
+	'alerts',
+], function (
+	pagination, infinitescroll, postTools, images, navigator, components, translator, hooks, helpers, api, alerts
+) {
 	const Posts = { };
 
 	Posts.signaturesShown = {};
@@ -446,5 +450,65 @@ define('forum/topic/posts', [
 		});
 	};
 
-	return Posts;
+	Posts.addReactionHandlers = function () {
+		const topicContainer = components.get('topic');
+
+		topicContainer.on('click', '[component="post/add-reaction"]', function () {
+			const button = $(this);
+			const pid = button.attr('data-pid');
+			const reaction = button.attr('data-reaction');
+
+			api.post(`/posts/${pid}/reaction`, { reaction }, function (err) {
+				if (err) {
+					return alerts.error(err);
+				}
+				updateReactionsUI(pid, reaction, true);
+			});
+		});
+
+		topicContainer.on('click', '[component="post/remove-reaction"]', function () {
+			const button = $(this);
+			const pid = button.attr('data-pid');
+			const reaction = button.attr('data-reaction');
+
+			api.del(`/posts/${pid}/reaction`, { reaction }, function (err) {
+				if (err) {
+					return alerts.error(err);
+				}
+				updateReactionsUI(pid, reaction, false);
+			});
+		});
+	};
+
+	function updateReactionsUI(pid, reaction, isAdding) {
+		const postEl = components.get('post', 'pid', pid);
+		const reactionEl = postEl.find(`[component="post/reaction"][data-reaction="${reaction}"]`);
+
+		if (isAdding) {
+			if (reactionEl.length) {
+				const countEl = reactionEl.find('.reaction-count');
+				countEl.text(parseInt(countEl.text(), 10) + 1);
+			} else {
+				const newReaction = $(`<span component="post/reaction" data-reaction="${reaction}">
+					<span class="reaction-emoji">${reaction}</span>
+					<span class="reaction-count">1</span>
+				</span>`);
+				postEl.find('[component="post/reactions"]').append(newReaction);
+			}
+		} else {
+			if (reactionEl.length) {
+				const countEl = reactionEl.find('.reaction-count');
+				const newCount = parseInt(countEl.text(), 10) - 1;
+				if (newCount > 0) {
+					countEl.text(newCount);
+				} else {
+					reactionEl.remove();
+				}
+			}
+		}
+	}
+
+	hooks.on('action:topic.loaded', function () {
+		Posts.addReactionHandlers();
+	});
 });
