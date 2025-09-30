@@ -44,6 +44,13 @@
 					</div>
 
 					<a class="fw-bold text-nowrap text-truncate" href="{{{ if ./user.userslug }}}{config.relative_path}/user/{./user.userslug}{{{ else }}}#{{{ end }}}" data-username="{posts.user.username}" data-uid="{posts.user.uid}">{posts.user.displayname}</a>
+						{{{ if ./urgency }}}
+						<span class="post-urgency post-urgency--level-{./urgency} ms-2 d-inline-flex align-items-center rounded-1 px-2 py-0 text-xs">
+							{{{ if ./urgency == 1 }}}[[topic:urgency:low]]{{{ end }}}
+							{{{ if ./urgency == 2 }}}[[topic:urgency:medium]]{{{ end }}}
+							{{{ if ./urgency == 3 }}}[[topic:urgency:high]]{{{ end }}}
+						</span>
+						{{{ end }}}
 				</div>
 
 				{{{ each posts.user.selectedGroups }}}

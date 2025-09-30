@@ -245,6 +245,12 @@
 	"open-composer": "Open composer",
 	"post-quick-reply": "Quick reply",
 
+	"urgency": "Urgency",
+	"urgency:normal": "Normal",
+	"urgency:low": "Low",
+	"urgency:medium": "Medium",
+	"urgency:high": "High",
+
 	"navigator.index": "Post %1 of %2",
 	"navigator.unread": "%1 unread",
 	"upvote-post": "Upvote post",

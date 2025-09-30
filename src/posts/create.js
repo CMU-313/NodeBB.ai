@@ -28,7 +28,9 @@ module.exports = function (Posts) {
 		}
 
 		const pid = data.pid || await db.incrObjectField('global', 'nextPid');
-		let postData = { pid, uid, tid, content, sourceContent, timestamp };
+		// Urgency: integer enum (0 = normal/default)
+		const urgency = data.urgency !== undefined ? parseInt(data.urgency, 10) : 0;
+		let postData = { pid, uid, tid, content, sourceContent, timestamp, urgency };
 
 		if (data.toPid) {
 			postData.toPid = data.toPid;
