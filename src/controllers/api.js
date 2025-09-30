@@ -11,6 +11,7 @@ const translator = require('../translator');
 const languages = require('../languages');
 const { generateToken } = require('../middleware/csrf');
 const utils = require('../utils');
+const db = require('../database');
 
 const apiController = module.exports;
 
@@ -153,6 +154,28 @@ apiController.getConfig = async function (req, res) {
 apiController.getModerators = async function (req, res) {
 	const moderators = await categories.getModerators(req.params.cid);
 	res.json({ moderators: moderators });
+};
+
+apiController.getUnpopularTopics = async function (req) {
+	const { cid } = req.query;
+	if (!cid) {
+		throw new Error('Category ID (cid) is required');
+	}
+
+	const tids = await db.getSortedSetRangeByScore(
+		`cid:${cid}:tids:views`,
+		0, // Start of range
+		-1, // End of range
+		0, // Minimum score (views)
+		5 // Maximum score (views threshold)
+	);
+
+	const topics = await Promise.all(tids.map(async (tid) => {
+		const topic = await topics.getTopicData(tid);
+		return topic;
+	}));
+
+	return topics;
 };
 
 require('../promisify')(apiController, ['getConfig', 'getObject', 'getModerators']);

@@ -688,4 +688,15 @@ describe('API', async () => {
 			assert(schema[prop], `"${prop}" was found in response, but is not defined in schema (path: ${method} ${path}, context: ${context})`);
 		});
 	}
+
+	describe('GET /api/unpopular', () => {
+		it('should fetch unpopular topics with fewer than 5 views', async () => {
+			const response = await request.get('/api/unpopular?cid=1');
+			assert.strictEqual(response.statusCode, 200);
+			assert(Array.isArray(response.body));
+			response.body.forEach((topic) => {
+				assert(topic.viewcount < 5);
+			});
+		});
+	});
 });
