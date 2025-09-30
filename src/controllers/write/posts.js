@@ -99,6 +99,16 @@ Posts.delete = async (req, res) => {
 	helpers.formatApiResponse(200, res);
 };
 
+Posts.hide = async (req, res) => {
+	await api.posts.hide(req, { pid: req.params.pid });
+	helpers.formatApiResponse(200, res);
+};
+
+Posts.unhide = async (req, res) => {
+	await api.posts.unhide(req, { pid: req.params.pid });
+	helpers.formatApiResponse(200, res);
+};
+
 Posts.move = async (req, res) => {
 	await api.posts.move(req, {
 		pid: req.params.pid,

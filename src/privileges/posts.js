@@ -17,6 +17,8 @@ const privsTopics = require('./topics');
 
 const privsPosts = module.exports;
 
+const groups = require('../groups');
+
 privsPosts.get = async function (pids, uid) {
 	if (!Array.isArray(pids) || !pids.length) {
 		return [];
@@ -236,6 +238,32 @@ privsPosts.canPurge = async function (pid, uid) {
 	}
 
 	return (results.purge && (results.owner || results.isModerator)) || results.isAdmin;
+};
+
+privsPosts.canHide = async function (pid, uid) {
+	const results = await utils.promiseParallel({
+		isAdmin: user.isAdministrator(uid),
+		isMod: posts.isModerator([pid], uid),
+		isOwner: posts.isOwner(pid, uid),
+	});
+	results.isMod = results.isMod[0];
+
+	if (results.isAdmin) {
+		return { flag: true };
+	}
+
+	// Allow moderators of the category
+	if (results.isMod) {
+		return { flag: true };
+	}
+
+	// Allow instructors group members to hide posts (assumption: group named 'instructors')
+	const isInstructor = await groups.isMember(uid, 'instructors');
+	if (isInstructor) {
+		return { flag: true };
+	}
+
+	return { flag: false, message: '[[error:no-privileges]]' };
 };
 
 async function isAdminOrMod(pid, uid) {

@@ -188,6 +188,22 @@ postsAPI.restore = async function (caller, data) {
 	});
 };
 
+postsAPI.hide = async function (caller, data) {
+	await hideOrUnhide(caller, data, {
+		command: 'hide',
+		event: 'event:post_hidden',
+		type: 'post-hide',
+	});
+};
+
+postsAPI.unhide = async function (caller, data) {
+	await hideOrUnhide(caller, data, {
+		command: 'unhide',
+		event: 'event:post_unhidden',
+		type: 'post-unhide',
+	});
+};
+
 async function deleteOrRestore(caller, data, params) {
 	if (!data || !data.pid) {
 		throw new Error('[[error:invalid-data]]');
@@ -209,6 +225,28 @@ async function deleteOrRestore(caller, data, params) {
 	});
 
 	// Explicitly non-awaited
+	posts.getPostSummaryByPids([data.pid], caller.uid, { extraFields: ['edited'] }).then(([post]) => {
+		require('.').activitypub.update.note(caller, { post });
+	});
+}
+
+async function hideOrUnhide(caller, data, params) {
+	if (!data || !data.pid) {
+		throw new Error('[[error:invalid-data]]');
+	}
+	const postData = await posts.tools[params.command](caller.uid, data.pid);
+
+	websockets.in(`topic_${postData.tid}`).emit(params.event, postData);
+
+	await events.log({
+		type: params.type,
+		uid: caller.uid,
+		pid: data.pid,
+		tid: postData.tid,
+		ip: caller.ip,
+	});
+
+	// Explicitly non-awaited: update activitypub if relevant
 	posts.getPostSummaryByPids([data.pid], caller.uid, { extraFields: ['edited'] }).then(([post]) => {
 		require('.').activitypub.update.note(caller, { post });
 	});
