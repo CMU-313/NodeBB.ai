@@ -31,6 +31,7 @@ const adminController = {
 	users: require('./admin/users'),
 	uploads: require('./admin/uploads'),
 	info: require('./admin/info'),
+	leaderboard: require('./admin/leaderboard'),
 };
 
 adminController.routeIndex = async (req, res) => {
