@@ -27,6 +27,8 @@ module.exports = function (User) {
 		'postcount', 'topiccount', 'lastposttime', 'banned', 'banned:expire',
 		'status', 'flags', 'followerCount', 'followingCount', 'cover:url',
 		'cover:position', 'groupTitle', 'mutedUntil', 'mutedReason',
+		// identification tags: will contain an object like { name, color, textColor, slug }
+		'identification:rank',
 	];
 
 	let customFieldWhiteList = null;
