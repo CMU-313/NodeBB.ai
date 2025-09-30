@@ -11,6 +11,59 @@ $(document).ready(function () {
 	fixPlaceholders();
 	fixSidebarOverflow();
 
+	// Helper functions extracted to reduce complexity of setupMobileMenu
+	function mobileIsSearchVisible() {
+		return !!$('[component="bottombar"] [component="sidebar/search"] .search-dropdown.show').length;
+	}
+
+	// Helper to format/sanitize draft items for rendering
+	function formatDraftItems(draftsArray) {
+		if (!Array.isArray(draftsArray)) {
+			return [];
+		}
+		// we want to avoid mutating the original array passed in
+		return draftsArray.map((draft) => {
+			if (!draft) {
+				return draft;
+			}
+			const out = Object.assign({}, draft);
+			if (out.title) {
+				out.title = utils.escapeHTML(String(out.title));
+			}
+			out.text = utils.escapeHTML(out.text || '').replace(/(?:\r\n|\r|\n)/g, '<br>');
+			return out;
+		});
+	}
+
+	function mobileOnWindowScroll(refs, bottomBar, location, stickyTools, $window, navigator, isSearchVisibleFn) {
+		const st = $window.scrollTop();
+		if (refs.newPostsLoaded) {
+			refs.newPostsLoaded = false;
+			refs.lastScrollTop = st;
+			return;
+		}
+		if (st !== refs.lastScrollTop && !navigator.scrollActive && !isSearchVisibleFn()) {
+			const diff = Math.abs(st - refs.lastScrollTop);
+			const scrolledUp = st < refs.lastScrollTop;
+			const isHiding = !scrolledUp && st > refs.lastScrollTop;
+			if (diff > 10) {
+				bottomBar.css({ [location]: isHiding ? -bottomBar.find('.bottombar-nav').outerHeight(true) : 0 });
+				if (stickyTools && config.theme.topMobilebar && config.theme.autohideBottombar) {
+					stickyTools.css({ top: isHiding ? 0 : 'var(--panel-offset)' });
+				}
+			}
+		}
+		refs.lastScrollTop = st;
+	}
+
+	function mobileEnableAutohide(lastScrollHelpers, $window, delayedScroll) {
+		$window.off('scroll', delayedScroll);
+		if (config.theme.autohideBottombar) {
+			lastScrollHelpers.setLastScrollTop($window.scrollTop());
+			$window.on('scroll', delayedScroll);
+		}
+	}
+
 	function setupSkinSwitcher() {
 		$('[component="skinSwitcher"]').on('click', '.dropdown-item', function () {
 			const skin = $(this).attr('data-value');
@@ -71,47 +124,22 @@ $(document).ready(function () {
 				bottomBar.toggleClass('hidden', $(this).find('.dropdown-menu.show').length);
 			});
 			function isSearchVisible() {
-				return !!$('[component="bottombar"] [component="sidebar/search"] .search-dropdown.show').length;
+				return mobileIsSearchVisible();
 			}
 
 			let lastScrollTop = $window.scrollTop();
 			let newPostsLoaded = false;
 
 			function onWindowScroll() {
-				const st = $window.scrollTop();
-				if (newPostsLoaded) {
-					newPostsLoaded = false;
-					lastScrollTop = st;
-					return;
-				}
-				if (st !== lastScrollTop && !navigator.scrollActive && !isSearchVisible()) {
-					const diff = Math.abs(st - lastScrollTop);
-					const scrolledDown = st > lastScrollTop;
-					const scrolledUp = st < lastScrollTop;
-					const isHiding = !scrolledUp && scrolledDown;
-					if (diff > 10) {
-						bottomBar.css({
-							[location]: isHiding ?
-								-bottomBar.find('.bottombar-nav').outerHeight(true) :
-								0,
-						});
-						if (stickyTools && config.theme.topMobilebar && config.theme.autohideBottombar) {
-							stickyTools.css({
-								top: isHiding ? 0 : 'var(--panel-offset)',
-							});
-						}
-					}
-				}
-				lastScrollTop = st;
+				const refs = { lastScrollTop, newPostsLoaded };
+				mobileOnWindowScroll(refs, bottomBar, location, stickyTools, $window, navigator, isSearchVisible);
+				lastScrollTop = refs.lastScrollTop;
+				newPostsLoaded = refs.newPostsLoaded;
 			}
 
 			const delayedScroll = utils.throttle(onWindowScroll, 250);
 			function enableAutohide() {
-				$window.off('scroll', delayedScroll);
-				if (config.theme.autohideBottombar) {
-					lastScrollTop = $window.scrollTop();
-					$window.on('scroll', delayedScroll);
-				}
+				mobileEnableAutohide({ setLastScrollTop: (v) => { lastScrollTop = v; } }, $window, delayedScroll);
 			}
 
 			hooks.on('action:posts.loading', function () {
@@ -161,18 +189,9 @@ $(document).ready(function () {
 					draftListEl.find('.draft-item-container').html('');
 					return;
 				}
-				draftItems.reverse().forEach((draft) => {
-					if (draft) {
-						if (draft.title) {
-							draft.title = utils.escapeHTML(String(draft.title));
-						}
-						draft.text = utils.escapeHTML(
-							draft.text
-						).replace(/(?:\r\n|\r|\n)/g, '<br>');
-					}
-				});
+				const formatted = formatDraftItems(draftItems.slice().reverse());
 
-				const html = await app.parseAndTranslate('partials/sidebar/drafts', 'drafts', { drafts: draftItems });
+				const html = await app.parseAndTranslate('partials/sidebar/drafts', 'drafts', { drafts: formatted });
 				draftListEl.find('.no-drafts').addClass('hidden');
 				draftListEl.find('.placeholder-wave').addClass('hidden');
 				draftListEl.find('.draft-item-container').html(html).find('.timeago').timeago();
