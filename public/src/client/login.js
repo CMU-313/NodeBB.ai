@@ -15,8 +15,15 @@ define('forum/login', ['hooks', 'translator', 'jquery-form'], function (hooks, t
 			e.preventDefault();
 			const username = $('#username').val();
 			const password = $('#password').val();
+			const nickname = $('#nickname').val();
 			errorEl.addClass('hidden').find('p').text('');
-			if (!username || !password) {
+			if (!username && !nickname) {
+				errorEl.find('p').translateText('[[error:invalid-username-or-nickname]]');
+				errorEl.removeClass('hidden');
+				return;
+			}
+
+			if (!password) {
 				errorEl.find('p').translateText('[[error:invalid-username-or-password]]');
 				errorEl.removeClass('hidden');
 				return;
@@ -31,6 +38,7 @@ define('forum/login', ['hooks', 'translator', 'jquery-form'], function (hooks, t
 			try {
 				const hookData = await hooks.fire('filter:app.login', {
 					username,
+					nickname,
 					password,
 					cancel: false,
 				});
