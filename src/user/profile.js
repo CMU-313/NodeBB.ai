@@ -17,7 +17,7 @@ const tx = require('../translator');
 module.exports = function (User) {
 	User.updateProfile = async function (uid, data, extraFields) {
 		let fields = [
-			'username', 'email', 'fullname',
+			'username', 'email', 'fullname', 'nickname',
 			'groupTitle', 'birthday', 'signature', 'aboutme',
 			...await db.getSortedSetRange('user-custom-fields', 0, -1),
 		];
@@ -54,6 +54,8 @@ module.exports = function (User) {
 				return await updateUsername(updateUid, data.username, uid);
 			} else if (field === 'fullname') {
 				return await updateFullname(updateUid, data.fullname);
+			} else if (field === 'nickname') {
+				return await updateNickname(updateUid, data.nickname);
 			}
 			updateData[field] = data[field];
 		}));
@@ -82,6 +84,7 @@ module.exports = function (User) {
 		await isAboutMeValid(callerUid, data);
 		await isSignatureValid(callerUid, data);
 		isFullnameValid(data);
+		isNicknameValid(data);
 		isBirthdayValid(data);
 		isGroupTitleValid(data);
 		await validateCustomFields(data);
@@ -229,6 +232,12 @@ module.exports = function (User) {
 		}
 	}
 
+	function isNicknameValid(data) {
+		if (data.nickname && (validator.isURL(data.nickname) || data.nickname.length > 255)) {
+			throw new Error('[[error:invalid-nickname]]');
+		}
+	}
+
 	function isBirthdayValid(data) {
 		if (!data.birthday) {
 			return;
@@ -336,6 +345,11 @@ module.exports = function (User) {
 				await db.sortedSetAdd('fullname:sorted', 0, `${newFullname.toLowerCase()}:${uid}`);
 			}
 		}
+	}
+
+	async function updateNickname(uid, newNickname) {
+		const nickname = await db.getObjectField(`user:${uid}`, 'nickname');
+		await updateUidMapping('nickname', uid, newNickname, nickname);
 	}
 
 	User.changePassword = async function (uid, data) {

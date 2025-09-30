@@ -184,6 +184,17 @@ User.getUsernameByEmail = async function (email) {
 	return await User.getUserField(uid, 'username');
 };
 
+User.getUidByNickname = async function (nickname) {
+	if (!nickname) {
+		return 0;
+	}
+	return await db.sortedSetScore('nickname:uid', nickname);
+};
+
+User.getUsernameByUid = async function (uid) {
+	return await User.getUserField(uid, 'username');
+};
+
 User.isModerator = async function (uid, cid) {
 	return await privileges.users.isModerator(uid, cid);
 };
