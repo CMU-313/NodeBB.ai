@@ -69,6 +69,24 @@ define('forum/topic/postTools', [
 				hooks.fire('action:post.tools.load', {
 					element: dropdownMenu,
 				});
+
+				if (data.posts.display_endorse_tool) {
+					dropdownMenu.append('<li><a href="#" class="endorse-post" data-pid="' + pid + '">Endorse</a></li>');
+				}
+
+				// Add event listener for endorse button
+				container.on('click', '.endorse-post', async function (e) {
+					e.preventDefault();
+					const pid = $(this).attr('data-pid');
+					try {
+						const result = await api.post(`/posts/${pid}/endorse`);
+						alerts.success('Post endorsed successfully!');
+						// Update UI to reflect endorsement
+						$(this).closest('[data-pid]').toggleClass('endorsed', result.isEndorsed);
+					} catch (err) {
+						alerts.error(err.message);
+					}
+				});
 			});
 		});
 	}
