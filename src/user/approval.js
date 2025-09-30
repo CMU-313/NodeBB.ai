@@ -159,11 +159,22 @@ module.exports = function (User) {
 
 	User.autoApprove = async function () {
 		if (meta.config.autoApproveTime <= 0) {
-			return;
+			return; // Early exit for invalid configuration
 		}
+
 		const users = await db.getSortedSetRevRangeWithScores('registration:queue', 0, -1);
+		if (!users.length) {
+			return; // Early exit if no users in the queue
+		}
+
 		const now = Date.now();
-		for (const user of users.filter(user => now - user.score >= meta.config.autoApproveTime * 3600000)) {
+		const autoApproveThreshold = meta.config.autoApproveTime * 3600000;
+
+		for (const user of users) {
+			if (now - user.score < autoApproveThreshold) {
+				continue; // Skip users who don't meet the threshold
+			}
+
 			try {
 				// eslint-disable-next-line no-await-in-loop
 				await User.acceptRegistration(user.value);
