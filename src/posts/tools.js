@@ -1,6 +1,9 @@
 'use strict';
 
 const privileges = require('../privileges');
+const events = require('../events');
+const plugins = require('../plugins');
+const _ = require('lodash');
 
 module.exports = function (Posts) {
 	Posts.tools = {};
@@ -11,6 +14,14 @@ module.exports = function (Posts) {
 
 	Posts.tools.restore = async function (uid, pid) {
 		return await togglePostDelete(uid, pid, false);
+	};
+
+	Posts.tools.pin = async function (uid, pid) {
+		return await togglePostPin(uid, pid, true);
+	};
+
+	Posts.tools.unpin = async function (uid, pid) {
+		return await togglePostPin(uid, pid, false);
 	};
 
 	async function togglePostDelete(uid, pid, isDelete) {
@@ -40,5 +51,24 @@ module.exports = function (Posts) {
 			post = await Posts.parsePost(post);
 		}
 		return post;
+	}
+
+	async function togglePostPin(uid, pid, pin) {
+		const postData = await Posts.getPostData(pid);
+		if (!postData) {
+			throw new Error('[[error:no-post]]');
+		}
+
+		const cid = postData.cid || await Posts.getPostField(pid, 'cid');
+		const isAdminOrMod = await privileges.categories.isAdminOrMod(cid, uid);
+		if (!isAdminOrMod) {
+			throw new Error('[[error:no-privileges]]');
+		}
+
+		await Posts.setPostField(pid, 'pinned', pin ? 1 : 0);
+		await events.log({ type: pin ? 'post-pin' : 'post-unpin', uid, pid, tid: postData.tid, cid });
+		postData.pinned = pin;
+		plugins.hooks.fire('action:post.' + (pin ? 'pin' : 'unpin'), { post: _.clone(postData), uid });
+		return postData;
 	}
 };

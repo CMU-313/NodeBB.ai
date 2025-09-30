@@ -205,6 +205,16 @@ Posts.editQueuedPost = async (req, res) => {
 	helpers.formatApiResponse(200, res, result);
 };
 
+Posts.pin = async (req, res) => {
+	const post = await api.posts.pin(req, { pid: req.params.pid });
+	helpers.formatApiResponse(200, res, post);
+};
+
+Posts.unpin = async (req, res) => {
+	const post = await api.posts.unpin(req, { pid: req.params.pid });
+	helpers.formatApiResponse(200, res, post);
+};
+
 Posts.notifyQueuedPostOwner = async (req, res) => {
 	const { id } = req.params;
 	await api.posts.notifyQueuedPostOwner(req, { id, message: req.body.message });
