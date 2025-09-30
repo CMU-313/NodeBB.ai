@@ -12,7 +12,7 @@ const sockets = require('../socket.io');
 
 
 module.exports = function (Messaging) {
-	Messaging.editMessage = async (uid, mid, roomId, content) => {
+	Messaging.editMessage = async ({ uid, mid, roomId, content }) => {
 		await Messaging.checkContent(content);
 		const isPublic = parseInt(await db.getObjectField(`chat:room:${roomId}`, 'public'), 10) === 1;
 		const raw = await Messaging.getMessageField(mid, 'content');
@@ -21,7 +21,7 @@ module.exports = function (Messaging) {
 		}
 
 		const payload = await plugins.hooks.fire('filter:messaging.edit', {
-			content: content,
+			content,
 			edited: Date.now(),
 		});
 
@@ -35,7 +35,7 @@ module.exports = function (Messaging) {
 		if (messages[0]) {
 			const roomName = messages[0].deleted ? `uid_${uid}` : `chat_room_${roomId}`;
 			sockets.in(roomName).emit('event:chats.edit', {
-				messages: messages,
+				messages,
 			});
 
 			if (!isPublic && utils.isNumber(messages[0].fromuid)) {
