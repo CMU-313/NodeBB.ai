@@ -49,7 +49,7 @@ search.search = async function (data) {
 		}
 	}
 
-	result.time = (process.elapsedTimeSince(start) / 1000).toFixed(2);
+	result.time = (utils.elapsedTimeSince(start) / 1000).toFixed(2);
 	return result;
 };
 
