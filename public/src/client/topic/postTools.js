@@ -194,6 +194,16 @@ define('forum/topic/postTools', [
 				hooks.fire('action:composer.post.edit', {
 					pid: getData(btn, 'data-pid'),
 				});
+
+				postContainer.on('click', '[component="post/archive"]', function () {
+					const pid = getData($(this), 'data-pid');
+					postAction('archive', pid);
+				});
+
+				postContainer.on('click', '[component="post/unarchive"]', function () {
+					const pid = getData($(this), 'data-pid');
+					postAction('unarchive', pid);
+				});
 			}
 		});
 
@@ -442,8 +452,21 @@ define('forum/topic/postTools', [
 				return;
 			}
 
-			const route = action === 'purge' ? '' : '/state';
-			const method = action === 'restore' ? 'put' : 'del';
+			let route;
+			let method;
+			if (action === 'purge') {
+				route = '';
+				method = 'del';
+			} else if (action === 'restore' || action === 'delete') {
+				route = '/state';
+				method = action === 'restore' ? 'put' : 'del';
+			} else if (action === 'archive' || action === 'unarchive') {
+				route = '/archive';
+				method = action === 'archive' ? 'put' : 'del';
+			} else {
+				route = '/state';
+				method = 'del';
+			}
 			api[method](`/posts/${encodeURIComponent(pid)}${route}`).catch(alerts.error);
 		});
 	}

@@ -188,6 +188,22 @@ postsAPI.restore = async function (caller, data) {
 	});
 };
 
+postsAPI.archive = async function (caller, data) {
+	await archiveOrUnarchive(caller, data, {
+		command: 'archive',
+		event: 'event:post_archived',
+		type: 'post-archive',
+	});
+};
+
+postsAPI.unarchive = async function (caller, data) {
+	await archiveOrUnarchive(caller, data, {
+		command: 'unarchive',
+		event: 'event:post_unarchived',
+		type: 'post-unarchive',
+	});
+};
+
 async function deleteOrRestore(caller, data, params) {
 	if (!data || !data.pid) {
 		throw new Error('[[error:invalid-data]]');
@@ -209,6 +225,28 @@ async function deleteOrRestore(caller, data, params) {
 	});
 
 	// Explicitly non-awaited
+	posts.getPostSummaryByPids([data.pid], caller.uid, { extraFields: ['edited'] }).then(([post]) => {
+		require('.').activitypub.update.note(caller, { post });
+	});
+}
+
+async function archiveOrUnarchive(caller, data, params) {
+	if (!data || !data.pid) {
+		throw new Error('[[error:invalid-data]]');
+	}
+
+	const postData = await posts.tools[params.command](caller.uid, data.pid);
+	websockets.in(`topic_${postData.tid}`).emit(params.event, postData);
+
+	await events.log({
+		type: params.type,
+		uid: caller.uid,
+		pid: data.pid,
+		tid: postData.tid,
+		ip: caller.ip,
+	});
+
+	// Update activitypub note asynchronously
 	posts.getPostSummaryByPids([data.pid], caller.uid, { extraFields: ['edited'] }).then(([post]) => {
 		require('.').activitypub.update.note(caller, { post });
 	});

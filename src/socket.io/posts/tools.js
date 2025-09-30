@@ -19,7 +19,7 @@ module.exports = function (SocketPosts) {
 		}
 		const cid = await posts.getCidByPid(data.pid);
 		const results = await utils.promiseParallel({
-			posts: posts.getPostFields(data.pid, ['deleted', 'bookmarks', 'uid', 'ip', 'flagId', 'url']),
+			posts: posts.getPostFields(data.pid, ['deleted', 'bookmarks', 'uid', 'ip', 'flagId', 'url', 'archived']),
 			isAdmin: user.isAdministrator(socket.uid),
 			isGlobalMod: user.isGlobalModerator(socket.uid),
 			isModerator: user.isModerator(socket.uid, cid),
@@ -68,6 +68,16 @@ module.exports = function (SocketPosts) {
 			uid: socket.uid,
 			tools: [],
 		});
+
+		// If user can delete (proxy for moderation), expose archive/unarchive tool
+		if (results.canDelete && results.canDelete.flag) {
+			if (postData.archived) {
+				tools.unshift({ action: 'post/unarchive', icon: 'fa-undo', html: '[[topic:unarchive]]' });
+			} else {
+				tools.unshift({ action: 'post/archive', icon: 'fa-archive', html: '[[topic:archive]]' });
+			}
+		}
+
 		postData.tools = tools;
 
 		return results;
