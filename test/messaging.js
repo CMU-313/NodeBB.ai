@@ -31,13 +31,29 @@ describe('Messaging Library', () => {
 
 	let chatMessageDelay;
 
-	const callv3API = async (method, path, body, user) => {
+	// callv3API supports both an options-object form and the legacy positional form
+	const callv3API = async (...args) => {
+		let method;
+		let path;
+		let body = {};
+		let user;
+
+		if (args.length === 1 && typeof args[0] === 'object' && args[0] !== null && ('method' in args[0] || 'path' in args[0])) {
+			({ method, path, body = {}, user } = args[0]);
+		} else {
+			[method, path, body = {}, user] = args;
+		}
+
+		if (!method || !path || !user) {
+			throw new Error('callv3API requires { method, path, user }');
+		}
+
 		const options = {
 			body,
 			jar: mocks.users[user].jar,
 		};
 
-		if (method !== 'get') {
+		if (String(method).toLowerCase() !== 'get') {
 			options.headers = {
 				'x-csrf-token': mocks.users[user].csrf,
 			};
