@@ -1,4 +1,3 @@
-
 'use strict';
 
 const topics = require('../topics');
@@ -10,6 +9,15 @@ module.exports = function (Posts) {
 		const pids = await Posts.getPidsFromSet(set, start, stop, reverse);
 		const posts = await Posts.getPostsByPids(pids, uid);
 		return await user.blocks.filter(uid, posts);
+	};
+
+	Posts.getUnansweredPosts = async function (set, start, stop, uid, reverse) {
+		const pids = await Posts.getPidsFromSet(set, start, stop, reverse);
+		const posts = await Posts.getPostsByPids(pids, uid);
+
+		// Filter posts that have no replies
+		const unansweredPosts = posts.filter(post => post && post.replies === 0);
+		return await user.blocks.filter(uid, unansweredPosts);
 	};
 
 	Posts.isMain = async function (pids) {

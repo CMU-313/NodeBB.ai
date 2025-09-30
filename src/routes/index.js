@@ -162,6 +162,18 @@ function addCoreRoutes(app, router, middleware, mounts) {
 	_mounts.globalMod(router, middleware, controllers);
 	_mounts['well-known'](router, middleware, controllers);
 
+	// Add route for fetching unanswered posts
+	router.get('/api/unanswered', middleware.authenticateRequest, async (req, res) => {
+		try {
+			const { start = 0, stop = 19, reverse = false } = req.query;
+			const uid = req.user ? req.user.uid : 0;
+			const unansweredPosts = await require('../posts/topics').getUnansweredPosts('posts:recent', start, stop, uid, reverse);
+			res.json({ posts: unansweredPosts });
+		} catch (err) {
+			res.status(500).json({ error: err.message });
+		}
+	});
+
 	addRemountableRoutes(app, router, middleware, mounts);
 
 	const relativePath = nconf.get('relative_path');
