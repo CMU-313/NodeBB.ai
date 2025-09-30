@@ -8,6 +8,8 @@
             <div>
                 <a href="{config.relative_path}/post/{post.pid}" class="timeago text-xs text-secondary lh-1" style="vertical-align: middle;" title="{post.timestampISO}"></a>
             </div>
+            <!-- Endorsed badge -->
+            {{>partials/topic/endorsed-badge}}
         </div>
         <div class="content ghost-scrollbar" style="max-height: 300px; overflow-y:auto;">{post.content}</div>
     </div>
