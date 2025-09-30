@@ -475,9 +475,11 @@ describe('Utility Methods', () => {
 	});
 
 	it('should profile function', (done) => {
+		delete require.cache[require.resolve('../src/utils')];
+		const { profile } = require('../src/utils');
 		const st = process.hrtime();
 		setTimeout(() => {
-			process.profile('it took', st);
+			profile('it took', st);
 			done();
 		}, 500);
 	});
