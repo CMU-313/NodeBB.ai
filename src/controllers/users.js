@@ -107,6 +107,7 @@ usersController.renderUsersPage = async function (set, req, res) {
 
 usersController.getUsers = async function (set, uid, query) {
 	const setToData = {
+		'users:helpfulness': { title: '[[pages:users/sort-helpfulness]]', crumb: '[[users:most-helpful]]' },
 		'users:postcount': { title: '[[pages:users/sort-posts]]', crumb: '[[users:top-posters]]' },
 		'users:reputation': { title: '[[pages:users/sort-reputation]]', crumb: '[[users:most-reputation]]' },
 		'users:joindate': { title: '[[pages:users/latest]]', crumb: '[[global:users]]' },

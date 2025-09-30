@@ -38,6 +38,7 @@ require('./approval')(User);
 require('./invite')(User);
 require('./password')(User);
 require('./info')(User);
+require('./helpfulness')(User);
 require('./online')(User);
 require('./blocks')(User);
 require('./uploads')(User);
@@ -89,8 +90,15 @@ User.getUsers = async function (uids, uid) {
 	const userData = await User.getUsersWithFields(uids, [
 		'uid', 'username', 'userslug', 'picture', 'status',
 		'postcount', 'reputation', 'email:confirmed', 'lastonline',
-		'flags', 'banned', 'banned:expire', 'joindate',
+		'flags', 'banned', 'banned:expire', 'joindate', 'helpfulnessScore',
 	], uid);
+
+	// Add helpfulness scores
+	await Promise.all(userData.map(async (user) => {
+		if (user && user.uid) {
+			user.helpfulnessScore = await db.sortedSetScore('users:helpfulness', user.uid) || 0;
+		}
+	}));
 
 	return User.hidePrivateData(userData, uid);
 };
