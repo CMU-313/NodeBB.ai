@@ -319,6 +319,38 @@ define('forum/topic', [
 			destroyed = true;
 		}
 
+		// Fetch post summary and render the tooltip for the given link and pid
+		async function fetchAndShowTooltip(linkArg, pid) {
+			const postData = postCache[pid] || await api.get(`/posts/${encodeURIComponent(pid)}/summary`);
+			$('#post-tooltip').remove();
+			if (!postData || !ajaxify.data.template.topic) {
+				return;
+			}
+			postCache[pid] = postData;
+			const tooltip = await app.parseAndTranslate('partials/topic/post-preview', { post: postData });
+			if (destroyed) {
+				return;
+			}
+			tooltip.hide().find('.timeago').timeago();
+			tooltip.appendTo($('body')).fadeIn(300);
+			const postContent = linkArg.parents('[component="topic"]').find('[component="post/content"]').first();
+			const postRect = postContent.offset();
+			const postWidth = postContent.width();
+			const linkRect = linkArg.offset();
+			const { top } = linkArg.get(0).getBoundingClientRect();
+			const dropup = top > window.innerHeight / 2;
+			tooltip.on('mouseenter', function () {
+				linkArg.attr('over-tooltip', 1);
+			});
+			tooltip.one('mouseleave', destroyTooltip);
+			$(window).off('click', onClickOutside).one('click', onClickOutside);
+			tooltip.css({
+				top: dropup ? linkRect.top - tooltip.outerHeight() : linkRect.top + 30,
+				left: postRect.left,
+				width: postWidth,
+			});
+		}
+
 		function onClickOutside(ev) {
 			// If the click is outside the tooltip, destroy it
 			if (!$(ev.target).closest('#post-tooltip').length) {
@@ -344,35 +376,7 @@ define('forum/topic', [
 			destroyed = false;
 
 			renderTimeout = setTimeout(async () => {
-				async function renderPost(pid) {
-					const postData = postCache[pid] || await api.get(`/posts/${encodeURIComponent(pid)}/summary`);
-					$('#post-tooltip').remove();
-					if (postData && ajaxify.data.template.topic) {
-						postCache[pid] = postData;
-						const tooltip = await app.parseAndTranslate('partials/topic/post-preview', { post: postData });
-						if (destroyed) {
-							return;
-						}
-						tooltip.hide().find('.timeago').timeago();
-						tooltip.appendTo($('body')).fadeIn(300);
-						const postContent = link.parents('[component="topic"]').find('[component="post/content"]').first();
-						const postRect = postContent.offset();
-						const postWidth = postContent.width();
-						const linkRect = link.offset();
-						const { top } = link.get(0).getBoundingClientRect();
-						const dropup = top > window.innerHeight / 2;
-						tooltip.on('mouseenter', function () {
-							link.attr('over-tooltip', 1);
-						});
-						tooltip.one('mouseleave', destroyTooltip);
-						$(window).off('click', onClickOutside).one('click', onClickOutside);
-						tooltip.css({
-							top: dropup ? linkRect.top - tooltip.outerHeight() : linkRect.top + 30,
-							left: postRect.left,
-							width: postWidth,
-						});
-					}
-				}
+
 
 				const href = link.attr('href');
 				const location = utils.urlToLocation(href);
@@ -386,11 +390,11 @@ define('forum/topic', [
 					if (encodeURIComponent(link.parents('[component="post"]').attr('data-pid')) === encodeURIComponent(pid)) {
 						return; // dont render self post
 					}
-					renderPost(pid);
+					await fetchAndShowTooltip(link, pid);
 				} else if (topicMatch) {
 					const tid = topicMatch[1];
 					const topicData = await api.get('/topics/' + tid, {});
-					renderPost(topicData.mainPid);
+					await fetchAndShowTooltip(link, topicData.mainPid);
 				}
 			}, 300);
 		});
