@@ -144,12 +144,25 @@ $(document).ready(function () {
 		require(['composer/drafts', 'bootbox'], function (drafts, bootbox) {
 			const draftsEl = $('[component="sidebar/drafts"]');
 
-			function updateBadgeCount() {
-				const count = drafts.getAvailableCount();
+			function showOrHideDraftsContainer(count) {
 				if (count > 0) {
 					draftsEl.removeClass('hidden');
 				}
+			}
+
+			function updateBadgeCount() {
+				const count = drafts.getAvailableCount();
+				showOrHideDraftsContainer(count);
 				$('[component="drafts/count"]').toggleClass('hidden', count <= 0).text(count);
+			}
+
+			function sanitizeDraft(draft) {
+				if (!draft) return draft;
+				if (draft.title) {
+					draft.title = utils.escapeHTML(String(draft.title));
+				}
+				draft.text = utils.escapeHTML(draft.text).replace(/(?:\r\n|\r|\n)/g, '<br>');
+				return draft;
 			}
 
 			async function renderDraftList() {
@@ -161,15 +174,10 @@ $(document).ready(function () {
 					draftListEl.find('.draft-item-container').html('');
 					return;
 				}
-				draftItems.reverse().forEach((draft) => {
-					if (draft) {
-						if (draft.title) {
-							draft.title = utils.escapeHTML(String(draft.title));
-						}
-						draft.text = utils.escapeHTML(
-							draft.text
-						).replace(/(?:\r\n|\r|\n)/g, '<br>');
-					}
+
+				// sanitize in-place and reverse for display
+				draftItems.reverse().forEach((d, idx) => {
+					draftItems[idx] = sanitizeDraft(d);
 				});
 
 				const html = await app.parseAndTranslate('partials/sidebar/drafts', 'drafts', { drafts: draftItems });
@@ -178,14 +186,11 @@ $(document).ready(function () {
 				draftListEl.find('.draft-item-container').html(html).find('.timeago').timeago();
 			}
 
-
-			draftsEl.on('shown.bs.dropdown', renderDraftList);
-
-			draftsEl.on('click', '[component="drafts/open"]', function () {
+			function onOpenDraftClick() {
 				drafts.open($(this).attr('data-save-id'));
-			});
+			}
 
-			draftsEl.on('click', '[component="drafts/delete"]', function () {
+			function onDeleteDraftClick() {
 				const save_id = $(this).attr('data-save-id');
 				bootbox.confirm('[[modules:composer.discard-draft-confirm]]', function (ok) {
 					if (ok) {
@@ -194,7 +199,11 @@ $(document).ready(function () {
 					}
 				});
 				return false;
-			});
+			}
+
+			draftsEl.on('shown.bs.dropdown', renderDraftList);
+			draftsEl.on('click', '[component="drafts/open"]', onOpenDraftClick);
+			draftsEl.on('click', '[component="drafts/delete"]', onDeleteDraftClick);
 
 			$(window).on('action:composer.drafts.save', updateBadgeCount);
 			$(window).on('action:composer.drafts.remove', updateBadgeCount);
