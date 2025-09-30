@@ -57,7 +57,7 @@ module.exports = function (Topics) {
 		}
 
 		Topics.calculatePostIndices(replies, repliesStart);
-		await addEventStartEnd(postData, set, reverse, topicData);
+		await addEventStartEnd(postData, { set, reverse, topicData });
 		const allPosts = postData.slice();
 		postData = await user.blocks.filter(uid, postData);
 		if (allPosts.length !== postData.length) {
@@ -77,7 +77,9 @@ module.exports = function (Topics) {
 		return result.posts;
 	};
 
-	async function addEventStartEnd(postData, set, reverse, topicData) {
+	async function addEventStartEnd(postData, options) {
+		const { set, reverse, topicData } = options;
+		
 		if (!postData.length) {
 			return;
 		}
