@@ -11,6 +11,23 @@ const middleware = require('../middleware');
 const helpers = require('../middleware/helpers');
 const { secureRandom } = require('../utils');
 
+function isStaticAssetRequest(req, res, relativePath) {
+	if (res.locals.isAPI) {
+		return false;
+	}
+
+	const isUploadPath = req.path.startsWith(`${relativePath}/assets/uploads`);
+	const isNonHtmlRequest = req.get('accept') && !req.get('accept').includes('text/html');
+	const isFavicon = req.path === '/favicon.ico';
+
+	return isUploadPath || isNonHtmlRequest || isFavicon;
+}
+
+function isActivityPubRequest(req) {
+	return activitypub.helpers.assertAccept(req.headers.accept) ||
+		(req.headers['Content-Type'] && activitypub._constants.acceptableTypes.includes(req.headers['Content-Type']));
+}
+
 exports.handle404 = helpers.try(async (req, res) => {
 	const relativePath = nconf.get('relative_path');
 	const isClientScript = new RegExp(`^${relativePath}\\/assets\\/src\\/.+\\.js(\\?v=\\w+)?$`);
@@ -25,19 +42,10 @@ exports.handle404 = helpers.try(async (req, res) => {
 
 	if (isClientScript.test(req.url)) {
 		res.type('text/javascript').status(404).send('Not Found');
-	} else if (
-		activitypub.helpers.assertAccept(req.headers.accept) ||
-		(req.headers['Content-Type'] && activitypub._constants.acceptableTypes.includes(req.headers['Content-Type']))
-	) {
+	} else if (isActivityPubRequest(req)) {
 		// todo: separate logging of AP 404s
 		res.sendStatus(404);
-	} else if (
-		!res.locals.isAPI && (
-			req.path.startsWith(`${relativePath}/assets/uploads`) ||
-			(req.get('accept') && !req.get('accept').includes('text/html')) ||
-			req.path === '/favicon.ico'
-		)
-	) {
+	} else if (isStaticAssetRequest(req, res, relativePath)) {
 		meta.errors.log404(req.path || '');
 		res.sendStatus(404);
 	} else if (req.accepts('html')) {
