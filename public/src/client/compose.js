@@ -12,6 +12,12 @@ define('forum/compose', ['hooks'], function (hooks) {
 				container: container,
 			});
 		}
+
+		// Add event listener for anonymous checkbox
+		container.on('change', '[component="composer/anonymous"]', function () {
+			const isAnonymous = $(this).is(':checked');
+			container.data('anonymous', isAnonymous);
+		});
 	};
 
 	return Compose;

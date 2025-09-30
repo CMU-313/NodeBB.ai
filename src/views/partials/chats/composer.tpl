@@ -26,4 +26,10 @@
 	<form class="hidden" component="chat/upload" method="post" enctype="multipart/form-data">
 		<input type="file" name="files[]" multiple class="hidden"/>
 	</form>
+	<div class="form-check">
+		<input class="form-check-input" type="checkbox" id="anonymousCheckbox" component="composer/anonymous">
+		<label class="form-check-label" for="anonymousCheckbox">
+			[[modules:composer.anonymous]]
+		</label>
+	</div>
 </div>
