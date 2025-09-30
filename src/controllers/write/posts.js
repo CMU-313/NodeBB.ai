@@ -210,3 +210,14 @@ Posts.notifyQueuedPostOwner = async (req, res) => {
 	await api.posts.notifyQueuedPostOwner(req, { id, message: req.body.message });
 	helpers.formatApiResponse(200, res);
 };
+
+// Bulk queue actions
+Posts.acceptQueuedPostsBulk = async (req, res) => {
+	const result = await api.posts.acceptQueuedPostsBulk(req, { ids: req.body.ids });
+	helpers.formatApiResponse(200, res, result);
+};
+
+Posts.removeQueuedPostsBulk = async (req, res) => {
+	const result = await api.posts.removeQueuedPostsBulk(req, { ids: req.body.ids });
+	helpers.formatApiResponse(200, res, result);
+};

@@ -601,6 +601,63 @@ postsAPI.removeQueuedPost = async (caller, data) => {
 	await logQueueEvent(caller, result, 'reject');
 };
 
+// Bulk operations for queued posts
+postsAPI.acceptQueuedPostsBulk = async (caller, data) => {
+	if (!data || !Array.isArray(data.ids) || data.ids.length === 0) {
+		throw new Error('[[error:invalid-data]]');
+	}
+
+	const results = await Promise.allSettled(data.ids.map(async (id) => {
+		await canEditQueue(caller.uid, { id }, 'accept');
+		const result = await posts.submitFromQueue(id);
+		if (result && caller.uid !== parseInt(result.uid, 10)) {
+			await sendQueueNotification('post-queue-accepted', result.uid, `/post/${result.pid}`);
+		}
+		await logQueueEvent(caller, result, 'accept');
+		return { id, result: result ? { type: result.type, pid: result.pid, tid: result.tid } : null };
+	}));
+
+	const success = [];
+	const errors = [];
+	results.forEach((r, idx) => {
+		if (r.status === 'fulfilled') {
+			success.push(r.value);
+		} else {
+			errors.push({ id: data.ids[idx], error: r.reason && r.reason.message ? r.reason.message : String(r.reason) });
+		}
+	});
+
+	return { success, errors };
+};
+
+postsAPI.removeQueuedPostsBulk = async (caller, data) => {
+	if (!data || !Array.isArray(data.ids) || data.ids.length === 0) {
+		throw new Error('[[error:invalid-data]]');
+	}
+
+	const results = await Promise.allSettled(data.ids.map(async (id) => {
+		await canEditQueue(caller.uid, { id }, 'reject');
+		const result = await posts.removeFromQueue(id);
+		if (result && caller.uid !== parseInt(result.uid, 10)) {
+			await sendQueueNotification('post-queue-rejected', result.uid, '/');
+		}
+		await logQueueEvent(caller, result, 'reject');
+		return { id, result: result ? { type: result.type } : null };
+	}));
+
+	const success = [];
+	const errors = [];
+	results.forEach((r, idx) => {
+		if (r.status === 'fulfilled') {
+			success.push(r.value);
+		} else {
+			errors.push({ id: data.ids[idx], error: r.reason && r.reason.message ? r.reason.message : String(r.reason) });
+		}
+	});
+
+	return { success, errors };
+};
+
 postsAPI.editQueuedPost = async (caller, data) => {
 	if (!data || !data.id || (!data.content && !data.title && !data.cid)) {
 		throw new Error('[[error:invalid-data]]');

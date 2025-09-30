@@ -248,18 +248,31 @@ define('forum/post-queue', [
 				return;
 			}
 			const action = bulkAction.split('-')[0];
-			const promises = ids.map(id => doAction(action, id));
-
-			Promise.allSettled(promises).then(function (results) {
-				const fulfilled = results.filter(res => res.status === 'fulfilled').length;
-				const errors = results.filter(res => res.status === 'rejected');
-				if (fulfilled) {
-					alerts.success(`[[post-queue:bulk-${action}-success, ${fulfilled}]]`);
-					ajaxify.refresh();
+			// Try bulk endpoint first; if it fails, fall back to individual requests
+			try {
+				if (action === 'accept') {
+					await api.post('/posts/queue/bulk/accept', { ids });
+				} else if (action === 'reject') {
+					await api.del('/posts/queue/bulk', { ids });
+				} else {
+					throw new Error('Unknown bulk action');
 				}
+				alerts.success(`[[post-queue:bulk-${action}-success, ${ids.length}]]`);
+				ajaxify.refresh();
+			} catch (err) {
+				// fallback to sequential if bulk fails (e.g., older server without bulk endpoints)
+				const promises = ids.map(id => doAction(action, id));
+				Promise.allSettled(promises).then(function (results) {
+					const fulfilled = results.filter(res => res.status === 'fulfilled').length;
+					const errors = results.filter(res => res.status === 'rejected');
+					if (fulfilled) {
+						alerts.success(`[[post-queue:bulk-${action}-success, ${fulfilled}]]`);
+						ajaxify.refresh();
+					}
 
-				errors.forEach(res => alerts.error(res.reason));
-			});
+					errors.forEach(res => alerts.error(res.reason));
+				});
+			}
 		});
 	}
 

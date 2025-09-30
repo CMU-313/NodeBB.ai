@@ -1,0 +1,58 @@
+summary: Remove multiple queued posts
+description: Bulk-reject (remove) posts from the post queue by id.
+operationId: removeQueuedPostsBulk
+security:
+  - bearerAuth: []
+  - cookieAuth: []
+requestBody:
+  required: true
+  content:
+    application/json:
+      schema:
+        type: object
+        properties:
+          ids:
+            type: array
+            items:
+              type: string
+        required:
+          - ids
+responses:
+  '200':
+    description: Bulk reject result
+    content:
+      application/json:
+        schema:
+          type: object
+          properties:
+            success:
+              type: array
+              items:
+                type: object
+                properties:
+                  id:
+                    type: string
+                  result:
+                    type: object
+                    properties:
+                      type:
+                        type: string
+            errors:
+              type: array
+              items:
+                type: object
+                properties:
+                  id:
+                    type: string
+                  error:
+                    type: string
+  '400':
+    $ref: '../../../components/responses/400.yaml'
+  '401':
+    $ref: '../../../components/responses/401.yaml'
+  '403':
+    $ref: '../../../components/responses/403.yaml'
+  '404':
+    $ref: '../../../components/responses/404.yaml'
+  '500':
+    $ref: '../../../components/responses/500.yaml'
