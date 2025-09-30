@@ -24,44 +24,11 @@ module.exports = function (Groups) {
 			values: values,
 		}));
 
-		// Cast some values as bool (if not boolean already)
-		// 'true' and '1' = true, everything else false
-		['userTitleEnabled', 'private', 'hidden', 'disableJoinRequests', 'disableLeave'].forEach((prop) => {
-			if (values.hasOwnProperty(prop) && typeof values[prop] !== 'boolean') {
-				values[prop] = values[prop] === 'true' || parseInt(values[prop], 10) === 1;
-			}
-		});
+		// Cast boolean properties
+		castBooleanProperties(values, ['userTitleEnabled', 'private', 'hidden', 'disableJoinRequests', 'disableLeave']);
 
-		const payload = {
-			description: values.description || '',
-			icon: values.icon || '',
-			labelColor: values.labelColor || '#000000',
-			textColor: values.textColor || '#ffffff',
-		};
-
-		if (values.hasOwnProperty('userTitle')) {
-			payload.userTitle = values.userTitle || '';
-		}
-
-		if (values.hasOwnProperty('userTitleEnabled')) {
-			payload.userTitleEnabled = values.userTitleEnabled ? '1' : '0';
-		}
-
-		if (values.hasOwnProperty('hidden')) {
-			payload.hidden = values.hidden ? '1' : '0';
-		}
-
-		if (values.hasOwnProperty('private')) {
-			payload.private = values.private ? '1' : '0';
-		}
-
-		if (values.hasOwnProperty('disableJoinRequests')) {
-			payload.disableJoinRequests = values.disableJoinRequests ? '1' : '0';
-		}
-
-		if (values.hasOwnProperty('disableLeave')) {
-			payload.disableLeave = values.disableLeave ? '1' : '0';
-		}
+		// Prepare payload
+		const payload = preparePayload(values);
 
 		if (values.hasOwnProperty('name')) {
 			await checkNameChange(groupName, values.name);
@@ -89,6 +56,55 @@ module.exports = function (Groups) {
 			values: values,
 		});
 	};
+
+	// Helper function to cast boolean properties
+	function castBooleanProperties(values, properties) {
+		properties.forEach((prop) => {
+			if (values.hasOwnProperty(prop) && typeof values[prop] !== 'boolean') {
+				values[prop] = values[prop] === 'true' || parseInt(values[prop], 10) === 1;
+			}
+		});
+	}
+
+	// Further split payload preparation into smaller functions
+	function prepareBasicPayload(values) {
+		return {
+			description: values.description || '',
+			icon: values.icon || '',
+			labelColor: values.labelColor || '#000000',
+			textColor: values.textColor || '#ffffff',
+		};
+	}
+
+	function prepareOptionalPayload(values) {
+		const optionalPayload = {};
+		if (values.hasOwnProperty('userTitle')) {
+			optionalPayload.userTitle = values.userTitle || '';
+		}
+		if (values.hasOwnProperty('userTitleEnabled')) {
+			optionalPayload.userTitleEnabled = values.userTitleEnabled ? '1' : '0';
+		}
+		if (values.hasOwnProperty('hidden')) {
+			optionalPayload.hidden = values.hidden ? '1' : '0';
+		}
+		if (values.hasOwnProperty('private')) {
+			optionalPayload.private = values.private ? '1' : '0';
+		}
+		if (values.hasOwnProperty('disableJoinRequests')) {
+			optionalPayload.disableJoinRequests = values.disableJoinRequests ? '1' : '0';
+		}
+		if (values.hasOwnProperty('disableLeave')) {
+			optionalPayload.disableLeave = values.disableLeave ? '1' : '0';
+		}
+		return optionalPayload;
+	}
+
+	function preparePayload(values) {
+		return {
+			...prepareBasicPayload(values),
+			...prepareOptionalPayload(values),
+		};
+	}
 
 	async function updateVisibility(groupName, hidden) {
 		if (hidden) {
