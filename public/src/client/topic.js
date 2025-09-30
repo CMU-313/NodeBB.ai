@@ -17,11 +17,12 @@ define('forum/topic', [
 	'alerts',
 	'bootbox',
 	'clipboard',
+	'bookmark-categories',
 ], function (
 	infinitescroll, threadTools, postTools,
 	events, posts, navigator, sort, quickreply,
 	components, storage, hooks, api, alerts,
-	bootbox, clipboard
+	bootbox, clipboard, bookmarkCategories
 ) {
 	const Topic = {};
 	let tid = '0';
@@ -67,10 +68,9 @@ define('forum/topic', [
 		addRepliesHandler();
 		addPostsPreviewHandler();
 		setupQuickReply();
-		handleBookmark(tid);
-		handleThumbs();
-
-		$(window).on('scroll', utils.debounce(updateTopicTitle, 250));
+	handleBookmark(tid);
+	handleThumbs();
+	bookmarkCategories.init();		$(window).on('scroll', utils.debounce(updateTopicTitle, 250));
 
 		handleTopicSearch();
 

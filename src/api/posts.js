@@ -13,7 +13,173 @@ const plugins = require('../plugins');
 const meta = require('../meta');
 const events = require('../events');
 const privileges = require('../privileges');
-const activitypub = require('../activitypub');
+const activitypub = requpostsAPI.unbookmark = async function (caller, data) {
+	await apiHelpers.postCommand(caller, 'unbookmark', 'bookmarked', '', data);
+};
+
+postsAPI.createBookmarkCategory = async function (caller, data) {
+	if (!caller.uid) {
+		throw new Error('[[error:not-logged-in]]');
+	}
+	return await posts.createBookmarkCategory(caller.uid, data);
+};
+
+postsAPI.getBookmarkCategories = async function (caller) {
+	return await posts.getBookmarkCategories(caller.uid);
+};
+
+postsAPI.updateBookmarkCategory = async function (caller, data) {
+	if (!caller.uid) {
+		throw new Error('[[error:not-logged-in]]');
+	}
+	if (!data.categoryId) {
+		throw new Error('[[error:invalid-data]]');
+	}
+	return await posts.updateBookmarkCategory(caller.uid, data.categoryId, data);
+};
+
+postsAPI.deleteBookmarkCategory = async function (caller, data) {
+	if (!caller.uid) {
+		throw new Error('[[error:not-logged-in]]');
+	}
+	if (!data.categoryId) {
+		throw new Error('[[error:invalid-data]]');
+	}
+	await posts.deleteBookmarkCategory(caller.uid, data.categoryId);
+};
+
+postsAPI.addBookmarkToCategory = async function (caller, data) {
+	if (!caller.uid) {
+		throw new Error('[[error:not-logged-in]]');
+	}
+	if (!data.pid || !data.categoryId) {
+		throw new Error('[[error:invalid-data]]');
+	}
+	await posts.addBookmarkToCategory(caller.uid, data.pid, data.categoryId);
+};
+
+postsAPI.removeBookmarkFromCategory = async function (caller, data) {
+	if (!caller.uid) {
+		throw new Error('[[error:not-logged-in]]');
+	}
+	if (!data.pid || !data.categoryId) {
+		throw new Error('[[error:invalid-data]]');
+	}
+	await posts.removeBookmarkFromCategory(caller.uid, data.pid, data.categoryId);
+};
+
+postsAPI.getBookmarksInCategory = async function (caller, data) {
+	return await posts.getBookmarksInCategory(caller.uid, data.categoryId, data.start, data.limit);
+};
+
+postsAPI.createBookmarkCategory = async function (caller, data) {
+	if (!caller.uid) {
+		throw new Error('[[error:not-logged-in]]');
+	}
+	return await posts.createBookmarkCategory(caller.uid, data);
+};
+
+postsAPI.getBookmarkCategories = async function (caller) {
+	return await posts.getBookmarkCategories(caller.uid);
+};
+
+postsAPI.updateBookmarkCategory = async function (caller, data) {
+	if (!caller.uid) {
+		throw new Error('[[error:not-logged-in]]');
+	}
+	if (!data.categoryId) {
+		throw new Error('[[error:invalid-data]]');
+	}
+	return await posts.updateBookmarkCategory(caller.uid, data.categoryId, data);
+};
+
+postsAPI.deleteBookmarkCategory = async function (caller, data) {
+	if (!caller.uid) {
+		throw new Error('[[error:not-logged-in]]');
+	}
+	if (!data.categoryId) {
+		throw new Error('[[error:invalid-data]]');
+	}
+	await posts.deleteBookmarkCategory(caller.uid, data.categoryId);
+};
+
+postsAPI.addBookmarkToCategory = async function (caller, data) {
+	if (!caller.uid) {
+		throw new Error('[[error:not-logged-in]]');
+	}
+	if (!data.pid || !data.categoryId) {
+		throw new Error('[[error:invalid-data]]');
+	}
+	await posts.addBookmarkToCategory(caller.uid, data.pid, data.categoryId);
+};
+
+postsAPI.removeBookmarkFromCategory = async function (caller, data) {
+	if (!caller.uid) {
+		throw new Error('[[error:not-logged-in]]');
+	}
+	if (!data.pid || !data.categoryId) {
+		throw new Error('[[error:invalid-data]]');
+	}
+	await posts.removeBookmarkFromCategory(caller.uid, data.pid, data.categoryId);
+};
+
+postsAPI.getBookmarksInCategory = async function (caller, data) {
+	return await posts.getBookmarksInCategory(caller.uid, data.categoryId, data.start, data.limit);
+};
+
+postsAPI.createBookmarkCategory = async function (caller, data) {
+	if (!caller.uid) {
+		throw new Error('[[error:not-logged-in]]');
+	}
+	return await posts.createBookmarkCategory(caller.uid, data);
+};
+
+postsAPI.getBookmarkCategories = async function (caller) {
+	return await posts.getBookmarkCategories(caller.uid);
+};
+
+postsAPI.updateBookmarkCategory = async function (caller, data) {
+	if (!caller.uid) {
+		throw new Error('[[error:not-logged-in]]');
+	}
+	if (!data.categoryId) {
+		throw new Error('[[error:invalid-data]]');
+	}
+	return await posts.updateBookmarkCategory(caller.uid, data.categoryId, data);
+};
+
+postsAPI.deleteBookmarkCategory = async function (caller, data) {
+	if (!caller.uid) {
+		throw new Error('[[error:not-logged-in]]');
+	}
+	if (!data.categoryId) {
+		throw new Error('[[error:invalid-data]]');
+	}
+	await posts.deleteBookmarkCategory(caller.uid, data.categoryId);
+};
+
+postsAPI.addBookmarkToCategory = async function (caller, data) {
+	if (!caller.uid) {
+		throw new Error('[[error:not-logged-in]]');
+	}
+	if (!data.pid || !data.categoryId) {
+		throw new Error('[[error:invalid-data]]');
+	}
+	await posts.addBookmarkToCategory(caller.uid, data.pid, data.categoryId);
+};
+
+postsAPI.removeBookmarkFromCategory = async function (caller, data) {
+	if (!caller.uid) {
+		throw new Error('[[error:not-logged-in]]');
+	}
+	if (!data.pid || !data.categoryId) {
+		throw new Error('[[error:invalid-data]]');
+	}
+	await posts.removeBookmarkFromCategory(caller.uid, data.pid, data.categoryId);
+};
+
+postsAPI.getBookmarksInCategory = async function (caller, data) {
+	return await posts.getBookmarksInCategory(caller.uid, data.categoryId, data.start, data.limit);('../activitypub');
 const apiHelpers = require('./helpers');
 const websockets = require('../socket.io');
 const socketHelpers = require('../socket.io/helpers');

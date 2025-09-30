@@ -210,3 +210,42 @@ Posts.notifyQueuedPostOwner = async (req, res) => {
 	await api.posts.notifyQueuedPostOwner(req, { id, message: req.body.message });
 	helpers.formatApiResponse(200, res);
 };
+
+Posts.createBookmarkCategory = async (req, res) => {
+	const data = await api.posts.createBookmarkCategory(req, req.body);
+	helpers.formatApiResponse(200, res, data);
+};
+
+Posts.getBookmarkCategories = async (req, res) => {
+	const data = await api.posts.getBookmarkCategories(req);
+	helpers.formatApiResponse(200, res, data);
+};
+
+Posts.updateBookmarkCategory = async (req, res) => {
+	const data = await api.posts.updateBookmarkCategory(req, { ...req.body, categoryId: req.params.categoryId });
+	helpers.formatApiResponse(200, res, data);
+};
+
+Posts.deleteBookmarkCategory = async (req, res) => {
+	await api.posts.deleteBookmarkCategory(req, { categoryId: req.params.categoryId });
+	helpers.formatApiResponse(200, res);
+};
+
+Posts.addBookmarkToCategory = async (req, res) => {
+	await api.posts.addBookmarkToCategory(req, { pid: req.params.pid, categoryId: req.params.categoryId });
+	helpers.formatApiResponse(200, res);
+};
+
+Posts.removeBookmarkFromCategory = async (req, res) => {
+	await api.posts.removeBookmarkFromCategory(req, { pid: req.params.pid, categoryId: req.params.categoryId });
+	helpers.formatApiResponse(200, res);
+};
+
+Posts.getBookmarksInCategory = async (req, res) => {
+	const data = await api.posts.getBookmarksInCategory(req, {
+		categoryId: req.params.categoryId,
+		start: parseInt(req.query.start, 10) || 0,
+		limit: parseInt(req.query.limit, 10) || 20,
+	});
+	helpers.formatApiResponse(200, res, data);
+};

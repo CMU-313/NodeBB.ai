@@ -92,6 +92,12 @@
 			<span component="post/bookmark-count" class="bookmarkCount badge bg-secondary" data-bookmarks="{posts.bookmarks}">{posts.bookmarks}</span>&nbsp;
 		</a>
 	</li>
+	<li {{{ if !posts.bookmarked }}}hidden{{{ end }}} class="bookmark-categories">
+		<a class="dropdown-item rounded-1 d-flex align-items-center gap-2" component="post/bookmark/categorize" role="menuitem" href="#" data-pid="{posts.pid}">
+			<span class="menu-icon"><i class="fa fa-fw text-secondary fa-tags"></i></span>
+			<span>[[topic:bookmark-categories]]</span>
+		</a>
+	</li>
 	{{{ end }}}
 
 

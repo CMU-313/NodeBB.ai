@@ -46,6 +46,14 @@ module.exports = function () {
 	setupApiRoute(router, 'put', '/queue/:id', controllers.write.posts.editQueuedPost);
 	setupApiRoute(router, 'post', '/queue/:id/notify', [middleware.checkRequired.bind(null, ['message'])], controllers.write.posts.notifyQueuedPostOwner);
 
+	// Bookmark category routes
+	setupApiRoute(router, 'post', '/bookmark-categories', [middleware.ensureLoggedIn, middleware.checkRequired.bind(null, ['name'])], controllers.write.posts.createBookmarkCategory);
+	setupApiRoute(router, 'get', '/bookmark-categories', [middleware.ensureLoggedIn], controllers.write.posts.getBookmarkCategories);
+	setupApiRoute(router, 'put', '/bookmark-categories/:categoryId', [middleware.ensureLoggedIn, middleware.checkRequired.bind(null, ['name'])], controllers.write.posts.updateBookmarkCategory);
+	setupApiRoute(router, 'delete', '/bookmark-categories/:categoryId', [middleware.ensureLoggedIn], controllers.write.posts.deleteBookmarkCategory);
+	setupApiRoute(router, 'put', '/:pid/bookmark-categories/:categoryId', middlewares, controllers.write.posts.addBookmarkToCategory);
+	setupApiRoute(router, 'delete', '/:pid/bookmark-categories/:categoryId', middlewares, controllers.write.posts.removeBookmarkFromCategory);
+	setupApiRoute(router, 'get', '/bookmark-categories/:categoryId', [middleware.ensureLoggedIn], controllers.write.posts.getBookmarksInCategory);
 
 	// Shorthand route to access post routes by topic index
 	router.all('/+byIndex/:index*?', [middleware.checkRequired.bind(null, ['tid'])], controllers.write.posts.redirectByIndex);
