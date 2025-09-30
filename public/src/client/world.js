@@ -100,7 +100,6 @@ define('forum/world', ['topicList', 'search', 'sort', 'hooks', 'alerts', 'api', 
 		};
 
 		let visibility = localStorage.getItem('world:show-categories');
-		console.log('got value', visibility);
 		visibility = visibility ? visibility === 'true' : true; // localStorage values are strings
 		update();
 
