@@ -11,7 +11,11 @@ define('forum/topic/posts', [
 	'translator',
 	'hooks',
 	'helpers',
-], function (pagination, infinitescroll, postTools, images, navigator, components, translator, hooks, helpers) {
+	'api',
+	'templates',
+], function (
+	pagination, infinitescroll, postTools, images, navigator, components, translator, hooks, helpers, api, templates
+) {
 	const Posts = { };
 
 	Posts.signaturesShown = {};
@@ -445,6 +449,32 @@ define('forum/topic/posts', [
 			}
 		});
 	};
+
+	Posts.loadUnresolvedPosts = async function () {
+		try {
+			const unresolvedPosts = await api.get('/api/posts/unresolved');
+			unresolvedPosts.forEach((post) => {
+				post.unresolvedLabel = `Unresolved for ${helpers.calculateTimeElapsed(post.createdAt)}`;
+			});
+			Posts.insertUnresolvedPosts(unresolvedPosts);
+		} catch (err) {
+			console.error('Failed to load unresolved posts:', err);
+		}
+	};
+
+	Posts.insertUnresolvedPosts = function (unresolvedPosts) {
+		const $feed = $('#posts-container');
+		unresolvedPosts.forEach((post) => {
+			const postHtml = templates.parse('partials/post', post);
+			$feed.prepend(postHtml);
+		});
+	};
+
+	hooks.on('action:ajaxify.end', function () {
+		if (ajaxify.data.template.topic) {
+			Posts.loadUnresolvedPosts();
+		}
+	});
 
 	return Posts;
 });

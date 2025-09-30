@@ -669,3 +669,30 @@ async function sendQueueNotification(type, targetUid, path, notificationText) {
 	const notifObj = await notifications.create(notifData);
 	await notifications.push(notifObj, [targetUid]);
 }
+
+postsAPI.getUnresolvedPosts = async function (caller, { limit = 10, offset = 0 }) {
+	const unresolvedPosts = await db.getSortedSetRevRangeByScore(
+		'posts:unresolved',
+		offset,
+		offset + limit - 1,
+		Date.now(),
+		0
+	);
+
+	const postsData = await posts.getPostsFields(unresolvedPosts, ['pid', 'tid', 'content', 'createdAt']);
+	return postsData;
+};
+
+postsAPI.getUnresolvedPostCounts = async function () {
+	const categories = await db.getSortedSetRange('categories:cid', 0, -1);
+
+	const counts = await Promise.all(categories.map(async (cid) => {
+		const count = await db.sortedSetCount(`category:${cid}:posts:unresolved`, 0, Date.now());
+		return { cid, count };
+	}));
+
+	return counts.reduce((acc, { cid, count }) => {
+		acc[cid] = count;
+		return acc;
+	}, {});
+};
