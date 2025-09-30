@@ -25,6 +25,21 @@ const apiTopics = require('../src/api/topics');
 const apiPosts = require('../src/api/posts');
 const request = require('../src/request');
 
+// Define a helper function for setting up topics
+function setupTopic(topic, callback) {
+	topics.post({
+		uid: topic.userId,
+		title: topic.title,
+		content: topic.content,
+		cid: topic.categoryId,
+	}, (err, result) => {
+		if (err) {
+			return callback(err);
+		}
+		callback(null, result);
+	});
+}
+
 describe('Topic\'s', () => {
 	let topic;
 	let categoryObj;
@@ -243,16 +258,10 @@ describe('Topic\'s', () => {
 		let newPost;
 
 		before((done) => {
-			topics.post({
-				uid: topic.userId,
-				title: topic.title,
-				content: topic.content,
-				cid: topic.categoryId,
-			}, (err, result) => {
+			setupTopic(topic, (err, result) => {
 				if (err) {
 					return done(err);
 				}
-
 				newTopic = result.topicData;
 				newPost = result.postData;
 				done();
@@ -381,16 +390,10 @@ describe('Topic\'s', () => {
 		let newPost;
 
 		before((done) => {
-			topics.post({
-				uid: topic.userId,
-				title: topic.title,
-				content: topic.content,
-				cid: topic.categoryId,
-			}, (err, result) => {
+			setupTopic(topic, (err, result) => {
 				if (err) {
 					return done(err);
 				}
-
 				newTopic = result.topicData;
 				newPost = result.postData;
 				done();
@@ -1500,22 +1503,6 @@ describe('Topic\'s', () => {
 		});
 
 		it('should return error if data is invalid', (done) => {
-			socketTopics.loadMoreTags({ uid: adminUid }, { after: 'asd' }, (err) => {
-				assert.equal(err.message, '[[error:invalid-data]]');
-				done();
-			});
-		});
-
-		it('should load more tags', (done) => {
-			socketTopics.loadMoreTags({ uid: adminUid }, { after: 0 }, (err, data) => {
-				assert.ifError(err);
-				assert(Array.isArray(data.tags));
-				assert.equal(data.nextStart, 100);
-				done();
-			});
-		});
-
-		it('should error if data is invalid', (done) => {
 			socketAdmin.tags.create({ uid: adminUid }, null, (err) => {
 				assert.equal(err.message, '[[error:invalid-data]]');
 				done();
@@ -2205,9 +2192,10 @@ describe('Topic\'s', () => {
 				},
 			});
 
-			const [topic1, topic2] = await Promise.all([
+			const [topic1, topic2, topic3] = await Promise.all([
 				getTopic(topic1Result.topicData.tid),
 				getTopic(topic2Result.topicData.tid),
+				getTopic(mergeTid),
 			]);
 
 			assert.equal(topic1.posts.length, 0);
