@@ -1,4 +1,3 @@
-
 'use strict';
 
 const _ = require('lodash');
@@ -439,6 +438,22 @@ Categories.buildForSelectCategories = function (categories, fields, parentCid) {
 	}
 
 	return categoriesData.map(category => _.pick(category, pickFields));
+};
+
+// Add methods for handling "announcement" type categories
+Categories.createAnnouncementCategory = async function (data) {
+    if (data.type !== 'announcement') {
+        throw new Error('Invalid category type');
+    }
+    return await Categories.create(data);
+};
+
+Categories.deleteAnnouncementCategory = async function (cid, uid) {
+    const categoryData = await Categories.getCategoryData(cid);
+    if (categoryData.type !== 'announcement') {
+        throw new Error('Invalid category type');
+    }
+    return await Categories.purge(cid, uid);
 };
 
 require('../promisify')(Categories);
