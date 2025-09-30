@@ -68,6 +68,7 @@ async function getGroups(req, sort, page) {
 }
 
 groupsController.details = async function (req, res, next) {
+	// Refactored for maintainability (CMU 17-313 P1B)
 	const lowercaseSlug = req.params.slug.toLowerCase();
 	if (req.params.slug !== lowercaseSlug) {
 		if (res.locals.isAPI) {
@@ -76,39 +77,27 @@ groupsController.details = async function (req, res, next) {
 			return res.redirect(`${nconf.get('relative_path')}/groups/${lowercaseSlug}`);
 		}
 	}
+
 	const groupName = await groups.getGroupNameByGroupSlug(req.params.slug);
 	if (!groupName) {
 		return next();
 	}
-	const [exists, isHidden, isAdmin, isGlobalMod] = await Promise.all([
-		groups.exists(groupName),
-		groups.isHidden(groupName),
-		privileges.admin.can('admin:groups', req.uid),
-		user.isGlobalModerator(req.uid),
-	]);
+
+	const [exists, isHidden, isAdmin, isGlobalMod] = await getGroupAccessInfo(groupName, req.uid);
 	if (!exists) {
 		return next();
 	}
-	if (isHidden && !isAdmin && !isGlobalMod) {
-		const [isMember, isInvited] = await Promise.all([
-			groups.isMember(req.uid, groupName),
-			groups.isInvited(req.uid, groupName),
-		]);
-		if (!isMember && !isInvited) {
-			return next();
-		}
+	if (await isGroupHiddenAndInaccessible(isHidden, isAdmin, isGlobalMod, req.uid, groupName)) {
+		return next();
 	}
-	const [groupData, posts] = await Promise.all([
-		groups.get(groupName, {
-			uid: req.uid,
-			truncateUserList: true,
-			userListCount: 20,
-		}),
-		groups.getLatestMemberPosts(groupName, 10, req.uid),
-	]);
+
+	const [groupData, posts] = await getGroupDataAndPosts(groupName, req.uid);
 	if (!groupData) {
 		return next();
 	}
+
+	// Temporary print statement for validation
+	console.log('crakab');
 
 	res.locals.linkTags = [
 		{
@@ -124,9 +113,48 @@ groupsController.details = async function (req, res, next) {
 		isAdmin: isAdmin,
 		isGlobalMod: isGlobalMod,
 		allowPrivateGroups: meta.config.allowPrivateGroups,
-		breadcrumbs: helpers.buildBreadcrumbs([{ text: '[[pages:groups]]', url: '/groups' }, { text: groupData.displayName }]),
+		breadcrumbs: helpers.buildBreadcrumbs([
+			{ text: '[[pages:groups]]', url: '/groups' },
+			{ text: groupData.displayName },
+		]),
 	});
 };
+
+// Helper to get group access info
+async function getGroupAccessInfo(groupName, uid) {
+	return await Promise.all([
+		groups.exists(groupName),
+		groups.isHidden(groupName),
+		privileges.admin.can('admin:groups', uid),
+		user.isGlobalModerator(uid),
+	]);
+}
+
+// Helper to check if group is hidden and user cannot access
+async function isGroupHiddenAndInaccessible(isHidden, isAdmin, isGlobalMod, uid, groupName) {
+	if (isHidden && !isAdmin && !isGlobalMod) {
+		const [isMember, isInvited] = await Promise.all([
+			groups.isMember(uid, groupName),
+			groups.isInvited(uid, groupName),
+		]);
+		if (!isMember && !isInvited) {
+			return true;
+		}
+	}
+	return false;
+}
+
+// Helper to get group data and posts
+async function getGroupDataAndPosts(groupName, uid) {
+	return await Promise.all([
+		groups.get(groupName, {
+			uid: uid,
+			truncateUserList: true,
+			userListCount: 20,
+		}),
+		groups.getLatestMemberPosts(groupName, 10, uid),
+	]);
+}
 
 groupsController.members = async function (req, res, next) {
 	const page = parseInt(req.query.page, 10) || 1;
