@@ -24,6 +24,8 @@ exports.compare = async function (password, hash, shaWrapped) {
 	return await pool.exec('compare', [password, hash || fakeHash]);
 };
 
+
+
 let fakeHashCache;
 async function getFakeHash() {
 	if (fakeHashCache) {
