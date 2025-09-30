@@ -1,4 +1,3 @@
-
 'use strict';
 
 const fs = require('fs');
@@ -257,11 +256,7 @@ function setupCookie() {
 	return cookie;
 }
 
-async function listen() {
-	let port = nconf.get('port');
-	const isSocket = isNaN(port) && !Array.isArray(port);
-	const socketPath = isSocket ? nconf.get('port') : '';
-
+async function validatePortConfig(port) {
 	if (Array.isArray(port)) {
 		if (!port.length) {
 			winston.error('[startup] empty ports array in config.json');
@@ -276,28 +271,47 @@ async function listen() {
 			process.exit();
 		}
 	}
-	port = parseInt(port, 10);
+	return parseInt(port, 10);
+}
+
+function configureProxy(port) {
 	if ((port !== 80 && port !== 443) || nconf.get('trust_proxy') === true) {
-		winston.info('🤝 Enabling \'trust proxy\'');
+		winston.info('🤝 Enabling "trust proxy"');
 		app.enable('trust proxy');
 	}
 
 	if ((port === 80 || port === 443) && process.env.NODE_ENV !== 'development') {
 		winston.info('Using ports 80 and 443 is not recommend; use a proxy instead. See README.md');
 	}
+}
+
+async function handleSocket(socketPath) {
+	const oldUmask = process.umask('0000');
+	try {
+		await exports.testSocket(socketPath);
+	} catch (err) {
+		winston.error(`[startup] NodeBB was unable to secure domain socket access (${socketPath})\n${err.stack}`);
+		throw err;
+	} finally {
+		process.umask(oldUmask);
+	}
+}
+
+async function listen() {
+	let port = nconf.get('port');
+	const isSocket = isNaN(port) && !Array.isArray(port);
+	const socketPath = isSocket ? nconf.get('port') : '';
+
+	if (!isSocket) {
+		port = await validatePortConfig(port);
+		configureProxy(port);
+	}
 
 	const bind_address = ((nconf.get('bind_address') === '0.0.0.0' || !nconf.get('bind_address')) ? '0.0.0.0' : nconf.get('bind_address'));
 	const args = isSocket ? [socketPath] : [port, bind_address];
-	let oldUmask;
 
 	if (isSocket) {
-		oldUmask = process.umask('0000');
-		try {
-			await exports.testSocket(socketPath);
-		} catch (err) {
-			winston.error(`[startup] NodeBB was unable to secure domain socket access (${socketPath})\n${err.stack}`);
-			throw err;
-		}
+		await handleSocket(socketPath);
 	}
 
 	return new Promise((resolve, reject) => {
@@ -310,9 +324,6 @@ async function listen() {
 
 			winston.info(`📡 NodeBB is now listening on: ${chalk.yellow(onText)}`);
 			winston.info(`🔗 Canonical URL: ${chalk.yellow(nconf.get('url'))}`);
-			if (oldUmask) {
-				process.umask(oldUmask);
-			}
 			resolve();
 		}]));
 	});
