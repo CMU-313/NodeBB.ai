@@ -107,6 +107,16 @@ Posts.move = async (req, res) => {
 	helpers.formatApiResponse(200, res);
 };
 
+Posts.pin = async (req, res) => {
+	const result = await api.posts.pin(req, { pid: req.params.pid });
+	helpers.formatApiResponse(200, res, result);
+};
+
+Posts.unpin = async (req, res) => {
+	const result = await api.posts.unpin(req, { pid: req.params.pid });
+	helpers.formatApiResponse(200, res, result);
+};
+
 async function mock(req) {
 	const tid = await posts.getPostField(req.params.pid, 'tid');
 	return { pid: req.params.pid, room_id: `topic_${tid}` };

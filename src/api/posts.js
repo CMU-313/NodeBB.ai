@@ -336,6 +336,20 @@ postsAPI.upvote = async function (caller, data) {
 	return await apiHelpers.postCommand(caller, 'upvote', 'voted', 'notifications:upvoted-your-post-in', data);
 };
 
+postsAPI.pin = async function (caller, data) {
+	if (!data || !data.pid) {
+		throw new Error('[[error:invalid-data]]');
+	}
+	return await posts.tools.pin(caller.uid, data.pid);
+};
+
+postsAPI.unpin = async function (caller, data) {
+	if (!data || !data.pid) {
+		throw new Error('[[error:invalid-data]]');
+	}
+	return await posts.tools.unpin(caller.uid, data.pid);
+};
+
 postsAPI.downvote = async function (caller, data) {
 	return await apiHelpers.postCommand(caller, 'downvote', 'voted', '', data);
 };

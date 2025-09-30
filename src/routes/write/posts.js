@@ -24,6 +24,9 @@ module.exports = function () {
 
 	setupApiRoute(router, 'put', '/:pid/move', [...middlewares, middleware.checkRequired.bind(null, ['tid'])], controllers.write.posts.move);
 
+	setupApiRoute(router, 'put', '/:pid/pin', middlewares, controllers.write.posts.pin);
+	setupApiRoute(router, 'delete', '/:pid/pin', middlewares, controllers.write.posts.unpin);
+
 	setupApiRoute(router, 'put', '/:pid/vote', [...middlewares, middleware.checkRequired.bind(null, ['delta'])], controllers.write.posts.vote);
 	setupApiRoute(router, 'delete', '/:pid/vote', middlewares, controllers.write.posts.unvote);
 	setupApiRoute(router, 'get', '/:pid/voters', [middleware.assert.post], controllers.write.posts.getVoters);
