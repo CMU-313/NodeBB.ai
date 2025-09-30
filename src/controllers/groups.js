@@ -67,8 +67,31 @@ async function getGroups(req, sort, page) {
 	return [groupData, pageCount];
 }
 
+/**
+ * Helper to determine whether the current request can view a hidden group.
+ * Returns true if the request is allowed to continue, false if the caller
+ * should respond with next() (i.e., treat as not found / forbidden).
+ */
+async function canViewHiddenGroup({ req, groupName, isHidden, isAdmin, isGlobalMod }) {
+	if (!isHidden) {
+		return true;
+	}
+
+	if (isAdmin || isGlobalMod) {
+		return true;
+	}
+
+	const [isMember, isInvited] = await Promise.all([
+		groups.isMember(req.uid, groupName),
+		groups.isInvited(req.uid, groupName),
+	]);
+
+	return Boolean(isMember || isInvited);
+}
+
 groupsController.details = async function (req, res, next) {
 	const lowercaseSlug = req.params.slug.toLowerCase();
+	// normalize slug / handle redirects
 	if (req.params.slug !== lowercaseSlug) {
 		if (res.locals.isAPI) {
 			req.params.slug = lowercaseSlug;
@@ -76,27 +99,28 @@ groupsController.details = async function (req, res, next) {
 			return res.redirect(`${nconf.get('relative_path')}/groups/${lowercaseSlug}`);
 		}
 	}
+
 	const groupName = await groups.getGroupNameByGroupSlug(req.params.slug);
 	if (!groupName) {
 		return next();
 	}
+
 	const [exists, isHidden, isAdmin, isGlobalMod] = await Promise.all([
 		groups.exists(groupName),
 		groups.isHidden(groupName),
 		privileges.admin.can('admin:groups', req.uid),
 		user.isGlobalModerator(req.uid),
 	]);
+
 	if (!exists) {
 		return next();
 	}
-	if (isHidden && !isAdmin && !isGlobalMod) {
-		const [isMember, isInvited] = await Promise.all([
-			groups.isMember(req.uid, groupName),
-			groups.isInvited(req.uid, groupName),
-		]);
-		if (!isMember && !isInvited) {
-			return next();
-		}
+
+	// delegate hidden-group access checks to a small helper to reduce function
+	// complexity and make the control flow clearer
+	const canViewHidden = await canViewHiddenGroup({ req, groupName, isHidden, isAdmin, isGlobalMod });
+	if (!canViewHidden) {
+		return next();
 	}
 	const [groupData, posts] = await Promise.all([
 		groups.get(groupName, {
