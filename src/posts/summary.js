@@ -22,7 +22,7 @@ module.exports = function (Posts) {
 		options.escape = options.hasOwnProperty('escape') ? options.escape : false;
 		options.extraFields = options.hasOwnProperty('extraFields') ? options.extraFields : [];
 
-		const fields = ['pid', 'tid', 'toPid', 'url', 'content', 'sourceContent', 'uid', 'timestamp', 'deleted', 'upvotes', 'downvotes', 'replies', 'handle'].concat(options.extraFields);
+		const fields = ['pid', 'tid', 'toPid', 'url', 'content', 'sourceContent', 'uid', 'timestamp', 'deleted', 'upvotes', 'downvotes', 'replies', 'handle', 'anonymous'].concat(options.extraFields);
 
 		let posts = await Posts.getPostsFields(pids, fields);
 		posts = posts.filter(Boolean);
@@ -53,6 +53,19 @@ module.exports = function (Posts) {
 			post.user = uidToUser[post.uid];
 			Posts.overrideGuestHandle(post, post.handle);
 			post.handle = undefined;
+
+			// Override user info for anonymous posts
+			if (post.anonymous === 1) {
+				post.user = {
+					uid: 0,
+					username: 'Anonymous',
+					userslug: 'anonymous',
+					picture: '',
+					status: 'offline',
+					displayname: 'Anonymous',
+				};
+			}
+
 			post.topic = tidToTopic[post.tid];
 			post.category = post.topic && cidToCategory[post.topic.cid];
 			post.isMainPost = post.topic && post.pid === post.topic.mainPid;
