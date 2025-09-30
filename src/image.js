@@ -21,6 +21,28 @@ function requireSharp() {
 	return sharp;
 }
 
+function applyQualityOptions(sharpImage, format, quality) {
+	if (!quality) {
+		return;
+	}
+
+	if (format === 'jpeg') {
+		sharpImage.jpeg({
+			quality: quality,
+			mozjpeg: true,
+		});
+		return;
+	}
+
+	if (format === 'png') {
+		sharpImage.png({
+			quality: quality,
+			compressionLevel: 9,
+		});
+		return;
+	}
+}
+
 image.isFileTypeAllowed = async function (path) {
 	const plugins = require('./plugins');
 	if (plugins.hooks.hasListeners('filter:image.isFileTypeAllowed')) {
@@ -51,27 +73,11 @@ image.resizeImage = async function (data) {
 		const metadata = await sharpImage.metadata();
 
 		sharpImage.rotate(); // auto-orients based on exif data
-		sharpImage.resize(data.hasOwnProperty('width') ? data.width : null, data.hasOwnProperty('height') ? data.height : null);
+		const width = data.hasOwnProperty('width') ? data.width : null;
+		const height = data.hasOwnProperty('height') ? data.height : null;
+		sharpImage.resize(width, height);
 
-		if (data.quality) {
-			switch (metadata.format) {
-				case 'jpeg': {
-					sharpImage.jpeg({
-						quality: data.quality,
-						mozjpeg: true,
-					});
-					break;
-				}
-
-				case 'png': {
-					sharpImage.png({
-						quality: data.quality,
-						compressionLevel: 9,
-					});
-					break;
-				}
-			}
-		}
+		applyQualityOptions(sharpImage, metadata.format, data.quality);
 
 		await sharpImage.toFile(data.target || data.path);
 	}
