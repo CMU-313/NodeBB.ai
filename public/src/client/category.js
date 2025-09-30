@@ -53,6 +53,8 @@ define('forum/category', [
 
 		new clipboard('[data-clipboard-text]');
 
+		handleCategorySearch(cid);
+
 		hooks.fire('action:topics.loaded', { topics: ajaxify.data.topics });
 		hooks.fire('action:category.loaded', { cid: ajaxify.data.cid });
 	};
@@ -124,6 +126,50 @@ define('forum/category', [
 		fadeEl.addEventListener('click', () => {
 			const state = fadeEl.classList.contains('line-clamp-4');
 			fadeEl.classList.toggle('line-clamp-4', !state);
+		});
+	}
+
+	function handleCategorySearch(cid) {
+		const searchInput = $('#category-search-input');
+		const searchButton = $('#category-search-button');
+
+		if (!searchInput.length || !searchButton.length) {
+			return;
+		}
+
+		function performSearch() {
+			const searchTerm = searchInput.val().trim();
+			console.log('[Category Search] User input:', searchTerm, 'Category ID:', cid);
+			
+			if (!searchTerm) {
+				return;
+			}
+
+			// Navigate to search page with category filter
+			const searchParams = new URLSearchParams({
+				term: searchTerm,
+				in: 'titlesposts',
+				categories: [cid],
+				searchChildren: 'true',
+			});
+
+			ajaxify.go('/search?' + searchParams.toString());
+		}
+
+		// Handle search button click
+		searchButton.on('click', performSearch);
+
+		// Handle Enter key press in search input
+		searchInput.on('keypress', function (e) {
+			if (e.which === 13) {
+				performSearch();
+			}
+		});
+
+		// Log input changes for verification (as per acceptance criteria)
+		searchInput.on('input', function () {
+			const currentValue = $(this).val();
+			console.log('[Category Search] Input changed:', currentValue);
 		});
 	}
 
