@@ -54,6 +54,15 @@
 			</div>
 		</div>
 
+		{{{ if postingStreak }}}
+		<div class="stat">
+			<div class="align-items-center justify-content-center card card-header p-3 border-0 rounded-1 h-100 gap-2">
+				<span class="stat-label text-xs fw-semibold"><i class="text-muted fa-solid fa-fire"></i> <span>[[user:posting-streak]]</span></span>
+				<span class="fs-2 ff-secondary" title="{postingStreak}">{postingStreak}</span>
+			</div>
+		</div>
+		{{{ end }}}
+
 		{{{ if email }}}
 		<div class="stat">
 			<div class="align-items-center justify-content-center card card-header p-3 border-0 rounded-1 h-100 gap-2">
