@@ -80,6 +80,7 @@ function apiRoutes(router, name, middleware, controllers) {
 	router.get(`/api/${name}/users/csv`, middleware.ensureLoggedIn, helpers.tryRoute(controllers.admin.users.getCSV));
 	router.get(`/api/${name}/groups/:groupname/csv`, middleware.ensureLoggedIn, helpers.tryRoute(controllers.admin.groups.getCSV));
 	router.get(`/api/${name}/analytics`, middleware.ensureLoggedIn, helpers.tryRoute(controllers.admin.dashboard.getAnalytics));
+	router.get(`/api/${name}/instructor/engagement`, middleware.ensureLoggedIn, helpers.tryRoute(controllers.admin.dashboard.getInstructorEngagement));
 	router.get(`/api/${name}/advanced/cache/dump`, middleware.ensureLoggedIn, helpers.tryRoute(controllers.admin.cache.dump));
 
 	const multipart = require('connect-multiparty');
