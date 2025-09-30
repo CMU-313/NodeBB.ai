@@ -4,6 +4,7 @@ module.exports = function (module) {
 	const _ = require('lodash');
 	const helpers = require('./helpers');
 	const { secureRandom } = require('../../utils');
+	const winston = require('winston');
 
 	module.setAdd = async function (key, value) {
 		if (!Array.isArray(value)) {
@@ -28,7 +29,7 @@ module.exports = function (module) {
 			});
 		} catch (err) {
 			if (err && err.message.includes('E11000 duplicate key error')) {
-				console.log(new Error('e11000').stack, key, value);
+				winston.warn('[database/mongo/sets] E11000 duplicate key, retrying setAdd', { key, value, stack: new Error('e11000').stack });
 				return await module.setAdd(key, value);
 			}
 			throw err;
@@ -61,7 +62,7 @@ module.exports = function (module) {
 			await bulk.execute();
 		} catch (err) {
 			if (err && err.message.includes('E11000 duplicate key error')) {
-				console.log(new Error('e11000').stack, keys, value);
+				winston.warn('[database/mongo/sets] E11000 duplicate key, retrying setsAdd', { keys, value, stack: new Error('e11000').stack });
 				return await module.setsAdd(keys, value);
 			}
 			throw err;
