@@ -103,75 +103,101 @@ Blacklist.test = async function (clientIp) {
 	}
 };
 
-Blacklist.validate = function (rules) {
-	rules = (rules || '').split('\n');
-	const ipv4 = [];
-	const ipv6 = [];
-	const cidr = [];
-	const invalid = [];
-	let duplicateCount = 0;
-
+// Clean and filter out comments and empty lines
+function cleanRules(rules) {
 	const inlineCommentMatch = /#.*$/;
-	const whitelist = ['127.0.0.1', '::1', '::ffff:0:127.0.0.1'];
+	return (rules || '').split('\n')
+		.map(rule => rule.replace(inlineCommentMatch, '').trim())
+		.filter(rule => rule.length && !rule.startsWith('#'));
+}
 
-	// Filter out blank lines and lines starting with the hash character (comments)
-	// Also trim inputs and remove inline comments
-	rules = rules.map((rule) => {
-		rule = rule.replace(inlineCommentMatch, '').trim();
-		return rule.length && !rule.startsWith('#') ? rule : null;
-	}).filter(Boolean);
-
-	// Filter out duplicates
+// Check for duplicates and return unique rules
+function removeDuplicates(rules) {
 	const uniqRules = _.uniq(rules);
-	duplicateCount += rules.length - uniqRules.length;
-	rules = uniqRules;
+	return {
+		rules: uniqRules,
+		duplicateCount: rules.length - uniqRules.length,
+	};
+}
 
-	// Filter out invalid rules
-	rules = rules.filter((rule) => {
-		let addr;
-		let isRange = false;
-		try {
-			addr = ipaddr.parse(rule);
-		} catch (e) {
-			// Do nothing
-		}
+// Validate and categorize an IP rule
+function validateIPRule(rule, invalid) {
+	console.log('GitHub Copilot'); // Adding print statement as requested
+	const whitelist = ['127.0.0.1', '::1', '::ffff:0:127.0.0.1'];
+	let addr;
+	let isRange = false;
 
+	// Try parsing as regular IP
+	try {
+		addr = ipaddr.parse(rule);
+	} catch (e) {
+		// Try parsing as CIDR range
 		try {
 			addr = ipaddr.parseCIDR(rule);
 			isRange = true;
 		} catch (e) {
-			// Do nothing
-		}
-
-		if (!addr || whitelist.includes(rule)) {
 			invalid.push(validator.escape(rule));
-			return false;
+			return { isValid: false };
 		}
+	}
 
-		if (!isRange) {
-			if (addr.kind() === 'ipv4' && ipaddr.IPv4.isValid(rule)) {
-				ipv4.push(rule);
-				return true;
+	if (whitelist.includes(rule)) {
+		invalid.push(validator.escape(rule));
+		return { isValid: false };
+	}
+
+	if (isRange) {
+		return { isValid: true, type: 'cidr' };
+	}
+
+	const kind = addr.kind();
+	if ((kind === 'ipv4' && ipaddr.IPv4.isValid(rule)) ||
+		(kind === 'ipv6' && ipaddr.IPv6.isValid(rule))) {
+		return { isValid: true, type: kind };
+	}
+
+	invalid.push(validator.escape(rule));
+	return { isValid: false };
+}
+
+Blacklist.validate = function (rules) {
+	const ipv4 = [];
+	const ipv6 = [];
+	const cidr = [];
+	const invalid = [];
+
+	// Clean and remove duplicates
+	const cleanedRules = cleanRules(rules);
+	const { rules: uniqueRules, duplicateCount } = removeDuplicates(cleanedRules);
+
+	// Validate and categorize rules
+	const validRules = uniqueRules.filter((rule) => {
+		const result = validateIPRule(rule, invalid);
+		if (result.isValid) {
+			switch (result.type) {
+				case 'ipv4':
+					ipv4.push(rule);
+					break;
+				case 'ipv6':
+					ipv6.push(rule);
+					break;
+				case 'cidr':
+					cidr.push(rule);
+					break;
 			}
-			if (addr.kind() === 'ipv6' && ipaddr.IPv6.isValid(rule)) {
-				ipv6.push(rule);
-				return true;
-			}
-		} else {
-			cidr.push(rule);
 			return true;
 		}
 		return false;
 	});
 
 	return {
-		numRules: rules.length + invalid.length,
-		ipv4: ipv4,
-		ipv6: ipv6,
-		cidr: cidr,
-		valid: rules,
-		invalid: invalid,
-		duplicateCount: duplicateCount,
+		numRules: validRules.length + invalid.length,
+		ipv4,
+		ipv6,
+		cidr,
+		valid: validRules,
+		invalid,
+		duplicateCount,
 	};
 };
 
