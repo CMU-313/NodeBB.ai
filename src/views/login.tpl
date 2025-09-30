@@ -18,8 +18,12 @@
 
 						<div class="mb-2 d-flex flex-column gap-2">
 							<label for="password">[[user:password]]</label>
-							<div>
+							<div class="d-flex align-items-center">
 								<input class="form-control" type="password" placeholder="[[user:password]]" name="password" id="password" autocomplete="current-password" autocapitalize="off" aria-required="true"/>
+								<button type="button" class="btn btn-link btn-sm ms-2" id="toggle-password-visibility" aria-pressed="false" aria-label="[[login:show-password]]">
+									<span class="visually-hidden">[[login:show-password]]</span>
+									<i class="fa fa-eye" aria-hidden="true"></i>
+								</button>
 								<p id="caps-lock-warning" class="text-danger hidden text-sm mb-0 form-text" aria-live="polite" role="alert" aria-atomic="true">
 									<i class="fa fa-exclamation-triangle"></i> [[login:caps-lock-enabled]]
 								</p>
