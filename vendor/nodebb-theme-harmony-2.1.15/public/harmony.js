@@ -156,36 +156,51 @@ $(document).ready(function () {
 				const draftListEl = $('[component="drafts/list"]');
 				const draftItems = drafts.listAvailable();
 				if (!draftItems.length) {
-					draftListEl.find('.no-drafts').removeClass('hidden');
-					draftListEl.find('.placeholder-wave').addClass('hidden');
-					draftListEl.find('.draft-item-container').html('');
+					handleEmptyDraftList(draftListEl);
 					return;
 				}
-				draftItems.reverse().forEach((draft) => {
+				const processedDrafts = processDraftItems(draftItems);
+				await updateDraftListUI(draftListEl, processedDrafts);
+			}
+
+			function handleEmptyDraftList(draftListEl) {
+				draftListEl.find('.no-drafts').removeClass('hidden');
+				draftListEl.find('.placeholder-wave').addClass('hidden');
+				draftListEl.find('.draft-item-container').html('');
+			}
+
+			function processDraftItems(draftItems) {
+				return draftItems.reverse().map((draft) => {
 					if (draft) {
 						if (draft.title) {
 							draft.title = utils.escapeHTML(String(draft.title));
 						}
-						draft.text = utils.escapeHTML(
-							draft.text
-						).replace(/(?:\r\n|\r|\n)/g, '<br>');
+						draft.text = utils.escapeHTML(draft.text).replace(/(?:\r\n|\r|\n)/g, '<br>');
 					}
+					return draft;
 				});
+			}
 
-				const html = await app.parseAndTranslate('partials/sidebar/drafts', 'drafts', { drafts: draftItems });
+			async function updateDraftListUI(draftListEl, drafts) {
+				const html = await app.parseAndTranslate('partials/sidebar/drafts', 'drafts', { drafts });
 				draftListEl.find('.no-drafts').addClass('hidden');
 				draftListEl.find('.placeholder-wave').addClass('hidden');
 				draftListEl.find('.draft-item-container').html(html).find('.timeago').timeago();
 			}
 
+			function setupEventListeners() {
+				draftsEl.on('shown.bs.dropdown', renderDraftList);
+				draftsEl.on('click', '[component="drafts/open"]', handleDraftOpen);
+				draftsEl.on('click', '[component="drafts/delete"]', handleDraftDelete);
+				$(window).on('action:composer.drafts.save', updateBadgeCount);
+				$(window).on('action:composer.drafts.remove', updateBadgeCount);
+			}
 
-			draftsEl.on('shown.bs.dropdown', renderDraftList);
-
-			draftsEl.on('click', '[component="drafts/open"]', function () {
+			function handleDraftOpen() {
 				drafts.open($(this).attr('data-save-id'));
-			});
+			}
 
-			draftsEl.on('click', '[component="drafts/delete"]', function () {
+			function handleDraftDelete() {
 				const save_id = $(this).attr('data-save-id');
 				bootbox.confirm('[[modules:composer.discard-draft-confirm]]', function (ok) {
 					if (ok) {
@@ -194,10 +209,9 @@ $(document).ready(function () {
 					}
 				});
 				return false;
-			});
+			}
 
-			$(window).on('action:composer.drafts.save', updateBadgeCount);
-			$(window).on('action:composer.drafts.remove', updateBadgeCount);
+			setupEventListeners();
 			updateBadgeCount();
 		});
 	}
