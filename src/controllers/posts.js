@@ -55,3 +55,46 @@ postsController.getRecentPosts = async function (req, res) {
 	const data = await posts.getRecentPosts(req.uid, start, stop, req.params.term);
 	res.json(data);
 };
+
+postsController.addReaction = async function (req, res) {
+	const { pid, emoji } = req.body;
+	const { uid } = req;
+
+	if (!uid) {
+		return helpers.notAllowed(req, res);
+	}
+
+	try {
+		await posts.addReaction(pid, uid, emoji);
+		res.status(200).json({ message: 'Reaction added successfully' });
+	} catch (error) {
+		res.status(500).json({ error: error.message });
+	}
+};
+
+postsController.removeReaction = async function (req, res) {
+	const { pid, emoji } = req.body;
+	const { uid } = req;
+
+	if (!uid) {
+		return helpers.notAllowed(req, res);
+	}
+
+	try {
+		await posts.removeReaction(pid, uid, emoji);
+		res.status(200).json({ message: 'Reaction removed successfully' });
+	} catch (error) {
+		res.status(500).json({ error: error.message });
+	}
+};
+
+postsController.getReactions = async function (req, res) {
+	const { pid } = req.params;
+
+	try {
+		const reactions = await posts.getReactions(pid);
+		res.status(200).json(reactions);
+	} catch (error) {
+		res.status(500).json({ error: error.message });
+	}
+};

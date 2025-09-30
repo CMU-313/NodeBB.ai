@@ -1173,7 +1173,7 @@ describe('Post\'s', () => {
 				assert(events);
 				assert.strictEqual(events.length, 1);
 				assert(backlinks);
-				assert(backlinks.includes('1'));
+				assert.strictEqual(backlinks.includes('1'), true);
 			});
 
 			it('should remove the backlink (but keep the event) if the post no longer contains a link to a topic', async () => {

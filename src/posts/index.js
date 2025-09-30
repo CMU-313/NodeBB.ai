@@ -104,4 +104,27 @@ Posts.modifyPostByPrivilege = function (post, privileges) {
 	}
 };
 
+Posts.addReaction = async function (pid, uid, emoji) {
+	const reactionKey = `post:${pid}:reactions`;
+	const userReactionKey = `user:${uid}:post:${pid}:reaction`;
+
+	await db.setAdd(reactionKey, JSON.stringify({ uid, emoji }));
+	await db.setObject(userReactionKey, { emoji });
+};
+
+Posts.removeReaction = async function (pid, uid, emoji) {
+	const reactionKey = `post:${pid}:reactions`;
+	const userReactionKey = `user:${uid}:post:${pid}:reaction`;
+
+	await db.setRemove(reactionKey, JSON.stringify({ uid, emoji }));
+	await db.delete(userReactionKey);
+};
+
+Posts.getReactions = async function (pid) {
+	const reactionKey = `post:${pid}:reactions`;
+	const reactions = await db.setMembers(reactionKey);
+
+	return reactions.map(reaction => JSON.parse(reaction));
+};
+
 require('../promisify')(Posts);

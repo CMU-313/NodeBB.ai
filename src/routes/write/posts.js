@@ -46,6 +46,10 @@ module.exports = function () {
 	setupApiRoute(router, 'put', '/queue/:id', controllers.write.posts.editQueuedPost);
 	setupApiRoute(router, 'post', '/queue/:id/notify', [middleware.checkRequired.bind(null, ['message'])], controllers.write.posts.notifyQueuedPostOwner);
 
+	setupApiRoute(router, 'post', '/:pid/reactions', middlewares, controllers.posts.addReaction);
+	setupApiRoute(router, 'delete', '/:pid/reactions', middlewares, controllers.posts.removeReaction);
+	setupApiRoute(router, 'get', '/:pid/reactions', [middleware.assert.post], controllers.posts.getReactions);
+
 
 	// Shorthand route to access post routes by topic index
 	router.all('/+byIndex/:index*?', [middleware.checkRequired.bind(null, ['tid'])], controllers.write.posts.redirectByIndex);
