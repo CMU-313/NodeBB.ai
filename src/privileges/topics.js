@@ -11,6 +11,7 @@ const categories = require('../categories');
 const plugins = require('../plugins');
 const utils = require('../utils');
 const privsCategories = require('./categories');
+const groups = require('../groups');
 
 const privsTopics = module.exports;
 
@@ -43,9 +44,25 @@ privsTopics.get = async function (tid, uid) {
 	const mayReply = privsTopics.canViewDeletedScheduled(topicData, {}, false, privData['topics:schedule']);
 	const hasTools = topicTools.tools.length > 0;
 
+	// Determine whether the user can read private topic
+	let canReadPrivate = true;
+	if (topicData && topicData.private === 1) {
+		// admins/mods and owner can read
+		if (isAdminOrMod || isOwner) {
+			canReadPrivate = true;
+		} else if (Array.isArray(topicData.allowedGroups) && topicData.allowedGroups.length) {
+			// check group membership
+			const isMemberResults = await Promise.all(topicData.allowedGroups.map(g => groups.isMember(uid, g)));
+			canReadPrivate = isMemberResults.includes(true);
+		} else {
+			// private but no allowed groups -> only admins/mods/owner
+			canReadPrivate = false;
+		}
+	}
+
 	return await plugins.hooks.fire('filter:privileges.topics.get', {
 		'topics:reply': (privData['topics:reply'] && ((!topicData.locked && mayReply) || isModerator)) || isAdministrator,
-		'topics:read': privData['topics:read'] || isAdministrator,
+	'topics:read': (privData['topics:read'] || isAdministrator) && canReadPrivate,
 		'topics:schedule': privData['topics:schedule'] || isAdministrator,
 		'topics:tag': privData['topics:tag'] || isAdministrator,
 		'topics:delete': (privData['topics:delete'] && (isOwner || isModerator)) || isAdministrator,
@@ -97,6 +114,33 @@ privsTopics.filterTids = async function (privilege, tids, uid) {
 		cidsSet.has(t.cid) &&
 		(results.isAdmin || privsTopics.canViewDeletedScheduled(t, {}, canViewDeleted[t.cid], canViewScheduled[t.cid]))
 	)).map(t => t.tid);
+
+	// If some topics are marked private, ensure uid has access (owner/admin/mod or member of allowedGroups)
+	if (Array.isArray(tids) && tids.length && uid) {
+		const topicsWithPrivacy = await topics.getTopicsFields(tids, ['tid', 'private', 'allowedGroups', 'uid']);
+		const allowed = [];
+		for (const t of topicsWithPrivacy) {
+			if (!t || t.private !== 1) {
+				allowed.push(t.tid);
+				continue;
+			}
+			const isOwner = uid === t.uid;
+			const isAdminOrMod = await privsTopics.isAdminOrMod(t.tid, uid);
+			if (isOwner || isAdminOrMod) {
+				allowed.push(t.tid);
+				continue;
+			}
+			let hasGroup = false;
+			if (Array.isArray(t.allowedGroups) && t.allowedGroups.length) {
+				const checks = await Promise.all(t.allowedGroups.map(g => groups.isMember(uid, g)));
+				hasGroup = checks.includes(true);
+			}
+			if (hasGroup) {
+				allowed.push(t.tid);
+			}
+		}
+		tids = tids.filter(tid => allowed.includes(tid));
+	}
 
 	const data = await plugins.hooks.fire('filter:privileges.topics.filter', {
 		privilege: privilege,

@@ -16,6 +16,7 @@ const posts = require('../posts');
 const privileges = require('../privileges');
 const categories = require('../categories');
 const translator = require('../translator');
+const groups = require('../groups');
 
 module.exports = function (Topics) {
 	Topics.create = async function (data) {
@@ -36,6 +37,22 @@ module.exports = function (Topics) {
 			postcount: 0,
 			viewcount: 0,
 		};
+
+		// privacy fields (optional)
+		if (data.private) {
+			topicData.private = 1;
+		} else {
+			topicData.private = 0;
+		}
+
+		if (Array.isArray(data.allowedGroups) && data.allowedGroups.length) {
+			// store as comma-separated string for compactness
+			topicData.allowedGroups = data.allowedGroups.join(',');
+		} else if (typeof data.allowedGroups === 'string' && data.allowedGroups.trim()) {
+			topicData.allowedGroups = data.allowedGroups;
+		} else {
+			topicData.allowedGroups = '';
+		}
 
 		if (Array.isArray(data.tags) && data.tags.length) {
 			topicData.tags = data.tags.join(',');
@@ -118,6 +135,30 @@ module.exports = function (Topics) {
 		await guestHandleValid(data);
 		if (!data.fromQueue) {
 			await user.isReadyToPost(uid, data.cid);
+		}
+
+		// Validate private topic request. Only admins/mods in the category allowed to create private topics
+		if (data.private) {
+			const isAdminOrMod = await privileges.categories.isAdminOrMod(data.cid, uid);
+			if (!isAdminOrMod) {
+				throw new Error('[[error:no-privileges]]');
+			}
+		}
+
+		// Normalize allowedGroups into array and validate they exist
+		if (data.allowedGroups) {
+			if (typeof data.allowedGroups === 'string') {
+				data.allowedGroups = data.allowedGroups.split(',').map(s => s.trim()).filter(Boolean);
+			}
+			if (!Array.isArray(data.allowedGroups)) {
+				data.allowedGroups = [];
+			}
+			// optional: ensure groups exist (non-blocking)
+			if (data.allowedGroups.length) {
+				const checks = await Promise.all(data.allowedGroups.map(g => groups.getGroupField(g, 'name').catch(() => null)));
+				// filter out non-existent groups
+				data.allowedGroups = data.allowedGroups.filter((g, i) => checks[i]);
+			}
 		}
 
 		const tid = await Topics.create(data);

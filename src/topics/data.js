@@ -14,6 +14,7 @@ const intFields = [
 	'deleted', 'locked', 'pinned', 'pinExpiry',
 	'timestamp', 'upvotes', 'downvotes',
 	'lastposttime', 'deleterUid',
+    'private',
 ];
 
 module.exports = function (Topics) {
@@ -139,5 +140,10 @@ function modifyTopic(topic, fields) {
 				class: escaped.replace(/\s/g, '-'),
 			};
 		});
+	}
+
+	// allowedGroups stored as comma-separated string -> expose as array
+	if (topic.hasOwnProperty('allowedGroups')) {
+		topic.allowedGroups = String(topic.allowedGroups || '').split(',').map(g => g.trim()).filter(Boolean);
 	}
 }
