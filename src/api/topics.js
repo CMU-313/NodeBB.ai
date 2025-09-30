@@ -97,7 +97,10 @@ topicsAPI.reply = async function (caller, data) {
 	if (!data || !data.tid || (meta.config.minimumPostLength !== 0 && !data.content)) {
 		throw new Error('[[error:invalid-data]]');
 	}
-	const payload = { ...data };
+	const payload = { 
+		...data,
+		isAnonymous: data.isAnonymous || false,
+	};
 	delete payload.pid;
 	apiHelpers.setDefaultPostData(caller, payload);
 

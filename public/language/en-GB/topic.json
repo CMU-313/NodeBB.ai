@@ -1,6 +1,9 @@
 {
 	"topic": "Topic",
 	"title": "Title",
+	"post-anonymously": "Post Anonymously",
+	"anonymous-posting": "Anonymous Posting",
+	"anonymous-posting-description": "Allow users to post questions and replies anonymously",
 
 	"no-topics-found": "No topics found!",
 	"no-posts-found": "No posts found!",

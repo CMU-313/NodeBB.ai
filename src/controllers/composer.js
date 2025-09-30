@@ -48,6 +48,7 @@ exports.post = async function (req, res) {
 		content: body.content,
 		handle: body.handle,
 		fromQueue: false,
+		isAnonymous: body.isAnonymous === 'true' || body.isAnonymous === true,
 	};
 	req.body.noscript = 'true';
 
