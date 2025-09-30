@@ -156,19 +156,25 @@ $(document).ready(function () {
 				const draftListEl = $('[component="drafts/list"]');
 				const draftItems = drafts.listAvailable();
 				if (!draftItems.length) {
-					draftListEl.find('.no-drafts').removeClass('hidden');
-					draftListEl.find('.placeholder-wave').addClass('hidden');
-					draftListEl.find('.draft-item-container').html('');
+					handleEmptyDraftList(draftListEl);
 					return;
 				}
+				await populateDraftList(draftListEl, draftItems);
+			}
+
+			function handleEmptyDraftList(draftListEl) {
+				draftListEl.find('.no-drafts').removeClass('hidden');
+				draftListEl.find('.placeholder-wave').addClass('hidden');
+				draftListEl.find('.draft-item-container').html('');
+			}
+
+			async function populateDraftList(draftListEl, draftItems) {
 				draftItems.reverse().forEach((draft) => {
 					if (draft) {
 						if (draft.title) {
 							draft.title = utils.escapeHTML(String(draft.title));
 						}
-						draft.text = utils.escapeHTML(
-							draft.text
-						).replace(/(?:\r\n|\r|\n)/g, '<br>');
+						draft.text = utils.escapeHTML(draft.text).replace(/(?:\r\n|\r|\n)/g, '<br>');
 					}
 				});
 
@@ -178,26 +184,29 @@ $(document).ready(function () {
 				draftListEl.find('.draft-item-container').html(html).find('.timeago').timeago();
 			}
 
+			function setupEventHandlers() {
+				draftsEl.on('shown.bs.dropdown', renderDraftList);
 
-			draftsEl.on('shown.bs.dropdown', renderDraftList);
-
-			draftsEl.on('click', '[component="drafts/open"]', function () {
-				drafts.open($(this).attr('data-save-id'));
-			});
-
-			draftsEl.on('click', '[component="drafts/delete"]', function () {
-				const save_id = $(this).attr('data-save-id');
-				bootbox.confirm('[[modules:composer.discard-draft-confirm]]', function (ok) {
-					if (ok) {
-						drafts.removeDraft(save_id);
-						renderDraftList();
-					}
+				draftsEl.on('click', '[component="drafts/open"]', function () {
+					drafts.open($(this).attr('data-save-id'));
 				});
-				return false;
-			});
 
-			$(window).on('action:composer.drafts.save', updateBadgeCount);
-			$(window).on('action:composer.drafts.remove', updateBadgeCount);
+				draftsEl.on('click', '[component="drafts/delete"]', function () {
+					const save_id = $(this).attr('data-save-id');
+					bootbox.confirm('[[modules:composer.discard-draft-confirm]]', function (ok) {
+						if (ok) {
+							drafts.removeDraft(save_id);
+							renderDraftList();
+						}
+					});
+					return false;
+				});
+
+				$(window).on('action:composer.drafts.save', updateBadgeCount);
+				$(window).on('action:composer.drafts.remove', updateBadgeCount);
+			}
+
+			setupEventHandlers();
 			updateBadgeCount();
 		});
 	}
