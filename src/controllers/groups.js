@@ -67,37 +67,55 @@ async function getGroups(req, sort, page) {
 	return [groupData, pageCount];
 }
 
-groupsController.details = async function (req, res, next) {
+// Ensure slug is lowercase; if not, either update params for API requests
+// or redirect to the lowercase URL for browser requests. Returns true if
+// processing should continue, false if a redirect was sent.
+async function ensureSlugLowercase(req, res) {
 	const lowercaseSlug = req.params.slug.toLowerCase();
 	if (req.params.slug !== lowercaseSlug) {
 		if (res.locals.isAPI) {
 			req.params.slug = lowercaseSlug;
-		} else {
-			return res.redirect(`${nconf.get('relative_path')}/groups/${lowercaseSlug}`);
+			return true;
 		}
+		res.redirect(`${nconf.get('relative_path')}/groups/${lowercaseSlug}`);
+		return false;
 	}
+	return true;
+}
+
+// Load group context and perform authorization checks. On failure this
+// function will call next() and return null. On success it returns an
+// object with groupName, groupData, posts, isAdmin and isGlobalMod.
+async function loadGroupContext(req, res, next) {
 	const groupName = await groups.getGroupNameByGroupSlug(req.params.slug);
 	if (!groupName) {
-		return next();
+		next();
+		return null;
 	}
+
 	const [exists, isHidden, isAdmin, isGlobalMod] = await Promise.all([
 		groups.exists(groupName),
 		groups.isHidden(groupName),
 		privileges.admin.can('admin:groups', req.uid),
 		user.isGlobalModerator(req.uid),
 	]);
+
 	if (!exists) {
-		return next();
+		next();
+		return null;
 	}
+
 	if (isHidden && !isAdmin && !isGlobalMod) {
 		const [isMember, isInvited] = await Promise.all([
 			groups.isMember(req.uid, groupName),
 			groups.isInvited(req.uid, groupName),
 		]);
 		if (!isMember && !isInvited) {
-			return next();
+			next();
+			return null;
 		}
 	}
+
 	const [groupData, posts] = await Promise.all([
 		groups.get(groupName, {
 			uid: req.uid,
@@ -106,9 +124,27 @@ groupsController.details = async function (req, res, next) {
 		}),
 		groups.getLatestMemberPosts(groupName, 10, req.uid),
 	]);
+
 	if (!groupData) {
-		return next();
+		next();
+		return null;
 	}
+
+	return { groupName, groupData, posts, isAdmin, isGlobalMod };
+}
+
+groupsController.details = async function (req, res, next) {
+	if (!await ensureSlugLowercase(req, res)) {
+		return;
+	}
+
+	const ctx = await loadGroupContext(req, res, next);
+	if (!ctx) {
+		return;
+	}
+
+	const { groupData, posts, isAdmin, isGlobalMod } = ctx;
+	const lowercaseSlug = req.params.slug.toLowerCase();
 
 	res.locals.linkTags = [
 		{
