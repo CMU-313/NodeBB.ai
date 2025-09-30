@@ -523,6 +523,87 @@ helpers.formatApiResponse = async (statusCode, res, payload) => {
 		await handleGenericError(statusCode, res, payload);
 	}
 };
+helpers.formatApiResponse = async (statusCode, res, payload) => {
+    if (res.req.method === 'HEAD') {
+        return res.sendStatus(statusCode);
+    }
+
+    const isSuccess = String(statusCode).startsWith('2');
+
+    if (isSuccess) {
+        return sendSuccess(statusCode, res, payload);
+    }
+
+    // Error branches
+    if (payload instanceof Error || typeof payload === 'string') {
+        return sendErrorWithPayload(statusCode, res, payload);
+    }
+
+    // Generic predefined error (payload maybe object/null providing optional message)
+    const message = payload ? String(payload) : null;
+    const returnPayload = await helpers.generateError(statusCode, message, res);
+    return res.status(statusCode).json(returnPayload);
+};
+
+// --- Internal helpers (non-exported) ---
+
+function successCodeMap(statusCode) {
+    switch (statusCode) {
+        case 202: return { code: 'accepted', message: 'Accepted' };
+        case 204: return { code: 'no-content', message: 'No Content' };
+        default: return { code: 'ok', message: 'OK' };
+    }
+}
+
+async function sendSuccess(statusCode, res, payload) {
+    if (res.req.loggedIn) {
+        res.set('cache-control', 'private');
+    }
+    const { code, message } = successCodeMap(statusCode);
+    return res.status(statusCode).json({
+        status: { code, message },
+        response: payload || {},
+    });
+}
+
+async function sendErrorWithPayload(statusCode, res, rawPayload) {
+    const message = rawPayload instanceof Error ? rawPayload.message : rawPayload;
+    const response = {};
+    let finalStatus = statusCode;
+
+    // Map specific messages to HTTP status adjustments & augment response
+    switch (message) {
+        case '[[error:user-banned]]':
+            Object.assign(response, await generateBannedResponse(res));
+            // intentional fallthrough
+        // eslint-disable-next-line no-fallthrough
+        case '[[error:no-privileges]]':
+            finalStatus = 403;
+            break;
+        case '[[error:invalid-uid]]':
+            finalStatus = 401;
+            break;
+        case '[[error:no-topic]]':
+            finalStatus = 404;
+            break;
+    }
+
+    if (message.startsWith('[[error:required-parameters-missing, ')) {
+        const params = message.slice('[[error:required-parameters-missing, '.length, -2).split(' ');
+        Object.assign(response, { params });
+    }
+
+    const returnPayload = await helpers.generateError(finalStatus, message, res);
+    returnPayload.response = response;
+
+    if (global.env === 'development' && rawPayload instanceof Error && rawPayload.stack) {
+        returnPayload.stack = rawPayload.stack;
+        process.stdout.write(`[${chalk.yellow('api')}] Exception caught, error with stack trace follows:\n`);
+        process.stdout.write(rawPayload.stack);
+    }
+
+    return res.status(finalStatus).json(returnPayload);
+}
 
 async function generateBannedResponse(res) {
 	const response = {};
