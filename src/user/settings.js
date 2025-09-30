@@ -47,18 +47,28 @@ module.exports = function (User) {
 		return await Promise.all(settings.map(s => onSettingsLoaded(s.uid, s)));
 	};
 
-	async function onSettingsLoaded(uid, settings) {
-		const data = await plugins.hooks.fire('filter:user.getSettings', { uid: uid, settings: settings });
-		settings = data.settings;
-
+	function applyDefaultSettings(settings) {
 		const defaultTopicsPerPage = meta.config.topicsPerPage;
 		const defaultPostsPerPage = meta.config.postsPerPage;
 
-		settings.showemail = parseInt(getSetting(settings, 'showemail', 0), 10) === 1;
-		settings.showfullname = parseInt(getSetting(settings, 'showfullname', 0), 10) === 1;
-		settings.openOutgoingLinksInNewTab = parseInt(getSetting(settings, 'openOutgoingLinksInNewTab', 0), 10) === 1;
-		settings.dailyDigestFreq = getSetting(settings, 'dailyDigestFreq', 'off');
-		settings.usePagination = parseInt(getSetting(settings, 'usePagination', 0), 10) === 1;
+		// Boolean settings with 0 as default
+		const booleanSettingsWithDefault0 = [
+			'showemail', 'showfullname', 'openOutgoingLinksInNewTab', 'usePagination',
+			'followTopicsOnReply', 'disableIncomingChats', 'topicSearchEnabled',
+		];
+		booleanSettingsWithDefault0.forEach((key) => {
+			settings[key] = parseInt(getSetting(settings, key, 0), 10) === 1;
+		});
+
+		// Boolean settings with 1 as default
+		const booleanSettingsWithDefault1 = [
+			'followTopicsOnCreate', 'updateUrlWithPostIndex', 'scrollToMyPost',
+		];
+		booleanSettingsWithDefault1.forEach((key) => {
+			settings[key] = parseInt(getSetting(settings, key, 1), 10) === 1;
+		});
+
+		// Pagination settings
 		settings.topicsPerPage = Math.min(
 			meta.config.maxTopicsPerPage,
 			settings.topicsPerPage ? parseInt(settings.topicsPerPage, 10) : defaultTopicsPerPage,
@@ -69,28 +79,39 @@ module.exports = function (User) {
 			settings.postsPerPage ? parseInt(settings.postsPerPage, 10) : defaultPostsPerPage,
 			defaultPostsPerPage
 		);
+
+		// String settings
+		settings.dailyDigestFreq = getSetting(settings, 'dailyDigestFreq', 'off');
 		settings.userLang = settings.userLang || meta.config.defaultLang || 'en-GB';
 		settings.acpLang = settings.acpLang || settings.userLang;
 		settings.topicPostSort = getSetting(settings, 'topicPostSort', 'oldest_to_newest');
 		settings.categoryTopicSort = getSetting(settings, 'categoryTopicSort', 'recently_replied');
-		settings.followTopicsOnCreate = parseInt(getSetting(settings, 'followTopicsOnCreate', 1), 10) === 1;
-		settings.followTopicsOnReply = parseInt(getSetting(settings, 'followTopicsOnReply', 0), 10) === 1;
 		settings.upvoteNotifFreq = getSetting(settings, 'upvoteNotifFreq', 'all');
-		settings.disableIncomingChats = parseInt(getSetting(settings, 'disableIncomingChats', 0), 10) === 1;
-		settings.topicSearchEnabled = parseInt(getSetting(settings, 'topicSearchEnabled', 0), 10) === 1;
-		settings.updateUrlWithPostIndex = parseInt(getSetting(settings, 'updateUrlWithPostIndex', 1), 10) === 1;
 		settings.bootswatchSkin = validator.escape(String(settings.bootswatchSkin || ''));
 		settings.homePageRoute = validator.escape(String(settings.homePageRoute || '')).replace(/&#x2F;/g, '/');
-		settings.scrollToMyPost = parseInt(getSetting(settings, 'scrollToMyPost', 1), 10) === 1;
 		settings.categoryWatchState = getSetting(settings, 'categoryWatchState', 'notwatching');
+	}
 
+	async function applyNotificationSettings(settings) {
 		const notificationTypes = await notifications.getAllNotificationTypes();
 		notificationTypes.forEach((notificationType) => {
 			settings[notificationType] = getSetting(settings, notificationType, 'notification');
 		});
+	}
 
+	function applyChatSettings(settings) {
 		settings.chatAllowList = parseJSONSetting(settings.chatAllowList || '[]', []).map(String);
 		settings.chatDenyList = parseJSONSetting(settings.chatDenyList || '[]', []).map(String);
+	}
+
+	async function onSettingsLoaded(uid, settings) {
+		const data = await plugins.hooks.fire('filter:user.getSettings', { uid: uid, settings: settings });
+		settings = data.settings;
+
+		applyDefaultSettings(settings);
+		await applyNotificationSettings(settings);
+		applyChatSettings(settings);
+
 		return settings;
 	}
 
