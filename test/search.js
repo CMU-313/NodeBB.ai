@@ -224,4 +224,13 @@ describe('Search', () => {
 		assert.strictEqual(response.statusCode, 200);
 		await privileges.global.rescind(['groups:search:content'], 'guests');
 	});
+
+	it('should search posts by query', async () => {
+		const query = 'apple';
+		const result = await search.posts({ uid: phoebeUid }, { query, limit: 10, page: 1 });
+
+		assert(result);
+		assert(result.posts.length > 0);
+		assert(result.posts.some(post => post.content.includes(query)));
+	});
 });

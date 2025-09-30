@@ -36,6 +36,9 @@ _mounts.main = (app, middleware, controllers) => {
 	setupPageRoute(app, '/confirm/:code', [], controllers.confirmEmail);
 	setupPageRoute(app, '/outgoing', [], controllers.outgoing);
 	setupPageRoute(app, '/search', [], controllers.search.search);
+	setupPageRoute(app, '/search/posts', [], (req, res) => {
+		res.render('search-posts');
+	});
 	setupPageRoute(app, '/reset/:code?', [middleware.delayLoading], controllers.reset);
 	setupPageRoute(app, '/tos', [], controllers.termsOfUse);
 
