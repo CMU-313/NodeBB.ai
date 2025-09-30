@@ -11,7 +11,7 @@ const plugins = require('../plugins');
 const intFields = [
 	'tid', 'cid', 'uid', 'mainPid', 'postcount',
 	'viewcount', 'postercount', 'followercount',
-	'deleted', 'locked', 'pinned', 'pinExpiry',
+	'deleted', 'locked', 'pinned', 'pinExpiry', 'private',
 	'timestamp', 'upvotes', 'downvotes',
 	'lastposttime', 'deleterUid',
 ];
@@ -122,6 +122,11 @@ function modifyTopic(topic, fields) {
 
 	if (topic.hasOwnProperty('upvotes') && topic.hasOwnProperty('downvotes')) {
 		topic.votes = topic.upvotes - topic.downvotes;
+	}
+
+	// private flag present: expose boolean
+	if (topic.hasOwnProperty('private')) {
+		topic.private = topic.private === 1;
 	}
 
 	if (fields.includes('teaserPid') || !fields.length) {
