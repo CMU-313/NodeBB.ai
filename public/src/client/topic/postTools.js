@@ -145,6 +145,14 @@ define('forum/topic/postTools', [
 			votes.showAnnouncers(getData($(this), 'data-pid'));
 		});
 
+		postContainer.on('click', '[component="post/endorse"]', function () {
+			return endorsePost($(this), getData($(this), 'data-pid'));
+		});
+
+		postContainer.on('click', '[component="post/unendorse"]', function () {
+			return unendorsePost($(this), getData($(this), 'data-pid'));
+		});
+
 		postContainer.on('click', '[component="post/flag"]', function () {
 			const pid = getData($(this), 'data-pid');
 			require(['flags'], function (flags) {
@@ -381,6 +389,59 @@ define('forum/topic/postTools', [
 			}
 			const type = method === 'put' ? 'bookmark' : 'unbookmark';
 			hooks.fire(`action:post.${type}`, { pid: pid });
+		});
+		return false;
+	}
+
+	function endorsePost(button, pid) {
+		api.put(`/posts/${encodeURIComponent(pid)}/endorse`, undefined, function (err) {
+			if (err) {
+				return alerts.error(err);
+			}
+
+			// Update the UI to show endorsement
+			const postEl = button.closest('[component="post"]');
+			const endorseBtn = postEl.find('[component="post/endorse"]');
+			const unendorseBtn = postEl.find('[component="post/unendorse"]');
+			const endorsementEl = postEl.find('.endorsement');
+
+			endorseBtn.addClass('hidden');
+			unendorseBtn.removeClass('hidden');
+
+			if (endorsementEl.length) {
+				endorsementEl.removeClass('hidden');
+			} else {
+				// Create endorsement indicator
+				const endorsementHtml = '<div class="d-flex endorsement align-items-center ms-2">' +
+					'<span class="badge border border-success text-success" title="[[topic:endorsed-by, ' + app.user.username + ']]">' +
+					'<i class="fa fa-fw fa-check-circle"></i> [[topic:instructor-endorsed]]</span></div>';
+				postEl.find('.post-tools').before(endorsementHtml);
+			}
+
+			hooks.fire('action:post.endorse', { pid: pid });
+			alerts.success('[[topic:endorsed]]');
+		});
+		return false;
+	}
+
+	function unendorsePost(button, pid) {
+		api.del(`/posts/${encodeURIComponent(pid)}/endorse`, undefined, function (err) {
+			if (err) {
+				return alerts.error(err);
+			}
+
+			// Update the UI to hide endorsement
+			const postEl = button.closest('[component="post"]');
+			const endorseBtn = postEl.find('[component="post/endorse"]');
+			const unendorseBtn = postEl.find('[component="post/unendorse"]');
+			const endorsementEl = postEl.find('.endorsement');
+
+			endorseBtn.removeClass('hidden');
+			unendorseBtn.addClass('hidden');
+			endorsementEl.addClass('hidden');
+
+			hooks.fire('action:post.unendorse', { pid: pid });
+			alerts.success('[[topic:unendorsed]]');
 		});
 		return false;
 	}

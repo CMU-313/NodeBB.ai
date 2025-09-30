@@ -210,3 +210,18 @@ Posts.notifyQueuedPostOwner = async (req, res) => {
 	await api.posts.notifyQueuedPostOwner(req, { id, message: req.body.message });
 	helpers.formatApiResponse(200, res);
 };
+
+Posts.endorse = async (req, res) => {
+	const data = await api.posts.endorse(req, { pid: req.params.pid });
+	helpers.formatApiResponse(200, res, data);
+};
+
+Posts.unendorse = async (req, res) => {
+	const data = await api.posts.unendorse(req, { pid: req.params.pid });
+	helpers.formatApiResponse(200, res, data);
+};
+
+Posts.getEndorsement = async (req, res) => {
+	const data = await api.posts.getEndorsement(req, { pid: req.params.pid });
+	helpers.formatApiResponse(200, res, data);
+};

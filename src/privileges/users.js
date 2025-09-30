@@ -19,6 +19,10 @@ privsUsers.isGlobalModerator = async function (uid) {
 	return await isGroupMember(uid, 'Global Moderators');
 };
 
+privsUsers.isInstructor = async function (uid) {
+	return await isGroupMember(uid, 'instructors');
+};
+
 async function isGroupMember(uid, groupName) {
 	return await groups[Array.isArray(uid) ? 'isMembers' : 'isMember'](uid, groupName);
 }
