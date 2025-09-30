@@ -111,6 +111,14 @@ redisModule.socketAdapter = async function () {
 	});
 };
 
+redisModule.setQuestionVisibility = async function (questionId, visibility) {
+	await redisModule.client.hset(`question:${questionId}`, 'visibility', visibility);
+};
+
+redisModule.getQuestionVisibility = async function (questionId) {
+	return await redisModule.client.hget(`question:${questionId}`, 'visibility');
+};
+
 require('./redis/main')(redisModule);
 require('./redis/hash')(redisModule);
 require('./redis/sets')(redisModule);
