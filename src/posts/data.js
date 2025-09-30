@@ -8,6 +8,7 @@ const intFields = [
 	'uid', 'pid', 'tid', 'deleted', 'timestamp',
 	'upvotes', 'downvotes', 'deleterUid', 'edited',
 	'replies', 'bookmarks', 'announces',
+	// isAnonymous is a boolean, not int, so not included here
 ];
 
 module.exports = function (Posts) {
@@ -69,6 +70,10 @@ function modifyPost(post, fields) {
 		}
 		if (!fields.length || fields.includes('attachments')) {
 			post.attachments = (post.attachments || '').split(',').filter(Boolean);
+		}
+		// Ensure isAnonymous is always boolean
+		if (typeof post.isAnonymous !== 'boolean') {
+			post.isAnonymous = false;
 		}
 	}
 }
