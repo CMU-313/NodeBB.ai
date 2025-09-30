@@ -63,7 +63,7 @@ module.exports = function (Categories) {
 			}
 			return c1.order - c2.order;
 		});
-		searchResult.timing = (process.elapsedTimeSince(startTime) / 1000).toFixed(2);
+	searchResult.timing = (utils.elapsedTimeSince(startTime) / 1000).toFixed(2);
 		searchResult.categories = categoryData.filter(c => cids.includes(c.cid));
 		return searchResult;
 	};

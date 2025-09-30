@@ -4,15 +4,16 @@ const crypto = require('crypto');
 const nconf = require('nconf');
 const path = require('node:path');
 
-process.profile = function (operation, start) {
-	console.log('%s took %d milliseconds', operation, process.elapsedTimeSince(start));
-};
+const utils = { ...require('../public/src/utils.common') };
 
-process.elapsedTimeSince = function (start) {
+utils.elapsedTimeSince = function (start) {
 	const diff = process.hrtime(start);
 	return (diff[0] * 1e3) + (diff[1] / 1e6);
 };
-const utils = { ...require('../public/src/utils.common') };
+
+utils.profile = function (operation, start) {
+	console.log('%s took %d milliseconds', operation, utils.elapsedTimeSince(start));
+};
 
 utils.getLanguage = function () {
 	const meta = require('./meta');
