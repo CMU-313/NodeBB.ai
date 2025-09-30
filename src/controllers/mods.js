@@ -23,6 +23,17 @@ modsController.flags.list = async function (req, res) {
 	const validFilters = ['assignee', 'state', 'reporterId', 'type', 'targetUid', 'cid', 'quick', 'page', 'perPage'];
 	const validSorts = ['newest', 'oldest', 'reports', 'upvotes', 'downvotes', 'replies'];
 
+	function isOnlyPagination(filters) {
+		const keys = Object.keys(filters);
+		if (keys.length === 1 && filters.hasOwnProperty('page')) {
+			return true;
+		}
+		if (keys.length === 2 && filters.hasOwnProperty('page') && filters.hasOwnProperty('perPage')) {
+			return true;
+		}
+		return false;
+	}
+
 	const results = await Promise.all([
 		user.isAdminOrGlobalMod(req.uid),
 		user.getModeratedCids(req.uid),
@@ -69,10 +80,7 @@ modsController.flags.list = async function (req, res) {
 	}
 
 	// Pagination doesn't count as a filter
-	if (
-		(Object.keys(filters).length === 1 && filters.hasOwnProperty('page')) ||
-		(Object.keys(filters).length === 2 && filters.hasOwnProperty('page') && filters.hasOwnProperty('perPage'))
-	) {
+	if (isOnlyPagination(filters)) {
 		hasFilter = false;
 	}
 
