@@ -28,11 +28,22 @@ const Assert = module.exports;
 Assert.user = helpers.try(async (req, res, next) => {
 	const uid = req.params.uid || res.locals.uid;
 
-	if (
-		uid !== -2 && // exposeUid middleware was in chain (means route is local user only) and resolved to fediverse user
-		(((utils.isNumber(uid) || activitypub.helpers.isUri(uid)) && await user.exists(uid)) ||
-		(uid.indexOf('@') !== -1 && await user.existsBySlug(uid)))
-	) {
+	// If exposeUid middleware placed a special value meaning a fediverse user, abort
+	if (uid === -2) {
+		return controllerHelpers.formatApiResponse(404, res, new Error('[[error:no-user]]'));
+	}
+
+	// Determine the type of identifier and check existence accordingly.
+	const isNumericOrUri = utils.isNumber(uid) || activitypub.helpers.isUri(uid);
+	const looksLikeSlug = uid.indexOf('@') !== -1;
+
+	// Run existence checks in parallel when applicable.
+	const [existsById, existsBySlug] = await Promise.all([
+		isNumericOrUri ? user.exists(uid) : Promise.resolve(false),
+		looksLikeSlug ? user.existsBySlug(uid) : Promise.resolve(false),
+	]);
+
+	if ((isNumericOrUri && existsById) || (looksLikeSlug && existsBySlug)) {
 		return next();
 	}
 
