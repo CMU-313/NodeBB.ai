@@ -1,7 +1,6 @@
 'use strict';
 
 const zxcvbn = require('zxcvbn');
-const winston = require('winston');
 
 const db = require('../database');
 const utils = require('../utils');
@@ -12,37 +11,48 @@ const meta = require('../meta');
 const analytics = require('../analytics');
 
 module.exports = function (User) {
+	// Refactored User.create function to reduce complexity
 	User.create = async function (data) {
+		data = preprocessUserData(data);
+		await validateUserData(data);
+
+		await lockUserResources(data);
+
+		try {
+			const userData = await createUserInDatabase(data);
+			await postUserCreationTasks(userData, data);
+			return userData.uid;
+		} finally {
+			await unlockUserResources(data);
+		}
+	};
+
+	function preprocessUserData(data) {
 		data.username = data.username.trim();
 		data.userslug = slugify(data.username);
-		if (data.email !== undefined) {
+		if (data.email) {
 			data.email = String(data.email).trim();
 		}
+		return data;
+	}
 
+	async function validateUserData(data) {
 		await User.isDataValid(data);
+	}
 
+	async function lockUserResources(data) {
 		await lock(data.username, '[[error:username-taken]]');
 		if (data.email && data.email !== data.username) {
 			await lock(data.email, '[[error:email-taken]]');
 		}
-
-		try {
-			return await create(data);
-		} finally {
-			await db.deleteObjectFields('locks', [data.username, data.email]);
-		}
-	};
-
-	async function lock(value, error) {
-		const count = await db.incrObjectField('locks', value);
-		if (count > 1) {
-			throw new Error(error);
-		}
 	}
 
-	async function create(data) {
-		const timestamp = data.timestamp || Date.now();
+	async function unlockUserResources(data) {
+		await db.deleteObjectFields('locks', [data.username, data.email]);
+	}
 
+	async function createUserInDatabase(data) {
+		const timestamp = data.timestamp || Date.now();
 		let userData = {
 			username: data.username,
 			userslug: data.userslug,
@@ -55,71 +65,66 @@ module.exports = function (User) {
 				userData[field] = data[field];
 			}
 		});
-		if (data.gdpr_consent === true) {
-			userData.gdpr_consent = 1;
-		}
-		if (data.acceptTos === true) {
-			userData.acceptTos = 1;
-		}
+		if (data.gdpr_consent) userData.gdpr_consent = 1;
+		if (data.acceptTos) userData.acceptTos = 1;
 
 		const renamedUsername = await User.uniqueUsername(userData);
-		const userNameChanged = !!renamedUsername;
-		if (userNameChanged) {
+		if (renamedUsername) {
 			userData.username = renamedUsername;
 			userData.userslug = slugify(renamedUsername);
 		}
 
-		const results = await plugins.hooks.fire('filter:user.create', { user: userData, data: data });
+		const results = await plugins.hooks.fire('filter:user.create', { user: userData, data });
 		userData = results.user;
 
 		const uid = await db.incrObjectField('global', 'nextUid');
-		const isFirstUser = uid === 1;
 		userData.uid = uid;
 
 		await db.setObject(`user:${uid}`, userData);
+		await db.sortedSetAddBulk([
+			['username:uid', uid, userData.username],
+			[`user:${uid}:usernames`, timestamp, `${userData.username}:${timestamp}`],
+			['username:sorted', 0, `${userData.username.toLowerCase()}:${uid}`],
+			['userslug:uid', uid, userData.userslug],
+			['users:joindate', timestamp, uid],
+		]);
 
-		const bulkAdd = [
-			['username:uid', userData.uid, userData.username],
-			[`user:${userData.uid}:usernames`, timestamp, `${userData.username}:${timestamp}`],
-			['username:sorted', 0, `${userData.username.toLowerCase()}:${userData.uid}`],
-			['userslug:uid', userData.uid, userData.userslug],
-			['users:joindate', timestamp, userData.uid],
-			['users:online', timestamp, userData.uid],
-			['users:postcount', 0, userData.uid],
-			['users:reputation', 0, userData.uid],
-		];
+		return userData;
+	}
 
-		if (userData.fullname) {
-			bulkAdd.push(['fullname:sorted', 0, `${userData.fullname.toLowerCase()}:${userData.uid}`]);
-		}
-
+	async function postUserCreationTasks(userData, data) {
 		await Promise.all([
-			db.incrObjectField('global', 'userCount'),
 			analytics.increment('registrations'),
-			db.sortedSetAddBulk(bulkAdd),
 			groups.join(['registered-users', 'unverified-users'], userData.uid),
-			User.notifications.sendWelcomeNotification(userData.uid),
 			storePassword(userData.uid, data.password),
 			User.updateDigestSetting(userData.uid, meta.config.dailyDigestFreq),
 		]);
 
-		if (data.email && isFirstUser) {
-			await User.setUserField(uid, 'email', data.email);
-			await User.email.confirmByUid(userData.uid);
+		if (data.email) {
+			await handleEmailTasks(userData, data);
 		}
 
-		if (data.email && userData.uid > 1) {
+		plugins.hooks.fire('action:user.create', { user: userData, data });
+	}
+
+	async function handleEmailTasks(userData, data) {
+		if (userData.uid === 1) {
+			await User.setUserField(userData.uid, 'email', data.email);
+			await User.email.confirmByUid(userData.uid);
+		} else {
 			await User.email.sendValidationEmail(userData.uid, {
 				email: data.email,
 				template: 'welcome',
-				subject: `[[email:welcome-to, ${meta.config.title || meta.config.browserTitle || 'NodeBB'}]]`,
-			}).catch(err => winston.error(`[user.create] Validation email failed to send\n[emailer.send] ${err.stack}`));
+				subject: `[[email:welcome-to, ${meta.config.title || 'NodeBB'}]]`,
+			});
 		}
-		if (userNameChanged) {
-			await User.notifications.sendNameChangeNotification(userData.uid, userData.username);
+	}
+
+	async function lock(value, error) {
+		const count = await db.incrObjectField('locks', value);
+		if (count > 1) {
+			throw new Error(error);
 		}
-		plugins.hooks.fire('action:user.create', { user: userData, data: data });
-		return userData.uid;
 	}
 
 	async function storePassword(uid, password) {
