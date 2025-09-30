@@ -108,6 +108,7 @@ if (document.readyState === 'loading') {
 			'messages',
 			'search',
 			'forum/header',
+			'client/polls',
 			'hooks',
 		], function (taskbar, helpers, pagination, messages, search, header, hooks) {
 			header.prepareDOM();
