@@ -69,6 +69,12 @@ module.exports = function (Categories) {
 			normalTids = await db.getSortedSetRevRange(set, start, stop);
 		}
 		normalTids = normalTids.filter(tid => !pinnedTids.includes(tid));
+		
+		// Filter for unreplied topics if sort is 'unreplied'
+		if (data.sort === 'unreplied') {
+			normalTids = await topics.filterUnrepliedTids(normalTids);
+		}
+		
 		return pinnedTidsOnPage.concat(normalTids);
 	};
 
@@ -81,12 +87,28 @@ module.exports = function (Categories) {
 			return result && result.topicCount;
 		}
 		const set = await Categories.buildTopicsSortedSet(data);
+		let count;
 		if (Array.isArray(set)) {
-			return await db.sortedSetIntersectCard(set);
+			count = await db.sortedSetIntersectCard(set);
 		} else if (data.targetUid && set) {
-			return await db.sortedSetCard(set);
+			count = await db.sortedSetCard(set);
+		} else {
+			count = data.category.topic_count;
 		}
-		return data.category.topic_count;
+		
+		// For unreplied topics, we need to filter and count
+		if (data.sort === 'unreplied') {
+			let allTids;
+			if (Array.isArray(set)) {
+				allTids = await db.getSortedSetIntersect({ sets: set, start: 0, stop: -1 });
+			} else {
+				allTids = await db.getSortedSetMembers(set);
+			}
+			const unrepliedTids = await topics.filterUnrepliedTids(allTids);
+			return unrepliedTids.length;
+		}
+		
+		return count;
 	};
 
 	Categories.buildTopicsSortedSet = async function (data) {
@@ -98,6 +120,7 @@ module.exports = function (Categories) {
 			most_posts: `cid:${cid}:tids:posts`,
 			most_votes: `cid:${cid}:tids:votes`,
 			most_views: `cid:${cid}:tids:views`,
+			unreplied: `cid:${cid}:tids:create`, // Use create time for unreplied topics ordering
 		};
 
 		const mainSet = sortToSet.hasOwnProperty(sort) ? sortToSet[sort] : `cid:${cid}:tids`;
