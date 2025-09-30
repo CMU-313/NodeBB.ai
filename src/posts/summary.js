@@ -67,16 +67,43 @@ module.exports = function (Posts) {
 
 		posts = posts.filter(post => tidToTopic[post.tid]);
 
+		options._viewerUid = uid;
 		posts = await parsePosts(posts, options);
 		const result = await plugins.hooks.fire('filter:post.getPostSummaryByPids', { posts: posts, uid: uid });
 		return result.posts;
 	};
+
 
 	async function parsePosts(posts, options) {
 		return await Promise.all(posts.map(async (post) => {
 			if (!post.content && !post.sourceContent) {
 				return post;
 			}
+
+			// If the post was created as anonymous, and the viewer does not have
+			// privileges to see the author's identity, mask the user information.
+			if (post && post.anonymous) {
+				let canSee = false;
+				try {
+					if (parseInt(options && options._viewerUid, 10)) {
+						// Allow site admins/global mods or moderators of the category to see identity
+						canSee = await user.isAdminOrGlobalMod(options._viewerUid);
+						if (!canSee && post.category && post.category.cid) {
+							canSee = await user.isModerator(options._viewerUid, post.category.cid);
+						}
+					}
+				} catch (e) {
+					// Ignore errors and treat as cannot see
+					canSee = false;
+				}
+
+				if (!canSee) {
+					// Replace user info with an anonymous placeholder for public viewers
+					post._isAnonymousPublic = true;
+					post.user = { uid: 0, username: 'Anonymous', userslug: 'anonymous', picture: null };
+				}
+			}
+
 			if (options.parse) {
 				post = await Posts.parsePost(post);
 			}
