@@ -19,28 +19,20 @@ const helpers = require('./helpers');
 const modsController = module.exports;
 modsController.flags = {};
 
-modsController.flags.list = async function (req, res) {
-	const validFilters = ['assignee', 'state', 'reporterId', 'type', 'targetUid', 'cid', 'quick', 'page', 'perPage'];
-	const validSorts = ['newest', 'oldest', 'reports', 'upvotes', 'downvotes', 'replies'];
 
+// Extracted helper functions to simplify the `list` function
+
+async function validateFiltersAndSorts(req, validFilters, validSorts) {
 	const results = await Promise.all([
 		user.isAdminOrGlobalMod(req.uid),
 		user.getModeratedCids(req.uid),
 		plugins.hooks.fire('filter:flags.validateFilters', { filters: validFilters }),
 		plugins.hooks.fire('filter:flags.validateSort', { sorts: validSorts }),
 	]);
-	const [isAdminOrGlobalMod, moderatedCids,, { sorts }] = results;
-	let [,, { filters }] = results;
+	return results;
+}
 
-	if (!(isAdminOrGlobalMod || !!moderatedCids.length)) {
-		return helpers.notAllowed(req, res);
-	}
-
-	if (!isAdminOrGlobalMod && moderatedCids.length) {
-		res.locals.cids = moderatedCids.map(cid => String(cid));
-	}
-
-	// Parse query string params for filters, eliminate non-valid filters
+function parseFilters(req, filters, res) {
 	filters = filters.reduce((memo, cur) => {
 		if (req.query.hasOwnProperty(cur)) {
 			if (typeof req.query[cur] === 'string' && req.query[cur].trim() !== '') {
@@ -49,43 +41,23 @@ modsController.flags.list = async function (req, res) {
 				memo[cur] = req.query[cur].map(item => validator.escape(String(item).trim()));
 			}
 		}
-
 		return memo;
 	}, {});
 
-	let hasFilter = !!Object.keys(filters).length;
-
 	if (res.locals.cids) {
 		if (!filters.cid) {
-			// If mod and no cid filter, add filter for their modded categories
 			filters.cid = res.locals.cids;
 		} else if (Array.isArray(filters.cid)) {
-			// Remove cids they do not moderate
 			filters.cid = filters.cid.filter(cid => res.locals.cids.includes(String(cid)));
 		} else if (!res.locals.cids.includes(String(filters.cid))) {
 			filters.cid = res.locals.cids;
-			hasFilter = false;
 		}
 	}
 
-	// Pagination doesn't count as a filter
-	if (
-		(Object.keys(filters).length === 1 && filters.hasOwnProperty('page')) ||
-		(Object.keys(filters).length === 2 && filters.hasOwnProperty('page') && filters.hasOwnProperty('perPage'))
-	) {
-		hasFilter = false;
-	}
+	return filters;
+}
 
-	// Parse sort from query string
-	let sort;
-	if (req.query.sort) {
-		sort = sorts.includes(req.query.sort) ? req.query.sort : null;
-	}
-	if (sort === 'newest') {
-		sort = undefined;
-	}
-	hasFilter = hasFilter || !!sort;
-
+async function fetchData(filters, sort, req) {
 	const [flagsData, analyticsData, selectData] = await Promise.all([
 		flags.list({
 			filters: filters,
@@ -96,8 +68,10 @@ modsController.flags.list = async function (req, res) {
 		analytics.getDailyStatsForSet('analytics:flags', Date.now(), 30),
 		helpers.getSelectedCategory(filters.cid),
 	]);
+	return { flagsData, analyticsData, selectData };
+}
 
-	// Send back information for userFilter module
+async function prepareSelected(filters) {
 	const selected = {};
 	await Promise.all(['assignee', 'reporterId', 'targetUid'].map(async (filter) => {
 		let uids = filters[filter];
@@ -108,9 +82,31 @@ modsController.flags.list = async function (req, res) {
 		if (!Array.isArray(uids)) {
 			uids = [uids];
 		}
-
 		selected[filter] = await user.getUsersFields(uids, ['username', 'userslug', 'picture']);
 	}));
+	return selected;
+}
+
+modsController.flags.list = async function (req, res) {
+	const validFilters = ['assignee', 'state', 'reporterId', 'type', 'targetUid', 'cid', 'quick', 'page', 'perPage'];
+	const validSorts = ['newest', 'oldest', 'reports', 'upvotes', 'downvotes', 'replies'];
+
+	const [isAdminOrGlobalMod, moderatedCids, { filters: validFiltersResult }] =
+		await validateFiltersAndSorts(req, validFilters, validSorts);
+
+	if (!(isAdminOrGlobalMod || !!moderatedCids.length)) {
+		return helpers.notAllowed(req, res);
+	}
+
+	if (!isAdminOrGlobalMod && moderatedCids.length) {
+		res.locals.cids = moderatedCids.map(cid => String(cid));
+	}
+
+	const filters = parseFilters(req, validFiltersResult, res);
+	const sort = req.query.sort && validSorts.includes(req.query.sort) ? req.query.sort : 'newest';
+
+	const { flagsData, analyticsData, selectData } = await fetchData(filters, sort, req);
+	const selected = await prepareSelected(filters);
 
 	res.render('flags/list', {
 		flags: flagsData.flags,
@@ -118,13 +114,12 @@ modsController.flags.list = async function (req, res) {
 		analytics: analyticsData,
 		selectedCategory: selectData.selectedCategory,
 		selected,
-		hasFilter: hasFilter,
+		hasFilter: !!Object.keys(filters).length,
 		filters: filters,
 		expanded: !!(filters.assignee || filters.reporterId || filters.targetUid),
-		sort: sort || 'newest',
+		sort: sort,
 		title: '[[pages:flags]]',
 		pagination: pagination.create(flagsData.page, flagsData.pageCount, req.query),
-		breadcrumbs: helpers.buildBreadcrumbs([{ text: '[[pages:flags]]' }]),
 	});
 };
 
