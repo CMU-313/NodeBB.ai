@@ -198,6 +198,13 @@ module.exports = function (Posts) {
 			editor: data.uid,
 		};
 
+		// preserve urgency if not provided; otherwise coerce to int
+		if (data.urgency !== undefined) {
+			editPostData.urgency = parseInt(data.urgency, 10);
+		} else if (postData && postData.urgency !== undefined) {
+			editPostData.urgency = postData.urgency;
+		}
+
 		// For posts in scheduled topics, if edited before, use edit timestamp
 		editPostData.edited = topicData.scheduled ? (postData.edited || postData.timestamp) + 1 : Date.now();
 

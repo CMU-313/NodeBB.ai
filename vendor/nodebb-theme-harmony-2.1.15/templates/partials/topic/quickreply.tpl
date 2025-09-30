@@ -13,6 +13,16 @@
 			<textarea rows="4" name="content" component="topic/quickreply/text" class="form-control mousetrap" placeholder="[[modules:composer.textarea.placeholder]]"></textarea>
 			<div class="imagedrop"><div>[[topic:composer.drag-and-drop-images]]</div></div>
 		</div>
+
+		<div class="mt-2 d-flex align-items-center gap-2">
+			<label class="mb-0 text-muted small">[[topic:urgency]]</label>
+			<select name="urgency" class="form-select form-select-sm w-auto">
+				<option value="0">[[topic:urgency:normal]]</option>
+				<option value="1">[[topic:urgency:low]]</option>
+				<option value="2">[[topic:urgency:medium]]</option>
+				<option value="3">[[topic:urgency:high]]</option>
+			</select>
+		</div>
 		<div>
 			<div class="d-flex justify-content-end gap-2">
 				<button type="button" component="topic/quickreply/upload/button" class="btn btn-ghost btn-sm border"><i class="fa fa-upload"></i></button>

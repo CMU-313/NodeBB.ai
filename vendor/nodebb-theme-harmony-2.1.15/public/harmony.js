@@ -62,6 +62,20 @@ $(document).ready(function () {
 				}
 			});
 
+				// Inject minimal styles for post urgency badges
+				$(function () {
+					const css = `
+					.post-urgency{font-weight:600;font-size:0.75rem;line-height:1;color:#fff}
+					.post-urgency--level-1{background:#6c757d}
+					.post-urgency--level-2{background:#ffc107;color:#000}
+					.post-urgency--level-3{background:#dc3545}
+					`;
+					const style = document.createElement('style');
+					style.type = 'text/css';
+					style.appendChild(document.createTextNode(css));
+					document.head.appendChild(style);
+				});
+
 			const bottomBar = $('[component="bottombar"]');
 			let stickyTools = null;
 			const location = config.theme.topMobilebar ? 'top' : 'bottom';
