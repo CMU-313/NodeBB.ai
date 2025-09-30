@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Poll Creator</title>
+    <link rel="stylesheet" href="/path/to/your/styles.css">
+</head>
+<body>
+    <div class="poll-creator-container">
+        <h1>Create a New Poll</h1>
+
+        <form id="poll-creator-form">
+            <!-- Poll Title -->
+            <div class="form-group">
+                <label for="poll-title">Poll Title:</label>
+                <input type="text" id="poll-title" name="poll-title" placeholder="Enter the poll title" required>
+            </div>
+
+            <!-- Poll Description -->
+            <div class="form-group">
+                <label for="poll-description">Poll Description:</label>
+                <textarea id="poll-description" name="poll-description" placeholder="Enter a brief description of the poll"></textarea>
+            </div>
+
+            <!-- Poll Options -->
+            <div class="form-group">
+                <label for="poll-options">Poll Options:</label>
+                <div id="poll-options-container">
+                    <input type="text" name="poll-option" placeholder="Option 1" required>
+                    <input type="text" name="poll-option" placeholder="Option 2" required>
+                </div>
+                <button type="button" id="add-option-button">Add Option</button>
+            </div>
+
+            <!-- Poll Settings -->
+            <div class="form-group">
+                <label for="poll-settings">Poll Settings:</label>
+                <div>
+                    <input type="checkbox" id="allow-multiple-votes" name="allow-multiple-votes">
+                    <label for="allow-multiple-votes">Allow multiple votes</label>
+                </div>
+                <div>
+                    <input type="checkbox" id="show-results-after-vote" name="show-results-after-vote">
+                    <label for="show-results-after-vote">Show results only after voting</label>
+                </div>
+                <div>
+                    <input type="checkbox" id="anonymous-voting" name="anonymous-voting">
+                    <label for="anonymous-voting">Allow anonymous voting</label>
+                </div>
+            </div>
+
+            <!-- Submit Button -->
+            <div class="form-group">
+                <button type="submit">Create Poll</button>
+            </div>
+        </form>
+    </div>
+
+    <script>
+        // Add functionality to dynamically add poll options
+        document.getElementById('add-option-button').addEventListener('click', function () {
+            const container = document.getElementById('poll-options-container');
+            const input = document.createElement('input');
+            input.type = 'text';
+            input.name = 'poll-option';
+            input.placeholder = `Option ${container.children.length + 1}`;
+            container.appendChild(input);
+        });
+    </script>
+</body>
+</html>
