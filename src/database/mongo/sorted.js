@@ -451,7 +451,8 @@ module.exports = function (module) {
 			// https://jira.mongodb.org/browse/SERVER-14322
 			// https://docs.mongodb.org/manual/reference/command/findAndModify/#upsert-and-unique-index
 			if (err && err.message.includes('E11000 duplicate key error')) {
-				console.log(new Error('e11000').stack, key, increment, value);
+				const winston = require('winston');
+				winston.warn('[database/mongo/sorted] E11000 duplicate key, retrying sortedSetIncrBy', { key, increment, value, stack: new Error('e11000').stack });
 				return await module.sortedSetIncrBy(key, increment, value);
 			}
 			throw err;

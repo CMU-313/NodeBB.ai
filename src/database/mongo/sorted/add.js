@@ -3,6 +3,7 @@
 module.exports = function (module) {
 	const helpers = require('../helpers');
 	const utils = require('../../../utils');
+	const winston = require('winston');
 
 	module.sortedSetAdd = async function (key, score, value) {
 		if (!key) {
@@ -20,7 +21,7 @@ module.exports = function (module) {
 			await module.client.collection('objects').updateOne({ _key: key, value: value }, { $set: { score: parseFloat(score) } }, { upsert: true });
 		} catch (err) {
 			if (err && err.message.includes('E11000 duplicate key error')) {
-				console.log(new Error('e11000').stack, key, score, value);
+				winston.warn('[database/mongo/sorted/add] E11000 duplicate key, retrying sortedSetAdd', { key, score, value, stack: new Error('e11000').stack });
 				return await module.sortedSetAdd(key, score, value);
 			}
 			throw err;

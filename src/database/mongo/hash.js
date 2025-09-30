@@ -2,6 +2,7 @@
 
 module.exports = function (module) {
 	const helpers = require('./helpers');
+	const winston = require('winston');
 
 	const cache = require('../cache').create('mongo');
 
@@ -27,7 +28,7 @@ module.exports = function (module) {
 			}
 		} catch (err) {
 			if (err && err.message.includes('E11000 duplicate key error')) {
-				console.log(new Error('e11000').stack, key, data);
+				winston.warn('[database/mongo/hash] E11000 duplicate key, retrying setObject', { key, data, stack: new Error('e11000').stack });
 				return await module.setObject(key, data);
 			}
 			throw err;
