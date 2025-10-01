@@ -18,11 +18,16 @@
 
 						<div class="mb-2 d-flex flex-column gap-2">
 							<label for="password">[[user:password]]</label>
-							<div>
+							<div class="d-flex align-items-center gap-2">
 								<input class="form-control" type="password" placeholder="[[user:password]]" name="password" id="password" autocomplete="current-password" autocapitalize="off" aria-required="true"/>
-								<p id="caps-lock-warning" class="text-danger hidden text-sm mb-0 form-text" aria-live="polite" role="alert" aria-atomic="true">
-									<i class="fa fa-exclamation-triangle"></i> [[login:caps-lock-enabled]]
-								</p>
+								<!-- Show/hide password toggle -->
+								<button type="button" class="btn btn-outline-light btn-icon toggler toggle-password" id="toggle-password" aria-pressed="false" aria-label="Show password">
+									<i class="fa fa-eye" aria-hidden="true"></i>
+								</button>
+							</div>
+							<p id="caps-lock-warning" class="text-danger hidden text-sm mb-0 form-text" aria-live="polite" role="alert" aria-atomic="true">
+								<i class="fa fa-exclamation-triangle"></i> [[login:caps-lock-enabled]]
+							</p>
 							</div>
 							{{{ if allowPasswordReset }}}
 							<div>

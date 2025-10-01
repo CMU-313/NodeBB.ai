@@ -88,6 +88,23 @@ define('forum/login', ['hooks', 'translator', 'jquery-form'], function (hooks, t
 		// Guard against caps lock
 		Login.capsLockCheck(document.querySelector('#password'), document.querySelector('#caps-lock-warning'));
 
+		// Show/Hide password toggle
+		const toggleBtn = document.querySelector('#toggle-password');
+		const passwordInput = document.querySelector('#password');
+		if (toggleBtn && passwordInput) {
+			toggleBtn.addEventListener('click', function () {
+				const isText = passwordInput.type === 'text';
+				passwordInput.type = isText ? 'password' : 'text';
+				this.setAttribute('aria-pressed', isText ? 'false' : 'true');
+				this.setAttribute('aria-label', isText ? 'Show password' : 'Hide password');
+				const icon = this.querySelector('i');
+				if (icon) {
+					icon.classList.toggle('fa-eye');
+					icon.classList.toggle('fa-eye-slash');
+				}
+			});
+		}
+
 		if ($('#content #username').val()) {
 			$('#content #password').val('').focus();
 		} else {
