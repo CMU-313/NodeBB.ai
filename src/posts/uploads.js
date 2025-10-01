@@ -17,6 +17,9 @@ const topics = require('../topics');
 const file = require('../file');
 const meta = require('../meta');
 
+// Millisecond constants
+const MS_PER_DAY = 24 * 60 * 60 * 1000;
+
 module.exports = function (Posts) {
 	Posts.uploads = {};
 
@@ -113,7 +116,8 @@ module.exports = function (Posts) {
 
 	Posts.uploads.cleanOrphans = async () => {
 		const now = Date.now();
-		const expiration = now - (1000 * 60 * 60 * 24 * meta.config.orphanExpiryDays);
+		// Calculate expiration using named constant to avoid magic numbers
+		const expiration = now - (MS_PER_DAY * meta.config.orphanExpiryDays);
 		const days = meta.config.orphanExpiryDays;
 		if (!days) {
 			return [];
