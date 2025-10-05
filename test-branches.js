@@ -6,7 +6,7 @@ const { execSync, spawn } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 
-const CSV_OUTPUT = 'branch-test-results.csv';
+// CSV output filename will be set dynamically based on task string
 const NODEBB_STARTUP_TIMEOUT = 5 * 60 * 1000; // 5 minutes in milliseconds
 const NODEBB_CHECK_INTERVAL = 5000; // Check every 5 seconds
 
@@ -31,12 +31,12 @@ function getCurrentBranch() {
 	return exec('git branch --show-current', { silent: true }).trim();
 }
 
-// Get all branches containing "task-1"
-function getTask1Branches() {
+// Get all branches containing a specific task string
+function getTaskBranches(taskString) {
 	const output = exec('git branch -a', { silent: true });
 	const branches = output.split('\n')
 		.map(b => b.trim().replace(/^\*\s+/, '').replace(/^remotes\/origin\//, ''))
-		.filter(b => b.includes('task-1') && b !== '' && !b.includes('HEAD ->'));
+		.filter(b => b.includes(taskString) && b !== '' && !b.includes('HEAD ->'));
 
 	// Remove duplicates
 	return [...new Set(branches)];
@@ -268,13 +268,15 @@ async function testBranch(branchName, index, total) {
 }
 
 // Write results to CSV
-function writeCSV(results) {
+function writeCSV(results, taskString) {
+	const csvOutput = `branch-test-results-${taskString}.csv`;
 	const headers = 'Branch Name,Tests Passed,Tests Failed,NodeBB Started Successfully\n';
 	const rows = results.map(r =>
 		`${r.branch},${r.testsPassed},${r.testsFailed},${r.nodebbStarted}`).join('\n');
 
-	fs.writeFileSync(CSV_OUTPUT, headers + rows);
-	console.log(`\nResults written to ${CSV_OUTPUT}`);
+	fs.writeFileSync(csvOutput, headers + rows);
+	console.log(`\nResults written to ${csvOutput}`);
+	return csvOutput;
 }
 
 // Main function
@@ -282,16 +284,36 @@ async function main() {
 	console.log('Branch Testing Script');
 	console.log('===================\n');
 
-	// Get limit from command line args (optional)
-	const limit = process.argv[2] ? parseInt(process.argv[2]) : null;
+	// Parse command line arguments
+	// Usage: node test-branches.js [limit] [task-string]
+	// Examples:
+	//   node test-branches.js           -> all branches with "task-1"
+	//   node test-branches.js 5         -> first 5 branches with "task-1"
+	//   node test-branches.js task-2    -> all branches with "task-2"
+	//   node test-branches.js 5 task-2  -> first 5 branches with "task-2"
+
+	let limit = null;
+	let taskString = 'task-1'; // default
+
+	// Parse arguments
+	const args = process.argv.slice(2);
+	for (const arg of args) {
+		const numArg = parseInt(arg);
+		if (!isNaN(numArg) && numArg > 0) {
+			limit = numArg;
+		} else {
+			taskString = arg;
+		}
+	}
 
 	// Save current branch
 	const originalBranch = getCurrentBranch();
 	console.log(`Current branch: ${originalBranch}`);
+	console.log(`Task string: ${taskString}`);
 
 	// Get branches to test
-	let branches = getTask1Branches();
-	console.log(`Found ${branches.length} branches with "task-1"`);
+	let branches = getTaskBranches(taskString);
+	console.log(`Found ${branches.length} branches with "${taskString}"`);
 
 	// Apply limit if specified
 	if (limit && limit > 0) {
@@ -349,7 +371,7 @@ async function main() {
 	}
 
 	// Write CSV
-	writeCSV(results);
+	const csvOutput = writeCSV(results, taskString);
 
 	// Calculate statistics
 	const totalTime = ((Date.now() - startTime) / 60000).toFixed(1);
@@ -380,7 +402,7 @@ async function main() {
 		console.log(`    NodeBB: ${r.nodebbStarted}\n`);
 	});
 	console.log(`${'='.repeat(80)}\n`);
-	console.log(`Results saved to: ${CSV_OUTPUT}`);
+	console.log(`Results saved to: ${csvOutput}`);
 }
 
 // Run the script
