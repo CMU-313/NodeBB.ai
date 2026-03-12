@@ -5,6 +5,36 @@ const flags = require('../flags');
 
 const flagsApi = module.exports;
 
+async function assertPrivileged(uid) {
+	const allowed = await user.isPrivileged(uid);
+	if (!allowed) {
+		throw new Error('[[error:no-privileges]]');
+	}
+}
+
+async function getNotesAndHistory(flagId) {
+	const [notes, history] = await Promise.all([
+		flags.getNotes(flagId),
+		flags.getHistory(flagId),
+	]);
+	return { notes, history };
+}
+
+async function assertNoteOwnership(flagId, datetime, uid) {
+	let note;
+	try {
+		note = await flags.getNote(flagId, datetime);
+	} catch (e) {
+		if (e.message === '[[error:invalid-data]]') {
+			return; // Note doesn't exist yet, that's fine
+		}
+		throw e;
+	}
+	if (note.uid !== uid) {
+		throw new Error('[[error:no-privileges]]');
+	}
+}
+
 flagsApi.create = async (caller, data) => {
 	const required = ['type', 'id', 'reason'];
 	if (!required.every(prop => !!data[prop])) {
@@ -26,19 +56,12 @@ flagsApi.create = async (caller, data) => {
 };
 
 flagsApi.get = async (caller, { flagId }) => {
-	const isPrivileged = await user.isPrivileged(caller.uid);
-	if (!isPrivileged) {
-		throw new Error('[[error:no-privileges]]');
-	}
-
+	await assertPrivileged(caller.uid);
 	return await flags.get(flagId);
 };
 
 flagsApi.update = async (caller, data) => {
-	const allowed = await user.isPrivileged(caller.uid);
-	if (!allowed) {
-		throw new Error('[[error:no-privileges]]');
-	}
+	await assertPrivileged(caller.uid);
 
 	const { flagId } = data;
 	delete data.flagId;
@@ -78,29 +101,14 @@ flagsApi.rescindUser = async ({ uid }, { uid: targetUid }) => {
 };
 
 flagsApi.appendNote = async (caller, data) => {
-	const allowed = await user.isPrivileged(caller.uid);
-	if (!allowed) {
-		throw new Error('[[error:no-privileges]]');
-	}
+	await assertPrivileged(caller.uid);
+
 	if (data.datetime && data.flagId) {
-		try {
-			const note = await flags.getNote(data.flagId, data.datetime);
-			if (note.uid !== caller.uid) {
-				throw new Error('[[error:no-privileges]]');
-			}
-		} catch (e) {
-			// Okay if not does not exist in database
-			if (e.message !== '[[error:invalid-data]]') {
-				throw e;
-			}
-		}
+		await assertNoteOwnership(data.flagId, data.datetime, caller.uid);
 	}
+
 	await flags.appendNote(data.flagId, caller.uid, data.note, data.datetime);
-	const [notes, history] = await Promise.all([
-		flags.getNotes(data.flagId),
-		flags.getHistory(data.flagId),
-	]);
-	return { notes: notes, history: history };
+	return await getNotesAndHistory(data.flagId);
 };
 
 flagsApi.deleteNote = async (caller, data) => {
@@ -115,9 +123,5 @@ flagsApi.deleteNote = async (caller, data) => {
 		datetime: Date.now(),
 	});
 
-	const [notes, history] = await Promise.all([
-		flags.getNotes(data.flagId),
-		flags.getHistory(data.flagId),
-	]);
-	return { notes: notes, history: history };
+	return await getNotesAndHistory(data.flagId);
 };
