@@ -398,17 +398,17 @@ module.exports = function (User) {
 	};
 
 	User.incrementUserFieldBy = async function (uid, field, value) {
-		return await incrDecrUserFieldBy(uid, field, value, 'increment');
+		return await incrDecrUserFieldBy({ uid, field, value, type: 'increment' });
 	};
 
 	User.decrementUserFieldBy = async function (uid, field, value) {
-		return await incrDecrUserFieldBy(uid, field, -value, 'decrement');
+		return await incrDecrUserFieldBy({ uid, field, value: -value, type: 'decrement' });
 	};
 
-	async function incrDecrUserFieldBy(uid, field, value, type) {
+	async function incrDecrUserFieldBy({ uid, field, value, type }) {
 		const prefix = `user${activitypub.helpers.isUri(uid) ? 'Remote' : ''}`;
 		const newValue = await db.incrObjectFieldBy(`${prefix}:${uid}`, field, value);
-		plugins.hooks.fire('action:user.set', { uid: uid, field: field, value: newValue, type: type });
+		plugins.hooks.fire('action:user.set', { uid, field, value: newValue, type });
 		return newValue;
 	}
 };
