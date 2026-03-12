@@ -1,4 +1,3 @@
-
 'use strict';
 
 const topics = require('../topics');
@@ -6,7 +5,7 @@ const user = require('../user');
 const utils = require('../utils');
 
 module.exports = function (Posts) {
-	Posts.getPostsFromSet = async function (set, start, stop, uid, reverse) {
+	Posts.getPostsFromSet = async function ({ set, start, stop, uid, reverse }) {
 		const pids = await Posts.getPidsFromSet(set, start, stop, reverse);
 		const posts = await Posts.getPostsByPids(pids, uid);
 		return await user.blocks.filter(uid, posts);
