@@ -1,0 +1,1670 @@
+
+
+Gruntfile.js
+  25  Function with high complexity (count = 16): exports
+
+install/databases.js
+  18  Function with many returns (count = 6): getDatabaseConfig
+  18  Function with high complexity (count = 13): getDatabaseConfig
+
+loader.js
+  56  Function with high complexity (count = 12): addWorkerEvents
+
+public/src/admin/admin.js
+ 131  Function with high complexity (count = 15): updatePageTitle
+
+public/src/admin/appearance/themes.js
+   7  Function with high complexity (count = 13): init
+
+public/src/admin/dashboard.js
+ 358  Found 19 lines of similar code in 2 locations (mass = 131)
+        also found at public/src/admin/modules/dashboard-line-graph.js
+
+public/src/admin/extend/plugins.js
+  12  Function with many returns (count = 9): init
+  12  Function with high complexity (count = 39): init
+
+public/src/admin/extend/widgets.js
+  48  Function with high complexity (count = 16): prepareWidgets
+ 199  Function with high complexity (count = 10): loadWidgetData
+
+public/src/admin/manage/admins-mods.js
+   8  Function with many returns (count = 8): init
+   8  Function with high complexity (count = 19): init
+
+public/src/admin/manage/categories.js
+ 232  Deeply nested control flow (level = 5)
+   1  High total complexity (count = 50)
+ 203  Function with high complexity (count = 21): itemDragDidEnd
+ 254  Function with high complexity (count = 12): renderList
+
+public/src/admin/manage/category.js
+  16  Function with many returns (count = 8): init
+  16  Function with high complexity (count = 18): init
+ 249  Function with high complexity (count = 16): modified
+
+public/src/admin/manage/privileges.js
+   1  High total complexity (count = 62)
+  44  Function with high complexity (count = 20): setupPrivilegeTable
+
+public/src/admin/manage/registration.js
+   7  Function with high complexity (count = 10): init
+
+public/src/admin/manage/users.js
+   8  Function with many returns (count = 32): init
+   1  High total complexity (count = 70)
+   8  Function with high complexity (count = 52): init
+
+public/src/admin/modules/dashboard-line-graph.js
+ 175  Function with many parameters (count = 4): update
+ 123  Found 19 lines of similar code in 2 locations (mass = 131)
+        also found at public/src/admin/dashboard.js
+
+public/src/admin/modules/search.js
+  69  Function with high complexity (count = 18): setupSearch
+
+public/src/admin/settings.js
+  57  Function with high complexity (count = 15): prepare
+ 182  Function with high complexity (count = 12): saveFields
+
+public/src/ajaxify.js
+ 207  Function with many parameters (count = 4): onAjaxError
+ 252  Function with many parameters (count = 4): renderTemplate
+  27  Function with many returns (count = 9): check
+   1  High total complexity (count = 137)
+  27  Function with high complexity (count = 20): check
+  86  Function with high complexity (count = 15): go
+ 207  Function with high complexity (count = 28): onAjaxError
+ 409  Function with high complexity (count = 12): loadScript
+ 573  Function with high complexity (count = 34): ajaxifyAnchors
+ 587  Function with high complexity (count = 19): process
+
+public/src/app.js
+ 330  Function with many parameters (count = 4): parseAndTranslate
+   1  High total complexity (count = 66)
+
+public/src/client/account/edit/password.js
+  14  Function with high complexity (count = 22): handlePasswordChange
+
+public/src/client/account/posts.js
+  26  Found 16 lines of similar code in 2 locations (mass = 68)
+        also found at public/src/client/account/topics.js
+
+public/src/client/account/settings.js
+  86  Function with high complexity (count = 11): saveSettings
+ 175  Found 16 lines of similar code in 2 locations (mass = 119)
+        also found at public/src/client/account/settings.js
+ 192  Found 16 lines of similar code in 2 locations (mass = 119)
+        also found at public/src/client/account/settings.js
+
+public/src/client/account/topics.js
+  28  Found 16 lines of similar code in 2 locations (mass = 68)
+        also found at public/src/client/account/posts.js
+
+public/src/client/category/tools.js
+ 142  Function with many parameters (count = 4): categoryCommand
+  15  Function with many returns (count = 15): init
+
+public/src/client/category.js
+  75  Found 19 lines of identical code in 2 locations (mass = 156)
+        also found at public/src/client/world.js
+
+public/src/client/chats.js
+ 296  Function with many returns (count = 6): addScrollHandler
+   1  High total complexity (count = 115)
+ 296  Function with high complexity (count = 18): addScrollHandler
+ 686  Function with high complexity (count = 16): addSocketListeners
+
+public/src/client/flags/detail.js
+   8  Function with high complexity (count = 27): init
+
+public/src/client/flags/list.js
+ 155  Function with high complexity (count = 11): enableCheckboxes
+ 209  Function with high complexity (count = 13): handleBulkActions
+
+public/src/client/groups/details.js
+  31  Function with high complexity (count = 30): init
+
+public/src/client/header/unread.js
+  11  Function with high complexity (count = 20): initUnreadTopics
+  14  Function with high complexity (count = 18): onNewPost
+
+public/src/client/infinitescroll.js
+  40  Function with high complexity (count = 11): onScroll
+
+public/src/client/login.js
+   9  Function with high complexity (count = 13): init
+
+public/src/client/post-queue.js
+  55  Function with many parameters (count = 4): handleContentEdit
+ 118  Function with high complexity (count = 15): handleActions
+ 170  Function with high complexity (count = 11): handleQueueActions
+
+public/src/client/register.js
+  11  Function with high complexity (count = 12): init
+
+public/src/client/search.js
+   1  High total complexity (count = 61)
+ 150  Function with high complexity (count = 28): fillOutForm
+ 316  Function with high complexity (count = 13): tagFilterDropdown
+
+public/src/client/topic/diffs.js
+  83  Function with many parameters (count = 4): delete
+
+public/src/client/topic/events.js
+  99  Function with high complexity (count = 14): onPostEdited
+ 198  Function with high complexity (count = 12): togglePostDeleteState
+
+public/src/client/topic/images.js
+  15  Function with high complexity (count = 10): wrapImageInLink
+
+public/src/client/topic/move-post.js
+  95  Function with high complexity (count = 14): showPostsSelected
+
+public/src/client/topic/move.js
+  49  Function with high complexity (count = 12): onCommitClicked
+
+public/src/client/topic/postTools.js
+ 101  Function with many returns (count = 7): addPostHandlers
+   1  High total complexity (count = 84)
+ 101  Function with high complexity (count = 28): addPostHandlers
+ 218  Function with high complexity (count = 18): checkDuration
+ 392  Function with high complexity (count = 11): getUserSlug
+ 529  Function with high complexity (count = 12): delayedTooltip
+
+public/src/client/topic/posts.js
+ 156  Function with many parameters (count = 5): createNewPosts
+  71  Complex binary expression
+  72  Complex binary expression
+   1  High total complexity (count = 105)
+ 156  Function with high complexity (count = 29): createNewPosts
+ 162  Function with high complexity (count = 10): removeAlreadyAddedPosts
+ 249  Function with high complexity (count = 11): loadMorePosts
+ 324  Function with high complexity (count = 13): addNecroPostMessage
+
+public/src/client/topic/replies.js
+   7  Function with high complexity (count = 12): init
+
+public/src/client/topic/threadTools.js
+ 237  Function with many parameters (count = 4): topicCommand
+  18  Function with many returns (count = 9): init
+   1  High total complexity (count = 54)
+  18  Function with high complexity (count = 18): init
+
+public/src/client/topic.js
+ 157  Complex binary expression
+   1  High total complexity (count = 96)
+ 221  Function with high complexity (count = 11): addCodeBlockHandler
+ 306  Function with high complexity (count = 20): addPostsPreviewHandler
+ 417  Function with high complexity (count = 18): navigatorCallback
+ 445  Function with high complexity (count = 12): updateUserBookmark
+
+public/src/client/unread.js
+  19  Function with high complexity (count = 11): handleMarkRead
+
+public/src/client/world.js
+  40  Found 19 lines of identical code in 2 locations (mass = 156)
+        also found at public/src/client/category.js
+
+public/src/installer/install.js
+ 105  Function with high complexity (count = 16): activate
+
+public/src/modules/accounts/delete.js
+  36  Function with many parameters (count = 5): executeAction
+
+public/src/modules/accounts/moderate.js
+  11  Found 23 lines of similar code in 2 locations (mass = 134)
+        also found at public/src/modules/accounts/moderate.js
+  49  Found 22 lines of similar code in 2 locations (mass = 134)
+        also found at public/src/modules/accounts/moderate.js
+
+public/src/modules/accounts/picture.js
+ 144  Function with high complexity (count = 10): handleImageUpload
+
+public/src/modules/api.js
+  34  Function with high complexity (count = 18): xhr
+
+public/src/modules/autocomplete.js
+ 124  Function with many parameters (count = 4): handleOnSelect
+
+public/src/modules/categoryFilter.js
+   6  Function with high complexity (count = 25): init
+
+public/src/modules/categorySearch.js
+   6  Function with high complexity (count = 17): init
+
+public/src/modules/categorySelector.js
+   8  Function with many returns (count = 6): init
+
+public/src/modules/chat.js
+   1  High total complexity (count = 66)
+
+public/src/modules/coverPhoto.js
+  13  Function with many parameters (count = 4): init
+
+public/src/modules/flags.js
+  85  Function with many parameters (count = 4): createFlag
+
+public/src/modules/handleBack.js
+  35  Function with high complexity (count = 15): onBackClicked
+
+public/src/modules/helpers.common.js
+ 181  Function with many parameters (count = 4): spawnPrivilegeStates
+ 291  Function with many parameters (count = 5): buildAvatar
+   3  Function with many returns (count = 52): exports
+ 199  Complex binary expression
+ 200  Complex binary expression
+   1  High total complexity (count = 93)
+   3  Function with high complexity (count = 93): exports
+ 181  Function with high complexity (count = 12): spawnPrivilegeStates
+ 239  Function with high complexity (count = 28): userAgentIcons
+
+public/src/modules/iconSelect.js
+ 226  Function with high complexity (count = 26): init
+
+public/src/modules/navigator.js
+  32  Function with many parameters (count = 5): init
+ 677  Function with many parameters (count = 4): scrollToElement
+ 208  Function with many returns (count = 6): handleScrollNav
+   1  High total complexity (count = 122)
+ 103  Function with high complexity (count = 10): gotoMyNextPost
+ 208  Function with high complexity (count = 20): handleScrollNav
+ 358  Function with high complexity (count = 10): updateUnreadIndicator
+ 490  Function with high complexity (count = 12): update
+ 619  Function with high complexity (count = 10): scrollToIndex
+ 677  Function with high complexity (count = 12): scrollToElement
+
+public/src/modules/pictureCropper.js
+  35  Function with high complexity (count = 15): handleImageCrop
+  69  Function with high complexity (count = 10): ready
+
+public/src/modules/quickreply.js
+  14  Function with high complexity (count = 12): init
+
+public/src/modules/search.js
+  93  Function with many returns (count = 6): enableQuickSearch
+   1  High total complexity (count = 59)
+  93  Function with high complexity (count = 43): enableQuickSearch
+ 114  Function with high complexity (count = 28): doSearch
+
+public/src/modules/settings/array.js
+  41  Function with many parameters (count = 6): addArrayChildElement
+  72  Function with many parameters (count = 4): addAddButton
+
+public/src/modules/settings/key.js
+ 105  Function with many parameters (count = 4): getKeyString
+   1  High total complexity (count = 59)
+ 105  Function with high complexity (count = 26): getKeyString
+ 147  Function with high complexity (count = 13): getKeyFromString
+
+public/src/modules/settings/object.js
+  16  Function with many parameters (count = 7): addObjectPropertyElement
+  58  Function with high complexity (count = 13): set
+
+public/src/modules/settings/sorted-list.js
+ 139  Function with many parameters (count = 4): parse
+
+public/src/modules/settings.js
+ 284  Function with many parameters (count = 4): persistSettings
+ 373  Function with many parameters (count = 5): set
+ 415  Function with many parameters (count = 4): persist
+   1  High total complexity (count = 143)
+ 108  Function with high complexity (count = 14): cleanArray
+ 140  Function with high complexity (count = 10): readValue
+ 169  Function with high complexity (count = 17): fillField
+ 415  Function with high complexity (count = 23): persist
+ 508  Function with high complexity (count = 11): save
+
+public/src/modules/share.js
+   9  Function with many parameters (count = 4): openShare
+   8  Function with many returns (count = 7): addShareHandlers
+
+public/src/modules/tagFilter.js
+   6  Function with many returns (count = 6): init
+   6  Function with high complexity (count = 43): init
+
+public/src/modules/taskbar.js
+  79  Function with many parameters (count = 4): push
+
+public/src/modules/topicList.js
+ 190  Function with many parameters (count = 5): onTopicsLoaded
+ 138  Complex binary expression
+ 190  Function with high complexity (count = 10): onTopicsLoaded
+
+public/src/modules/translator.common.js
+   3  Function with many returns (count = 32): exports
+ 176  Deeply nested control flow (level = 5)
+ 147  Complex binary expression
+   1  High total complexity (count = 135)
+   3  Function with high complexity (count = 135): exports
+  49  Function with high complexity (count = 56): translate
+  49  Function with high complexity (count = 56): translate
+  70  Function with high complexity (count = 12): split
+ 280  Function with high complexity (count = 25): getTranslation
+ 280  Function with high complexity (count = 25): getTranslation
+ 430  Function with high complexity (count = 18): removePatterns
+ 430  Function with high complexity (count = 18): removePatterns
+
+public/src/modules/uploadHelpers.js
+ 190  Function with many parameters (count = 4): uploadProgress
+ 180  Complex binary expression
+ 156  Function with high complexity (count = 18): ajaxSubmit
+
+public/src/modules/uploader.js
+  84  Function with many parameters (count = 4): uploadProgress
+
+public/src/modules/userFilter.js
+   6  Function with high complexity (count = 20): init
+  44  Function with high complexity (count = 10): doSearch
+
+public/src/utils.common.js
+ 326  Complex binary expression
+   1  High total complexity (count = 65)
+
+public/src/widgets.js
+   3  Function with high complexity (count = 14): render
+
+public/vendor/jquery/draggable-background/backgroundDraggable.js
+  15  Function with many parameters (count = 4): limit
+  69  Function with high complexity (count = 35): init
+
+src/activitypub/actors.js
+  25  Function with many returns (count = 8): qualify
+ 101  Function with many returns (count = 11): assert
+ 277  Function with many returns (count = 8): assertGroup
+   1  High total complexity (count = 125)
+  25  Function with high complexity (count = 18): qualify
+ 101  Function with high complexity (count = 46): assert
+ 277  Function with high complexity (count = 30): assertGroup
+ 585  Function with high complexity (count = 18): prune
+ 515  Found 34 lines of similar code in 2 locations (mass = 169)
+        also found at src/activitypub/actors.js
+ 550  Found 34 lines of similar code in 2 locations (mass = 169)
+        also found at src/activitypub/actors.js
+
+src/activitypub/contexts.js
+  10  Function with many returns (count = 6): get
+  56  Function with high complexity (count = 22): getItems
+
+src/activitypub/feps.js
+  11  Function with high complexity (count = 10): announce
+  11  Function with high complexity (count = 10): announce
+
+src/activitypub/helpers.js
+ 228  Function with many parameters (count = 4): resolveActivity
+ 164  Function with many returns (count = 9): resolveLocalId
+ 275  Function with many returns (count = 7): resolveObjects
+   1  High total complexity (count = 92)
+  88  Function with high complexity (count = 10): query
+ 164  Function with high complexity (count = 10): resolveLocalId
+ 275  Function with high complexity (count = 12): resolveObjects
+ 380  Function with high complexity (count = 11): remoteAnchorToLocalProfile
+ 455  Function with high complexity (count = 21): generateCollection
+
+src/activitypub/inbox.js
+  23  Function with many parameters (count = 5): reject
+   1  High total complexity (count = 166)
+  77  Function with high complexity (count = 34): update
+ 179  Function with high complexity (count = 13): delete
+ 264  Function with high complexity (count = 37): announce
+ 368  Function with high complexity (count = 15): follow
+ 452  Function with high complexity (count = 20): accept
+ 495  Function with high complexity (count = 33): undo
+
+src/activitypub/index.js
+ 297  Function with many parameters (count = 4): get
+ 367  Function with many parameters (count = 5): sendMessage
+ 405  Function with many parameters (count = 4): send
+ 514  Function with many returns (count = 14): probe
+   1  High total complexity (count = 84)
+ 297  Function with high complexity (count = 10): get
+ 514  Function with high complexity (count = 20): probe
+
+src/activitypub/mocks.js
+ 165  Function with many returns (count = 6): profile
+ 116  Deeply nested control flow (level = 5)
+ 141  Deeply nested control flow (level = 5)
+ 198  Complex binary expression
+ 309  Complex binary expression
+   1  High total complexity (count = 185)
+  43  Function with high complexity (count = 67): _normalize
+ 165  Function with high complexity (count = 20): profile
+ 581  Function with high complexity (count = 51): public
+ 801  Function with high complexity (count = 19): private
+
+src/activitypub/notes.js
+  48  Function with many returns (count = 10): assert
+ 164  Complex binary expression
+   1  High total complexity (count = 110)
+  48  Function with high complexity (count = 45): assert
+ 258  Function with high complexity (count = 16): assertPrivate
+ 357  Function with high complexity (count = 10): assertRelation
+ 413  Function with high complexity (count = 23): getParentChain
+ 418  Function with high complexity (count = 22): traverse
+
+src/analytics.js
+  93  Function with high complexity (count = 13): pageView
+
+src/api/activitypub.js
+   1  High total complexity (count = 50)
+
+src/api/categories.js
+ 202  Function with high complexity (count = 12): setPrivilege
+
+src/api/chats.js
+   1  High total complexity (count = 77)
+  53  Function with high complexity (count = 11): create
+ 142  Function with high complexity (count = 14): update
+
+src/api/flags.js
+  80  Function with high complexity (count = 10): appendNote
+
+src/api/groups.js
+ 117  Complex binary expression
+   1  High total complexity (count = 56)
+ 122  Function with high complexity (count = 17): join
+ 184  Function with high complexity (count = 13): leave
+ 277  Found 15 lines of similar code in 2 locations (mass = 72)
+        also found at src/api/groups.js
+ 293  Found 15 lines of similar code in 2 locations (mass = 72)
+        also found at src/api/groups.js
+
+src/api/helpers.js
+  51  Function with many parameters (count = 4): doTopicAction
+  76  Function with many parameters (count = 4): logTopicAction
+  91  Function with many parameters (count = 5): postCommand
+ 131  Function with many parameters (count = 5): executeCommand
+
+src/api/posts.js
+ 656  Function with many parameters (count = 4): sendQueueNotification
+ 465  Complex binary expression
+   1  High total complexity (count = 93)
+  88  Function with high complexity (count = 18): edit
+
+src/api/users.js
+ 595  Complex binary expression
+   1  High total complexity (count = 103)
+  51  Function with high complexity (count = 10): update
+ 376  Function with high complexity (count = 12): invite
+ 516  Function with high complexity (count = 11): processDeletion
+
+src/batch.js
+  13  Function with high complexity (count = 29): processSortedSet
+  72  Function with high complexity (count = 12): processArray
+
+src/cache/lru.js
+   3  Function with many returns (count = 12): exports
+   3  Function with high complexity (count = 19): exports
+ 129  Found 21 lines of identical code in 2 locations (mass = 97)
+        also found at src/cache/ttl.js
+
+src/cache/ttl.js
+   3  Function with many returns (count = 12): exports
+   3  Function with high complexity (count = 16): exports
+ 102  Found 21 lines of identical code in 2 locations (mass = 97)
+        also found at src/cache/lru.js
+
+src/categories/create.js
+ 241  Function with many parameters (count = 4): copyPrivilegesFrom
+ 275  Function with many parameters (count = 4): copyPrivilegesByGroup
+  14  Function with many returns (count = 6): exports
+  14  Function with high complexity (count = 31): exports
+  15  Function with high complexity (count = 13): create
+
+src/categories/data.js
+  98  Function with many parameters (count = 4): defaultIntField
+  33  Function with many returns (count = 8): exports
+  33  Function with high complexity (count = 15): exports
+
+src/categories/index.js
+ 404  Function with many parameters (count = 4): recursive
+   2  High total complexity (count = 81)
+ 331  Function with high complexity (count = 21): getTree
+ 403  Function with high complexity (count = 10): buildForSelectCategories
+
+src/categories/recentreplies.js
+  16  Function with many parameters (count = 4): getRecentReplies
+  15  Function with high complexity (count = 38): exports
+  47  Function with high complexity (count = 10): updateRecentTidForCid
+
+src/categories/search.js
+  11  Function with many returns (count = 6): exports
+  11  Function with high complexity (count = 10): exports
+
+src/categories/topics.js
+  14  Function with many returns (count = 21): exports
+  94  Complex binary expression
+  14  Function with high complexity (count = 46): exports
+  30  Function with high complexity (count = 11): getTopicIds
+  92  Function with high complexity (count = 12): buildTopicsSortedSet
+
+src/categories/update.js
+  11  Function with many returns (count = 9): exports
+  11  Function with high complexity (count = 20): exports
+
+src/categories/watch.js
+   8  Function with many returns (count = 8): exports
+
+src/cli/package-install.js
+ 105  Function with high complexity (count = 18): installAll
+
+src/cli/reset.js
+  17  Function with high complexity (count = 11): reset
+
+src/cli/upgrade.js
+  94  Complex binary expression
+
+src/cli/user.js
+ 156  Function with many returns (count = 7): UserCommands
+   1  High total complexity (count = 50)
+ 156  Function with high complexity (count = 42): UserCommands
+ 199  Function with high complexity (count = 12): reset
+
+src/controllers/404.js
+  37  Complex binary expression
+
+src/controllers/accounts/chats.js
+  12  Function with many returns (count = 6): get
+  12  Function with high complexity (count = 13): get
+
+src/controllers/accounts/edit.js
+  14  Function with high complexity (count = 10): get
+
+src/controllers/accounts/follow.js
+  21  Function with many parameters (count = 5): getFollow
+
+src/controllers/accounts/helpers.js
+ 178  Complex binary expression
+   1  High total complexity (count = 51)
+  25  Function with high complexity (count = 22): getUserDataByUserSlug
+ 143  Function with high complexity (count = 17): getCustomUserFields
+
+src/controllers/accounts/posts.js
+  62  Function with many parameters (count = 4): getTopics
+  81  Function with many parameters (count = 4): getTopics
+  99  Function with many parameters (count = 4): getTopics
+ 276  Function with many parameters (count = 5): getItemData
+
+src/controllers/accounts/profile.js
+ 114  Complex binary expression
+ 116  Complex binary expression
+  82  Function with high complexity (count = 12): getPosts
+
+src/controllers/activitypub/actors.js
+ 122  Function with many returns (count = 7): topic
+ 122  Function with high complexity (count = 19): topic
+
+src/controllers/activitypub/index.js
+  17  Function with many returns (count = 6): fetch
+  61  Found 25 lines of similar code in 2 locations (mass = 173)
+        also found at src/controllers/activitypub/index.js
+  87  Found 25 lines of similar code in 2 locations (mass = 173)
+        also found at src/controllers/activitypub/index.js
+
+src/controllers/admin/categories.js
+  49  Function with high complexity (count = 12): getAll
+
+src/controllers/admin/dashboard.js
+ 343  Function with high complexity (count = 13): getSearches
+
+src/controllers/admin/privileges.js
+   9  Function with high complexity (count = 13): get
+
+src/controllers/admin/uploads.js
+ 256  Function with many parameters (count = 4): upload
+ 271  Function with many parameters (count = 6): uploadImage
+  19  Function with many returns (count = 6): get
+  19  Function with high complexity (count = 11): get
+
+src/controllers/admin/users.js
+   1  High total complexity (count = 58)
+  29  Function with high complexity (count = 30): getUsers
+
+src/controllers/admin.js
+  36  Function with many returns (count = 9): routeIndex
+
+src/controllers/api.js
+  27  Function with high complexity (count = 17): loadConfig
+
+src/controllers/authentication.js
+ 277  Function with many parameters (count = 4): continueLogin
+ 409  Function with many parameters (count = 4): localLogin
+ 409  Function with many returns (count = 6): localLogin
+   1  High total complexity (count = 111)
+  23  Function with high complexity (count = 12): registerAndLoginUser
+  76  Function with high complexity (count = 12): register
+ 144  Function with high complexity (count = 21): registerComplete
+ 239  Function with high complexity (count = 12): login
+ 277  Function with high complexity (count = 20): continueLogin
+ 409  Function with high complexity (count = 12): localLogin
+
+src/controllers/category.js
+  28  Function with many returns (count = 11): get
+  28  Function with high complexity (count = 40): get
+
+src/controllers/composer.js
+  42  Function with high complexity (count = 13): post
+
+src/controllers/errors.js
+  14  Function with many parameters (count = 4): handleURIErrors
+  14  Function with many parameters (count = 4): handleURIErrors
+  43  Function with many parameters (count = 4): handleErrors
+  43  Function with many parameters (count = 4): handleErrors
+  14  Function with high complexity (count = 10): handleURIErrors
+  14  Function with high complexity (count = 10): handleURIErrors
+  43  Function with high complexity (count = 20): handleErrors
+  43  Function with high complexity (count = 20): handleErrors
+  65  Function with high complexity (count = 12): defaultHandler
+
+src/controllers/groups.js
+  70  Function with high complexity (count = 11): details
+
+src/controllers/helpers.js
+  23  Function with many parameters (count = 4): noScriptErrors
+ 250  Function with many parameters (count = 4): getCategories
+ 255  Function with many parameters (count = 4): getCategoriesByStates
+ 260  Function with many parameters (count = 5): getCategoryData
+ 406  Function with many parameters (count = 4): checkVisibleChildren
+ 317  Complex binary expression
+   1  High total complexity (count = 108)
+ 125  Function with high complexity (count = 14): notAllowed
+ 165  Function with high complexity (count = 11): redirect
+ 450  Function with high complexity (count = 24): formatApiResponse
+ 542  Function with high complexity (count = 15): generateError
+
+src/controllers/mods.js
+ 236  Complex binary expression
+   1  High total complexity (count = 55)
+  22  Function with high complexity (count = 23): list
+ 131  Function with high complexity (count = 20): detail
+ 214  Function with high complexity (count = 14): postQueue
+
+src/controllers/posts.js
+  16  Function with high complexity (count = 10): redirectToPost
+
+src/controllers/recent.js
+  25  Function with high complexity (count = 12): getData
+
+src/controllers/search.js
+  36  Complex binary expression
+  37  Complex binary expression
+  22  Function with high complexity (count = 19): search
+ 149  Function with high complexity (count = 10): recordSearch
+
+src/controllers/topics.js
+ 211  Function with many parameters (count = 5): addTags
+  25  Function with many returns (count = 6): get
+  25  Function with many returns (count = 6): getTopic
+   1  High total complexity (count = 77)
+  25  Function with high complexity (count = 39): get
+  25  Function with high complexity (count = 39): getTopic
+ 211  Function with high complexity (count = 13): addTags
+
+src/controllers/user.js
+  30  Function with many parameters (count = 4): byType
+  38  Function with high complexity (count = 10): getUserDataByField
+
+src/controllers/users.js
+ 154  Function with many parameters (count = 4): getUsersAndCount
+ 154  Function with many returns (count = 6): getUsersAndCount
+
+src/controllers/write/categories.js
+ 109  Found 16 lines of similar code in 2 locations (mass = 66)
+        also found at src/controllers/write/categories.js
+ 126  Found 16 lines of similar code in 2 locations (mass = 66)
+        also found at src/controllers/write/categories.js
+
+src/controllers/write/utilities.js
+  28  Function with many parameters (count = 4): noScriptErrors
+
+src/coverPhoto.js
+  19  Function with high complexity (count = 12): getCover
+
+src/database/helpers.js
+   5  Function with many parameters (count = 4): mergeBatch
+  11  Complex binary expression
+   5  Function with high complexity (count = 13): mergeBatch
+
+src/database/mongo/connection.js
+  10  Function with high complexity (count = 10): getConnectionString
+
+src/database/mongo/hash.js
+   3  Function with many returns (count = 33): exports
+ 195  Complex binary expression
+   1  High total complexity (count = 64)
+   3  Function with high complexity (count = 64): exports
+  39  Function with high complexity (count = 11): setObjectBulk
+
+src/database/mongo/list.js
+   3  Function with many returns (count = 10): exports
+   3  Function with high complexity (count = 18): exports
+
+src/database/mongo/main.js
+   3  Function with many returns (count = 22): exports
+ 129  Function with many returns (count = 6): type
+   3  Function with high complexity (count = 24): exports
+
+src/database/mongo/sets.js
+   3  Function with many returns (count = 20): exports
+   3  Function with high complexity (count = 35): exports
+
+src/database/mongo/sorted/add.js
+   3  Function with many returns (count = 6): exports
+   3  Function with high complexity (count = 29): exports
+  51  Function with high complexity (count = 11): sortedSetsAdd
+
+src/database/mongo/sorted/intersect.js
+   3  Function with many returns (count = 15): exports
+   3  Function with high complexity (count = 39): exports
+ 116  Function with high complexity (count = 11): intersectBatch
+
+src/database/mongo/sorted/remove.js
+   3  Function with high complexity (count = 15): exports
+
+src/database/mongo/sorted/union.js
+   3  Function with many returns (count = 6): exports
+   3  Function with high complexity (count = 13): exports
+
+src/database/mongo/sorted.js
+  34  Function with many parameters (count = 7): getSortedSetRange
+  86  Function with many parameters (count = 4): doQuery
+ 122  Function with many parameters (count = 5): getSortedSetRangeByScore
+ 126  Function with many parameters (count = 5): getSortedSetRevRangeByScore
+ 130  Function with many parameters (count = 5): getSortedSetRangeByScoreWithScores
+ 134  Function with many parameters (count = 5): getSortedSetRevRangeByScoreWithScores
+ 138  Function with many parameters (count = 7): getSortedSetRangeByScore
+ 483  Function with many parameters (count = 5): getSortedSetRangeByLex
+ 487  Function with many parameters (count = 5): getSortedSetRevRangeByLex
+ 496  Function with many parameters (count = 6): sortedSetLex
+   6  Function with many returns (count = 67): exports
+   1  High total complexity (count = 127)
+   6  Function with high complexity (count = 127): exports
+  34  Function with high complexity (count = 28): getSortedSetRange
+ 391  Function with high complexity (count = 10): getSortedSetsMembersWithScores
+ 518  Function with high complexity (count = 11): buildLexQuery
+ 569  Function with high complexity (count = 23): processSortedSet
+
+src/database/mongo.js
+ 106  Function with high complexity (count = 11): info
+
+src/database/postgres/hash.js
+   3  Function with many returns (count = 35): exports
+ 302  Complex binary expression
+   3  Function with high complexity (count = 46): exports
+
+src/database/postgres/list.js
+   3  Function with many returns (count = 11): exports
+   3  Function with high complexity (count = 20): exports
+
+src/database/postgres/main.js
+   3  Function with many returns (count = 21): exports
+  15  Function with many returns (count = 7): exists
+   3  Function with high complexity (count = 18): exports
+
+src/database/postgres/sets.js
+   5  Function with many returns (count = 17): exports
+   5  Function with high complexity (count = 15): exports
+ 135  Found 22 lines of similar code in 2 locations (mass = 83)
+        also found at src/database/postgres/sorted.js
+
+src/database/postgres/sorted/add.js
+   3  Function with high complexity (count = 23): exports
+  67  Function with high complexity (count = 10): sortedSetsAdd
+
+src/database/postgres/sorted/intersect.js
+   3  Function with high complexity (count = 11): exports
+  39  Function with high complexity (count = 10): getSortedSetIntersect
+
+src/database/postgres/sorted/remove.js
+   3  Function with high complexity (count = 12): exports
+
+src/database/postgres/sorted/union.js
+   3  Function with many returns (count = 6): exports
+   3  Function with high complexity (count = 12): exports
+  33  Function with high complexity (count = 11): getSortedSetUnion
+
+src/database/postgres/sorted.js
+  31  Function with many parameters (count = 5): getSortedSetRange
+  90  Function with many parameters (count = 5): getSortedSetRangeByScore
+  94  Function with many parameters (count = 5): getSortedSetRevRangeByScore
+  98  Function with many parameters (count = 5): getSortedSetRangeByScoreWithScores
+ 102  Function with many parameters (count = 5): getSortedSetRevRangeByScoreWithScores
+ 106  Function with many parameters (count = 7): getSortedSetRangeByScore
+ 584  Function with many parameters (count = 5): getSortedSetRangeByLex
+ 588  Function with many parameters (count = 5): getSortedSetRevRangeByLex
+ 610  Function with many parameters (count = 6): sortedSetLex
+   3  Function with many returns (count = 65): exports
+   1  High total complexity (count = 109)
+   3  Function with high complexity (count = 109): exports
+  31  Function with high complexity (count = 13): getSortedSetRange
+ 224  Function with high complexity (count = 11): sortedSetsCardSum
+ 649  Function with high complexity (count = 22): buildLexQuery
+ 720  Function with high complexity (count = 17): processSortedSet
+ 656  Found 15 lines of similar code in 2 locations (mass = 130)
+        also found at src/database/postgres/sorted.js
+ 672  Found 15 lines of similar code in 2 locations (mass = 130)
+        also found at src/database/postgres/sorted.js
+ 458  Found 22 lines of similar code in 2 locations (mass = 83)
+        also found at src/database/postgres/sets.js
+ 491  Found 16 lines of similar code in 2 locations (mass = 79)
+        also found at src/database/postgres/sorted.js
+ 508  Found 16 lines of similar code in 2 locations (mass = 79)
+        also found at src/database/postgres/sorted.js
+
+src/database/redis/hash.js
+   3  Function with many returns (count = 29): exports
+ 183  Complex binary expression
+   3  Function with high complexity (count = 46): exports
+
+src/database/redis/list.js
+   3  Function with many returns (count = 9): exports
+
+src/database/redis/main.js
+   3  Function with many returns (count = 13): exports
+   3  Function with high complexity (count = 14): exports
+
+src/database/redis/sets.js
+   3  Function with many returns (count = 12): exports
+
+src/database/redis/sorted/add.js
+   3  Function with high complexity (count = 29): exports
+  40  Function with high complexity (count = 14): sortedSetsAdd
+
+src/database/redis/sorted/intersect.js
+   4  Function with many returns (count = 6): exports
+   4  Function with high complexity (count = 10): exports
+
+src/database/redis/sorted/union.js
+   4  Function with many returns (count = 7): exports
+
+src/database/redis/sorted.js
+  29  Function with many parameters (count = 7): sortedSetRange
+  60  Function with many parameters (count = 7): genParams
+  78  Function with many parameters (count = 5): getSortedSetRangeByScore
+  82  Function with many parameters (count = 5): getSortedSetRevRangeByScore
+  86  Function with many parameters (count = 5): getSortedSetRangeByScoreWithScores
+  90  Function with many parameters (count = 5): getSortedSetRevRangeByScoreWithScores
+  94  Function with many parameters (count = 7): sortedSetRangeByScore
+ 273  Function with many parameters (count = 5): getSortedSetRangeByLex
+ 277  Function with many parameters (count = 5): getSortedSetRevRangeByLex
+ 289  Function with many parameters (count = 7): sortedSetLex
+   3  Function with many returns (count = 51): exports
+   1  High total complexity (count = 68)
+   3  Function with high complexity (count = 68): exports
+  29  Function with high complexity (count = 13): sortedSetRange
+ 313  Function with high complexity (count = 18): getSortedSetScan
+
+src/emailer.js
+ 283  Function with many parameters (count = 4): sendToEmail
+   1  High total complexity (count = 61)
+ 119  Function with high complexity (count = 15): setupFallbackTransport
+ 168  Function with high complexity (count = 13): registerApp
+ 221  Function with high complexity (count = 20): send
+ 283  Function with high complexity (count = 11): sendToEmail
+
+src/events.js
+ 106  Function with high complexity (count = 18): getEvents
+
+src/flags.js
+  46  Function with many parameters (count = 4): prepareSets
+  80  Function with many parameters (count = 4): quick
+ 394  Function with many parameters (count = 7): create
+ 563  Function with many parameters (count = 8): addReport
+ 647  Function with many parameters (count = 4): canFlag
+ 896  Function with many parameters (count = 4): appendNote
+   1  High total complexity (count = 153)
+ 138  Function with high complexity (count = 14): getFlagIdsWithFilters
+ 277  Function with high complexity (count = 16): validate
+ 394  Function with high complexity (count = 13): create
+ 647  Function with high complexity (count = 11): canFlag
+ 739  Function with high complexity (count = 28): update
+
+src/groups/cover.js
+  11  Function with high complexity (count = 10): exports
+
+src/groups/create.js
+   8  Function with high complexity (count = 27): exports
+   9  Function with high complexity (count = 17): create
+
+src/groups/data.js
+  16  Function with many returns (count = 7): exports
+  68  Function with high complexity (count = 18): modifyGroup
+
+src/groups/index.js
+  96  Function with many parameters (count = 4): getNonPrivilegeGroups
+ 181  Function with many parameters (count = 4): getOwnersAndMembers
+
+src/groups/invite.js
+  11  Function with many returns (count = 6): exports
+  11  Function with high complexity (count = 11): exports
+
+src/groups/join.js
+  10  Function with high complexity (count = 18): exports
+
+src/groups/leave.js
+  11  Function with high complexity (count = 14): exports
+
+src/groups/membership.js
+   9  Function with many returns (count = 27): exports
+   9  Function with high complexity (count = 24): exports
+
+src/groups/search.js
+   6  Function with many returns (count = 8): exports
+   6  Function with high complexity (count = 16): exports
+
+src/groups/update.js
+  15  Function with many returns (count = 7): exports
+   1  High total complexity (count = 50)
+  15  Function with high complexity (count = 50): exports
+  16  Function with high complexity (count = 24): update
+
+src/groups/user.js
+   6  Function with many returns (count = 6): exports
+
+src/image.js
+  35  Function with high complexity (count = 14): resizeImage
+
+src/install.js
+ 308  Function with many returns (count = 6): createAdmin
+   1  High total complexity (count = 110)
+  50  Function with high complexity (count = 26): checkSetupFlagEnv
+ 125  Function with high complexity (count = 15): checkCIFlag
+ 192  Function with high complexity (count = 10): completeConfigSetup
+ 308  Function with high complexity (count = 19): createAdmin
+ 340  Function with high complexity (count = 10): success
+
+src/logger.js
+  72  Function with high complexity (count = 15): open
+
+src/messaging/create.js
+  11  Function with high complexity (count = 20): exports
+  39  Function with high complexity (count = 14): addMessage
+
+src/messaging/data.js
+  48  Function with many parameters (count = 4): getMessagesData
+ 177  Function with many parameters (count = 4): parseMessages
+ 186  Function with many parameters (count = 4): parseMessage
+  14  Function with many returns (count = 14): exports
+  14  Function with high complexity (count = 35): exports
+  48  Function with high complexity (count = 22): getMessagesData
+
+src/messaging/edit.js
+  15  Function with many parameters (count = 4): editMessage
+  14  Function with high complexity (count = 20): exports
+  51  Function with high complexity (count = 11): canEditDelete
+
+src/messaging/index.js
+  69  Function with many parameters (count = 4): getMessageIds
+  92  Function with many parameters (count = 5): parse
+ 174  Function with many parameters (count = 4): getRecentChats
+ 139  Complex binary expression
+   1  High total complexity (count = 77)
+ 337  Function with high complexity (count = 16): canMessageUser
+
+src/messaging/notifications.js
+ 105  Complex binary expression
+  15  Function with high complexity (count = 22): exports
+  93  Function with high complexity (count = 13): sendNotification
+
+src/messaging/pins.js
+  22  Function with many parameters (count = 4): getPinnedMessages
+
+src/messaging/rooms.js
+ 390  Function with many parameters (count = 4): getUidsInRoomFromSet
+ 394  Function with many parameters (count = 4): getUidsInRoom
+ 398  Function with many parameters (count = 4): getUsersInRoom
+ 405  Function with many parameters (count = 5): getUsersInRoomFromSet
+  28  Function with many returns (count = 20): exports
+ 470  Complex binary expression
+   1  High total complexity (count = 67)
+  28  Function with high complexity (count = 67): exports
+  46  Function with high complexity (count = 12): modifyRoomData
+ 457  Function with high complexity (count = 11): loadRoom
+
+src/messaging/unread.js
+   7  Function with many returns (count = 8): exports
+   7  Function with high complexity (count = 10): exports
+
+src/meta/blacklist.js
+ 106  Function with many returns (count = 7): validate
+ 106  Function with high complexity (count = 15): validate
+
+src/meta/build.js
+ 127  Function with high complexity (count = 16): build
+ 209  Function with high complexity (count = 12): webpack
+
+src/meta/configs.js
+   2  High total complexity (count = 53)
+  19  Function with high complexity (count = 15): deserialize
+  57  Function with high complexity (count = 10): serialize
+
+src/meta/css.js
+ 200  Function with high complexity (count = 16): getBundleMetadata
+
+src/meta/languages.js
+  96  Function with many parameters (count = 4): addPlugin
+
+src/meta/minifier.js
+ 208  Function with many parameters (count = 4): bundle
+
+src/meta/settings.js
+  45  Function with high complexity (count = 10): set
+
+src/meta/tags.js
+  16  Function with many parameters (count = 4): parse
+ 201  Function with many parameters (count = 4): addIfNotExists
+  16  Function with high complexity (count = 16): parse
+ 220  Function with high complexity (count = 15): addSiteOGImage
+
+src/meta/themes.js
+  88  Function with high complexity (count = 19): set
+
+src/middleware/activitypub.js
+  56  Function with high complexity (count = 15): assertPayload
+
+src/middleware/assert.js
+  33  Complex binary expression
+
+src/middleware/headers.js
+  12  Function with high complexity (count = 34): exports
+
+src/middleware/helpers.js
+  30  Function with high complexity (count = 14): buildBodyClass
+
+src/middleware/index.js
+ 166  Function with many parameters (count = 6): expose
+ 282  Function with many parameters (count = 4): checkRequired
+
+src/middleware/render.js
+ 318  Function with many parameters (count = 5): renderContent
+ 327  Function with many parameters (count = 4): renderHeader
+ 339  Function with many parameters (count = 4): renderFooter
+ 359  Function with many parameters (count = 4): renderAdminHeader
+ 371  Function with many parameters (count = 4): renderAdminFooter
+ 383  Function with many parameters (count = 5): renderHeaderFooter
+ 457  Function with many parameters (count = 4): modifyNavItem
+  29  Function with many returns (count = 26): exports
+   1  High total complexity (count = 73)
+  29  Function with high complexity (count = 73): exports
+  30  Function with high complexity (count = 15): processRender
+  30  Function with high complexity (count = 15): processRender
+  34  Function with high complexity (count = 15): render
+  34  Function with high complexity (count = 15): renderOverride
+  37  Function with high complexity (count = 14): renderMethod
+ 150  Function with high complexity (count = 15): loadClientHeaderFooterData
+ 414  Function with high complexity (count = 15): appendUnreadCounts
+
+src/middleware/user.js
+ 120  Function with many parameters (count = 4): ensureSelfOrMethod
+  39  Function with many returns (count = 36): exports
+  40  Function with many returns (count = 7): authenticate
+   1  High total complexity (count = 61)
+  39  Function with high complexity (count = 59): exports
+  40  Function with high complexity (count = 17): authenticate
+
+src/notifications.js
+ 423  Function with many returns (count = 10): merge
+   1  High total complexity (count = 108)
+  77  Function with high complexity (count = 22): getMultiple
+ 188  Function with high complexity (count = 21): pushToUids
+ 423  Function with high complexity (count = 33): merge
+
+src/pagination.js
+   8  Function with high complexity (count = 15): create
+
+src/plugins/data.js
+  88  Function with many returns (count = 7): getStaticDirectories
+
+src/plugins/hooks.js
+   1  High total complexity (count = 88)
+  38  Function with high complexity (count = 15): register
+  90  Function with high complexity (count = 10): fire
+ 156  Function with high complexity (count = 11): fireFilterHook
+ 182  Function with high complexity (count = 12): fireActionHook
+ 213  Function with high complexity (count = 21): fireStaticHook
+ 253  Function with high complexity (count = 12): fireResponseHook
+
+src/plugins/index.js
+ 195  Function with high complexity (count = 14): normalise
+
+src/plugins/install.js
+ 121  Function with many parameters (count = 4): runPackageManagerCommand
+  43  Function with many returns (count = 17): exports
+  43  Function with high complexity (count = 29): exports
+
+src/plugins/load.js
+  12  Function with high complexity (count = 24): exports
+
+src/posts/bookmarks.js
+   6  Function with many returns (count = 6): exports
+   6  Function with high complexity (count = 12): exports
+
+src/posts/category.js
+  11  Function with many returns (count = 7): exports
+
+src/posts/create.js
+  14  Function with high complexity (count = 25): exports
+  15  Function with high complexity (count = 20): create
+
+src/posts/data.js
+  13  Function with many returns (count = 6): exports
+  58  Function with high complexity (count = 14): modifyPost
+
+src/posts/delete.js
+  15  Function with high complexity (count = 18): exports
+  94  Function with high complexity (count = 11): deleteFromTopicUserNotification
+
+src/posts/diffs.js
+  72  Function with many parameters (count = 4): restore
+  12  Function with many returns (count = 12): exports
+  12  Function with high complexity (count = 23): exports
+
+src/posts/edit.js
+  17  Function with many returns (count = 6): exports
+  17  Function with high complexity (count = 27): exports
+ 106  Function with high complexity (count = 12): editMainPost
+
+src/posts/index.js
+  38  Function with many parameters (count = 4): getPidsFromSet
+  59  Function with many parameters (count = 4): getPostSummariesFromSet
+
+src/posts/parse.js
+  38  Function with many returns (count = 10): exports
+  38  Function with high complexity (count = 25): exports
+  80  Function with high complexity (count = 15): relativeToAbsolute
+
+src/posts/queue.js
+  20  Function with many returns (count = 29): exports
+ 126  Complex binary expression
+   1  High total complexity (count = 57)
+  20  Function with high complexity (count = 57): exports
+  21  Function with high complexity (count = 15): getQueuedPosts
+
+src/posts/recent.js
+  16  Function with many parameters (count = 4): getRecentPosts
+
+src/posts/summary.js
+  14  Function with many returns (count = 7): exports
+  14  Function with high complexity (count = 19): exports
+  15  Function with high complexity (count = 10): getPostSummaryByPids
+
+src/posts/topics.js
+   9  Function with many parameters (count = 5): getPostsFromSet
+   8  Function with many returns (count = 7): exports
+
+src/posts/uploads.js
+  20  Function with many returns (count = 12): exports
+  20  Function with high complexity (count = 27): exports
+ 177  Function with high complexity (count = 11): dissociate
+
+src/posts/user.js
+  16  Function with many returns (count = 18): exports
+  60  Complex binary expression
+  16  Function with high complexity (count = 32): exports
+
+src/posts/votes.js
+ 126  Function with many parameters (count = 4): unvote
+ 174  Function with many parameters (count = 5): vote
+ 210  Function with many parameters (count = 5): fireVoteHook
+ 229  Function with many parameters (count = 4): adjustPostVotes
+  13  Function with many returns (count = 16): exports
+   1  High total complexity (count = 50)
+  13  Function with high complexity (count = 50): exports
+
+src/prestart.js
+ 106  Complex binary expression
+  47  Function with high complexity (count = 11): loadConfig
+
+src/privileges/helpers.js
+ 204  Function with many parameters (count = 4): giveOrRescind
+  37  Function with high complexity (count = 10): isAllowedTo
+
+src/privileges/posts.js
+ 119  Function with many returns (count = 6): canEdit
+ 144  Complex binary expression
+ 194  Complex binary expression
+
+src/privileges/topics.js
+ 193  Function with many parameters (count = 4): canViewDeletedScheduled
+  47  Complex binary expression
+ 128  Complex binary expression
+ 170  Complex binary expression
+  17  Function with high complexity (count = 14): get
+
+src/promisify.js
+   5  Function with many returns (count = 7): exports
+   5  Function with high complexity (count = 13): exports
+
+src/pubsub.js
+  10  Function with high complexity (count = 16): get
+
+src/request.js
+  15  Function with high complexity (count = 11): call
+
+src/routes/admin.js
+   5  Function with many parameters (count = 4): exports
+  78  Function with many parameters (count = 4): apiRoutes
+
+src/routes/authentication.js
+  66  Function with high complexity (count = 22): reloadRoutes
+
+src/routes/feeds.js
+  41  Function with many parameters (count = 4): validateTokenIfRequiresLogin
+ 206  Function with many parameters (count = 4): generateSorted
+ 242  Function with many parameters (count = 4): sendTopicsFeed
+   1  High total complexity (count = 57)
+  64  Function with high complexity (count = 20): generateForTopic
+
+src/routes/index.js
+  59  Function with many parameters (count = 4): topic
+  64  Function with many parameters (count = 4): post
+  75  Function with many parameters (count = 4): tags
+  79  Function with many parameters (count = 4): categories
+  87  Function with many parameters (count = 4): category
+  92  Function with many parameters (count = 4): users
+  98  Function with many parameters (count = 4): groups
+ 154  Function with many parameters (count = 4): addCoreRoutes
+ 206  Function with many parameters (count = 4): addRemountableRoutes
+
+src/routes/user.js
+   7  Function with many parameters (count = 4): exports
+
+src/search.js
+ 355  Function with many returns (count = 6): sortPosts
+ 224  Complex binary expression
+   1  High total complexity (count = 96)
+  56  Function with high complexity (count = 30): searchInContent
+ 158  Function with high complexity (count = 12): fetchRemoteObject
+ 355  Function with high complexity (count = 10): sortPosts
+
+src/settings.js
+  59  Function with many parameters (count = 6): Settings
+   1  High total complexity (count = 64)
+   6  Function with high complexity (count = 11): expandObjBy
+ 132  Function with high complexity (count = 17): get
+ 189  Function with high complexity (count = 13): set
+
+src/socket.io/admin/categories.js
+  21  Function with many parameters (count = 4): copyPrivilegesToChildrenRecursive
+
+src/socket.io/admin/rooms.js
+  18  Function with high complexity (count = 24): getAll
+  90  Function with high complexity (count = 10): getLocalStats
+
+src/socket.io/helpers.js
+  33  Function with many parameters (count = 4): notifyUids
+  92  Function with many parameters (count = 4): sendNotificationToPostOwner
+ 133  Function with many parameters (count = 4): sendNotificationToTopicOwner
+ 167  Function with many returns (count = 7): upvote
+ 168  Complex binary expression
+
+src/socket.io/index.js
+ 158  Function with many returns (count = 6): onMessage
+   1  High total complexity (count = 60)
+ 158  Function with high complexity (count = 19): onMessage
+
+src/socket.io/meta.js
+  30  Function with high complexity (count = 13): enter
+
+src/socket.io/modules.js
+ 114  Function with many parameters (count = 4): joinLeave
+ 135  Complex binary expression
+
+src/socket.io/posts/tools.js
+  15  Function with high complexity (count = 15): exports
+
+src/socket.io/topics/tags.js
+  10  Function with many returns (count = 8): exports
+  10  Function with high complexity (count = 22): exports
+
+src/socket.io/topics.js
+  75  Function with many returns (count = 8): getMyNextPostIndex
+  75  Function with high complexity (count = 10): getMyNextPostIndex
+
+src/socket.io/uploads.js
+  14  Complex binary expression
+
+src/socket.io/user.js
+ 158  Complex binary expression
+
+src/start.js
+   8  Function with high complexity (count = 12): start
+  98  Function with high complexity (count = 12): addProcessHandlers
+
+src/topics/bookmarks.js
+   9  Function with many returns (count = 8): exports
+
+src/topics/create.js
+ 274  Function with many parameters (count = 5): check
+   2  High total complexity (count = 61)
+  20  Function with high complexity (count = 61): exports
+  83  Function with high complexity (count = 23): post
+ 179  Function with high complexity (count = 15): reply
+
+src/topics/data.js
+  19  Function with many returns (count = 7): exports
+  94  Function with high complexity (count = 13): modifyTopic
+
+src/topics/events.js
+  84  Function with many parameters (count = 4): translateEventArgs
+
+src/topics/follow.js
+  37  Function with many parameters (count = 5): setWatching
+  10  Function with many returns (count = 17): exports
+  10  Function with high complexity (count = 18): exports
+
+src/topics/fork.js
+  14  Function with many parameters (count = 5): createTopicFromPosts
+ 105  Function with many parameters (count = 4): movePostToTopic
+  13  Function with high complexity (count = 29): exports
+  14  Function with high complexity (count = 15): createTopicFromPosts
+
+src/topics/index.js
+  45  Function with many parameters (count = 4): getTopicsFromSet
+ 161  Function with many parameters (count = 6): getTopicWithPosts
+  62  Function with many returns (count = 6): getTopicsByTids
+  62  Function with high complexity (count = 18): getTopicsByTids
+
+src/topics/posts.js
+  25  Function with many parameters (count = 6): getTopicPosts
+  80  Function with many parameters (count = 4): addEventStartEnd
+ 336  Function with many parameters (count = 4): incrementFieldAndUpdateSortedSet
+  19  Function with many returns (count = 24): exports
+ 172  Complex binary expression
+ 173  Complex binary expression
+   2  High total complexity (count = 110)
+  19  Function with high complexity (count = 110): exports
+  25  Function with high complexity (count = 16): getTopicPosts
+  80  Function with high complexity (count = 30): addEventStartEnd
+ 108  Function with high complexity (count = 12): addPostData
+ 162  Function with high complexity (count = 15): modifyPostsByPrivilege
+ 359  Function with high complexity (count = 10): getPostReplies
+
+src/topics/recent.js
+  17  Function with many parameters (count = 5): getRecentTopics
+  43  Function with many parameters (count = 4): getLatestTidsFromSet
+   9  Function with many returns (count = 8): exports
+   9  Function with high complexity (count = 10): exports
+
+src/topics/sorted.js
+  13  Function with many returns (count = 26): exports
+ 175  Complex binary expression
+ 277  Complex binary expression
+ 280  Complex binary expression
+   2  High total complexity (count = 57)
+  13  Function with high complexity (count = 57): exports
+  40  Function with high complexity (count = 13): getTids
+ 245  Function with high complexity (count = 12): filterTids
+
+src/topics/suggested.js
+  12  Function with many parameters (count = 5): getSuggestedTopics
+  54  Function with many parameters (count = 4): getSearchTids
+
+src/topics/tags.js
+  69  Function with many parameters (count = 4): validateTags
+ 200  Function with many parameters (count = 4): getTagTidsByCids
+  20  Function with many returns (count = 41): exports
+   2  High total complexity (count = 71)
+  20  Function with high complexity (count = 71): exports
+ 473  Function with high complexity (count = 15): findMatches
+
+src/topics/teaser.js
+  13  Function with many returns (count = 14): exports
+  13  Function with high complexity (count = 33): exports
+  14  Function with high complexity (count = 16): getTeasers
+
+src/topics/thumbs.js
+  33  Complex binary expression
+  44  Function with high complexity (count = 16): get
+
+src/topics/tools.js
+  14  Function with many returns (count = 15): exports
+  14  Function with high complexity (count = 46): exports
+  26  Function with high complexity (count = 15): toggleDelete
+
+src/topics/unread.js
+  18  Function with many returns (count = 36): exports
+ 155  Complex binary expression
+ 156  Complex binary expression
+   2  High total complexity (count = 64)
+  18  Function with high complexity (count = 64): exports
+  92  Function with high complexity (count = 20): getTids
+
+src/upgrade.js
+ 121  Function with high complexity (count = 12): process
+ 177  Function with high complexity (count = 11): incrementProgress
+
+src/upgrades/1.0.0/chat_upgrade.js
+  11  Function with high complexity (count = 13): method
+
+src/upgrades/1.1.0/assign_topic_read_privilege.js
+  11  Function with high complexity (count = 11): method
+
+src/upgrades/1.10.2/upgrade_bans_to_hashes.js
+  11  Function with high complexity (count = 13): method
+
+src/upgrades/1.11.0/widget_visibility_groups.js
+   6  Function with high complexity (count = 19): method
+
+src/upgrades/1.12.3/user_pid_sets.js
+  23  Complex binary expression
+
+src/upgrades/1.13.3/fix_users_sorted_sets.js
+   9  Function with high complexity (count = 10): method
+
+src/upgrades/1.15.0/add_target_uid_to_flags.js
+  23  Deeply nested control flow (level = 5)
+  10  Function with high complexity (count = 16): method
+
+src/upgrades/1.15.0/verified_users_group.js
+  80  Function with high complexity (count = 11): updatePrivilges
+
+src/upgrades/1.2.0/edit_delete_deletetopic_privileges.js
+  11  Function with high complexity (count = 17): method
+
+src/upgrades/1.4.4/sound_settings.js
+  10  Function with high complexity (count = 11): method
+
+src/upgrades/1.5.0/flags_refactor.js
+   8  Function with high complexity (count = 13): method
+
+src/upgrades/1.7.3/key_value_schema_change.js
+  10  Function with high complexity (count = 11): method
+
+src/upgrades/3.3.0/chat_room_refactor.js
+  11  Function with high complexity (count = 19): method
+
+src/upgrades/4.3.0/normalize_thumbs_uploads.js
+  11  Function with high complexity (count = 11): method
+
+src/user/approval.js
+  16  Function with many returns (count = 7): exports
+  16  Function with high complexity (count = 12): exports
+
+src/user/auth.js
+  11  Function with many returns (count = 9): exports
+  11  Function with high complexity (count = 18): exports
+
+src/user/bans.js
+  11  Function with many returns (count = 10): exports
+  11  Function with high complexity (count = 22): exports
+
+src/user/blocks.js
+  27  Function with many parameters (count = 4): can
+   8  Function with many returns (count = 6): exports
+   8  Function with high complexity (count = 26): exports
+
+src/user/categories.js
+  12  Function with many returns (count = 9): exports
+  12  Function with high complexity (count = 11): exports
+
+src/user/create.js
+  14  Function with high complexity (count = 36): exports
+  43  Function with high complexity (count = 11): create
+
+src/user/data.js
+ 408  Function with many parameters (count = 4): incrDecrUserFieldBy
+  22  Function with many returns (count = 23): exports
+   1  High total complexity (count = 98)
+  22  Function with high complexity (count = 98): exports
+ 212  Function with high complexity (count = 42): modifyUserData
+ 341  Function with high complexity (count = 10): parseGroupTitle
+
+src/user/delete.js
+  20  Function with high complexity (count = 12): exports
+
+src/user/digest.js
+ 112  Complex binary expression
+  85  Function with high complexity (count = 14): send
+
+src/user/email.js
+ 105  Function with high complexity (count = 10): sendValidationEmail
+
+src/user/follow.js
+  78  Function with many parameters (count = 4): getFollow
+  10  Function with many returns (count = 9): exports
+  10  Function with high complexity (count = 16): exports
+  19  Function with high complexity (count = 10): toggleFollow
+
+src/user/index.js
+  75  Function with many parameters (count = 4): getUsersFromSet
+
+src/user/info.js
+  13  Function with many returns (count = 8): exports
+
+src/user/interstitials.js
+   1  High total complexity (count = 70)
+  23  Function with high complexity (count = 53): email
+  49  Function with high complexity (count = 50): callback
+
+src/user/invite.js
+  17  Function with many returns (count = 10): exports
+  17  Function with high complexity (count = 22): exports
+
+src/user/jobs.js
+  10  Function with high complexity (count = 10): exports
+
+src/user/notifications.js
+  94  Function with many parameters (count = 4): getNotificationsFromSet
+
+src/user/picture.js
+  13  Function with many returns (count = 15): exports
+  13  Function with high complexity (count = 21): exports
+
+src/user/posts.js
+ 132  Function with many parameters (count = 4): incrementUserFieldAndSetBy
+  10  Function with many returns (count = 10): exports
+  10  Function with high complexity (count = 24): exports
+  33  Function with high complexity (count = 12): isReady
+
+src/user/profile.js
+ 317  Function with many parameters (count = 4): updateUidMapping
+  17  Function with many returns (count = 19): exports
+   2  High total complexity (count = 85)
+  17  Function with high complexity (count = 85): exports
+  90  Function with high complexity (count = 21): validateCustomFields
+ 159  Function with high complexity (count = 12): isUsernameAvailable
+ 243  Function with high complexity (count = 10): isGroupTitleValid
+ 341  Function with high complexity (count = 10): changePassword
+
+src/user/search.js
+  13  Function with many returns (count = 12): exports
+  52  Deeply nested control flow (level = 5)
+   2  High total complexity (count = 68)
+  13  Function with high complexity (count = 68): exports
+  29  Function with high complexity (count = 47): search
+ 137  Function with high complexity (count = 11): filterAndSortUids
+
+src/user/settings.js
+  13  Function with many returns (count = 14): exports
+  13  Function with high complexity (count = 23): exports
+
+src/webserver.js
+ 260  Function with high complexity (count = 20): listen
+
+src/widgets/index.js
+  42  Function with many parameters (count = 5): renderLocation
+  55  Function with many parameters (count = 5): renderWidget
+   1  High total complexity (count = 59)
+ 233  Function with high complexity (count = 10): moveMissingAreasToDrafts
+
+test/activitypub/actors.js
+ 446  Found 27 lines of similar code in 2 locations (mass = 168)
+        also found at test/activitypub/actors.js
+ 474  Found 27 lines of similar code in 2 locations (mass = 168)
+        also found at test/activitypub/actors.js
+
+test/activitypub/feps.js
+  71  Complex binary expression
+  95  Complex binary expression
+ 173  Complex binary expression
+ 200  Complex binary expression
+
+test/activitypub/helpers.js
+ 182  Found 22 lines of similar code in 2 locations (mass = 115)
+        also found at test/activitypub/helpers.js
+ 205  Found 22 lines of similar code in 2 locations (mass = 115)
+        also found at test/activitypub/helpers.js
+
+test/api.js
+ 605  Function with many parameters (count = 5): compare
+ 413  Function with many returns (count = 6): generateTests
+ 669  Deeply nested control flow (level = 5)
+   1  High total complexity (count = 96)
+ 413  Function with high complexity (count = 39): generateTests
+ 605  Function with high complexity (count = 44): compare
+
+test/flags.js
+ 618  Found 15 lines of similar code in 2 locations (mass = 106)
+        also found at test/flags.js
+ 634  Found 15 lines of similar code in 2 locations (mass = 106)
+        also found at test/flags.js
+  76  Found 17 lines of identical code in 2 locations (mass = 77)
+        also found at test/flags.js
+ 223  Found 17 lines of identical code in 2 locations (mass = 77)
+        also found at test/flags.js
+ 330  Found 16 lines of similar code in 2 locations (mass = 101)
+        also found at test/flags.js
+ 347  Found 16 lines of similar code in 2 locations (mass = 101)
+        also found at test/flags.js
+ 381  Found 17 lines of similar code in 2 locations (mass = 113)
+        also found at test/flags.js
+ 399  Found 17 lines of similar code in 2 locations (mass = 113)
+        also found at test/flags.js
+ 445  Found 15 lines of similar code in 2 locations (mass = 82)
+        also found at test/flags.js
+ 461  Found 15 lines of similar code in 2 locations (mass = 82)
+        also found at test/flags.js
+
+test/helpers/index.js
+  92  Function with many parameters (count = 5): uploadFile
+ 167  Function with many parameters (count = 4): invite
+ 177  Function with many parameters (count = 4): createFolder
+
+test/messaging.js
+  34  Function with many parameters (count = 4): callv3API
+
+test/posts.js
+ 231  Found 17 lines of similar code in 2 locations (mass = 99)
+        also found at test/posts.js
+ 249  Found 17 lines of similar code in 2 locations (mass = 99)
+        also found at test/posts.js
+
+test/topics.js
+ 245  Found 16 lines of identical code in 2 locations (mass = 65)
+        also found at test/topics.js
+ 383  Found 16 lines of identical code in 2 locations (mass = 65)
+        also found at test/topics.js
+
+test/user.js
+ 488  Found 16 lines of similar code in 2 locations (mass = 125)
+        also found at test/user.js
+ 505  Found 16 lines of similar code in 2 locations (mass = 125)
+        also found at test/user.js
+
+vendor/nodebb-theme-harmony-2.1.15/public/harmony.js
+   1  High total complexity (count = 53)
+  47  Function with high complexity (count = 31): setupMobileMenu
+  80  Function with high complexity (count = 15): onWindowScroll
+ 143  Function with high complexity (count = 10): setupDrafts
+
