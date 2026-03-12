@@ -565,7 +565,7 @@ describe('API', async () => {
 					const hasJSON = http200.content && http200.content['application/json'];
 					if (hasJSON) {
 						schema = context[method].responses['200'].content['application/json'].schema;
-						compare(schema, result.body, method.toUpperCase(), path, 'root');
+					compare(schema, result.body, { method: method.toUpperCase(), path, context: 'root' });
 					}
 
 					// TODO someday: text/csv, binary file type checking?
@@ -602,7 +602,7 @@ describe('API', async () => {
 		}, {});
 	}
 
-	function compare(schema, response, method, path, context) {
+	function compare(schema, response, { method, path, context }) {
 		let required = [];
 		const additionalProperties = schema.hasOwnProperty('additionalProperties');
 
@@ -654,7 +654,7 @@ describe('API', async () => {
 						break;
 					case 'object':
 						assert.strictEqual(typeof response[prop], 'object', `"${prop}" was expected to be an object, but was ${typeof response[prop]} instead (path: ${method} ${path}, context: ${context})`);
-						compare(schema[prop], response[prop], method, path, context ? [context, prop].join('.') : prop);
+						compare(schema[prop], response[prop], { method, path, context: context ? [context, prop].join('.') : prop });
 						break;
 					case 'array':
 						assert.strictEqual(Array.isArray(response[prop]), true, `"${prop}" was expected to be an array, but was ${typeof response[prop]} instead (path: ${method} ${path}, context: ${context})`);
@@ -666,7 +666,7 @@ describe('API', async () => {
 							// Compare types
 							if (schema[prop].items.type === 'object' || Array.isArray(schema[prop].items.allOf || schema[prop].items.anyOf || schema[prop].items.oneOf)) {
 								response[prop].forEach((res) => {
-									compare(schema[prop].items, res, method, path, context ? [context, prop].join('.') : prop);
+										compare(schema[prop].items, res, { method, path, context: context ? [context, prop].join('.') : prop });
 								});
 							} else if (response[prop].length) { // for now
 								response[prop].forEach((item) => {
