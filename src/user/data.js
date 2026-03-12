@@ -398,17 +398,28 @@ module.exports = function (User) {
 	};
 
 	User.incrementUserFieldBy = async function (uid, field, value) {
-		return await incrDecrUserFieldBy(uid, field, value, 'increment');
+		return await updateUserFieldBy({ uid, field, value, type: 'increment' });
 	};
 
 	User.decrementUserFieldBy = async function (uid, field, value) {
-		return await incrDecrUserFieldBy(uid, field, -value, 'decrement');
+		// decrement should send a negative adjustment value but keep type for hooks
+		return await updateUserFieldBy({ uid, field, value: -value, type: 'decrement' });
 	};
 
-	async function incrDecrUserFieldBy(uid, field, value, type) {
+	/**
+	 * Adjust a numeric user field by a given amount and trigger hooks.
+	 *
+	 * @param {Object} opts
+	 * @param {number|string} opts.uid - User ID or URI for remote users
+	 * @param {string} opts.field - Field name to adjust
+	 * @param {number} opts.value - Amount to increment (positive or negative)
+	 * @param {'increment'|'decrement'} opts.type - Type of operation for hooks
+	 * @returns {Promise<number>} The new field value
+	 */
+	async function updateUserFieldBy({ uid, field, value, type }) {
 		const prefix = `user${activitypub.helpers.isUri(uid) ? 'Remote' : ''}`;
 		const newValue = await db.incrObjectFieldBy(`${prefix}:${uid}`, field, value);
-		plugins.hooks.fire('action:user.set', { uid: uid, field: field, value: newValue, type: type });
+		plugins.hooks.fire('action:user.set', { uid, field, value: newValue, type });
 		return newValue;
 	}
 };
