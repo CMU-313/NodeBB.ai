@@ -9,33 +9,42 @@ const privileges = require('../privileges');
 const plugins = require('../plugins');
 
 module.exports = function (Topics) {
-	Topics.getSuggestedTopics = async function (tid, uid, start, stop, cutoff = 0) {
+	// QLT: avoid too many parameters by accepting an options object
+	// caller can supply { tid, uid, start = 0, stop = -1, cutoff = 0 }
+	Topics.getSuggestedTopics = async function (opts = {}) {
+		const {
+			tid,
+			uid,
+			start = 0,
+			stop = -1,
+			cutoff = 0,
+		} = opts;
 		let tids;
 		if (!tid) {
 			return [];
 		}
-		tid = String(tid);
-		cutoff = cutoff === 0 ? cutoff : (cutoff * 2592000000);
-		const { cid, title, tags } = await Topics.getTopicFields(tid, [
+		const strTid = String(tid);
+		const effectiveCutoff = cutoff === 0 ? 0 : cutoff * 2592000000;
+		const { cid, title, tags } = await Topics.getTopicFields(strTid, [
 			'cid', 'title', 'tags',
 		]);
 
 		const [tagTids, searchTids] = await Promise.all([
-			getTidsWithSameTags(tid, tags.map(t => t.value), cutoff),
-			getSearchTids(tid, title, cid, cutoff),
+			getTidsWithSameTags(strTid, tags.map(t => t.value), effectiveCutoff),
+			getSearchTids(strTid, title, cid, effectiveCutoff),
 		]);
 
 		tids = _.uniq(tagTids.concat(searchTids));
 
 		let categoryTids = [];
 		if (stop !== -1 && tids.length < stop - start + 1) {
-			categoryTids = await getCategoryTids(tid, cid, cutoff);
+			categoryTids = await getCategoryTids(strTid, cid, effectiveCutoff);
 		}
 		tids = _.shuffle(_.uniq(tids.concat(categoryTids)));
 		tids = await privileges.topics.filterTids('topics:read', tids, uid);
 
 		let topicData = await Topics.getTopicsByTids(tids, uid);
-		topicData = topicData.filter(topic => topic && String(topic.tid) !== tid);
+		topicData = topicData.filter(topic => topic && String(topic.tid) !== strTid);
 		topicData = await user.blocks.filter(uid, topicData);
 		topicData = topicData.slice(start, stop !== -1 ? stop + 1 : undefined)
 			.sort((t1, t2) => t2.timestamp - t1.timestamp);

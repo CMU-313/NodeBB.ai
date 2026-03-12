@@ -1219,20 +1219,24 @@ describe('Topic\'s', () => {
 			tid3 = topic3.topicData.tid;
 		});
 
-		it('should return suggested topics', (done) => {
-			topics.getSuggestedTopics(tid1, adminUid, 0, -1, (err, topics) => {
-				assert.ifError(err);
-				assert(Array.isArray(topics));
-				done();
+		it('should return suggested topics', async () => {
+			const topicsArr = await topics.getSuggestedTopics({
+				tid: tid1,
+				uid: adminUid,
+				start: 0,
+				stop: -1,
 			});
+			assert(Array.isArray(topicsArr));
 		});
 
-		it('should return suggested topics', (done) => {
-			topics.getSuggestedTopics(tid3, adminUid, 0, 2, (err, topics) => {
-				assert.ifError(err);
-				assert(Array.isArray(topics));
-				done();
+		it('should return suggested topics', async () => {
+			const topicsArr = await topics.getSuggestedTopics({
+				tid: tid3,
+				uid: adminUid,
+				start: 0,
+				stop: 2,
 			});
+			assert(Array.isArray(topicsArr));
 		});
 	});
 
