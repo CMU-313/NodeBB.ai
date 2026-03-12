@@ -1,4 +1,3 @@
-
 'use strict';
 
 const _ = require('lodash');
@@ -242,45 +241,67 @@ module.exports = function (Topics) {
 		return b.viewcount - a.viewcount;
 	}
 
+	const tidFilterStrategies = {
+		new: (tids, uid) => Topics.filterNewTids(tids, uid),
+		unreplied: tids => Topics.filterUnrepliedTids(tids),
+	};
+
+	async function applyTidFilter(tids, filter, uid) {
+		const strategy = tidFilterStrategies[filter];
+		if (strategy) {
+			return await strategy(tids, uid);
+		}
+		return await Topics.filterNotIgnoredTids(tids, uid);
+	}
+
+	function shouldSkipIgnoredCids(params) {
+		return !!(params.cids || params.filter === 'watched' || meta.config.disableRecentCategoryFilter);
+	}
+
+	async function getIgnoredCids(topicCids, uid, params) {
+		if (shouldSkipIgnoredCids(params)) {
+			return [];
+		}
+		return await categories.isIgnored(topicCids, uid);
+	}
+
+	function isTopicVisible(topic, isCidIgnored, cids, tags) {
+		if (!topic || !topic.cid || isCidIgnored[topic.cid]) {
+			return false;
+		}
+		if (!cids && parseInt(topic.cid, 10) === -1) {
+			return false;
+		}
+		if (cids && !cids.includes(String(topic.cid))) {
+			return false;
+		}
+		if (tags.length && !tags.every(tag => topic.tags.find(topicTag => topicTag.value === tag))) {
+			return false;
+		}
+		return true;
+	}
+
 	async function filterTids(tids, params) {
 		const { filter, uid } = params;
 
-		if (filter === 'new') {
-			tids = await Topics.filterNewTids(tids, uid);
-		} else if (filter === 'unreplied') {
-			tids = await Topics.filterUnrepliedTids(tids);
-		} else {
-			tids = await Topics.filterNotIgnoredTids(tids, uid);
-		}
-
+		tids = await applyTidFilter(tids, filter, uid);
 		tids = await privileges.topics.filterTids('topics:read', tids, uid);
-		let topicData = await Topics.getTopicsFields(tids, ['uid', 'tid', 'cid', 'tags']);
+
+		const topicData = await Topics.getTopicsFields(tids, ['uid', 'tid', 'cid', 'tags']);
 		const topicCids = _.uniq(topicData.map(topic => topic.cid)).filter(Boolean);
 
-		async function getIgnoredCids() {
-			if (params.cids || filter === 'watched' || meta.config.disableRecentCategoryFilter) {
-				return [];
-			}
-			return await categories.isIgnored(topicCids, uid);
-		}
 		const [ignoredCids, filtered] = await Promise.all([
-			getIgnoredCids(),
+			getIgnoredCids(topicCids, uid, params),
 			user.blocks.filter(uid, topicData),
 		]);
 
 		const isCidIgnored = _.zipObject(topicCids, ignoredCids);
-		topicData = filtered;
-
 		const cids = params.cids && params.cids.map(String);
 		const { tags } = params;
-		tids = topicData.filter(t => (
-			t &&
-			t.cid &&
-			!isCidIgnored[t.cid] &&
-			(cids || parseInt(t.cid, 10) !== -1) &&
-			(!cids || cids.includes(String(t.cid))) &&
-			(!tags.length || tags.every(tag => t.tags.find(topicTag => topicTag.value === tag)))
-		)).map(t => t.tid);
+
+		tids = filtered
+			.filter(t => isTopicVisible(t, isCidIgnored, cids, tags))
+			.map(t => t.tid);
 
 		const result = await plugins.hooks.fire('filter:topics.filterSortedTids', { tids: tids, params: params });
 		return result.tids;
