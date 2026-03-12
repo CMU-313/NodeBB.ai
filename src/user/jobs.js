@@ -8,17 +8,20 @@ const meta = require('../meta');
 const jobs = {};
 
 module.exports = function (User) {
+	function getValidDigestHour(digestHour) {
+		if (isNaN(digestHour)) {
+			return 17;
+		}
+		if (digestHour > 23 || digestHour < 0) {
+			return 0;
+		}
+		return digestHour;
+	}
+
 	User.startJobs = function () {
 		winston.verbose('[user/jobs] (Re-)starting jobs...');
 
-		let { digestHour } = meta.config;
-
-		// Fix digest hour if invalid
-		if (isNaN(digestHour)) {
-			digestHour = 17;
-		} else if (digestHour > 23 || digestHour < 0) {
-			digestHour = 0;
-		}
+		const digestHour = getValidDigestHour(meta.config.digestHour);
 
 		User.stopJobs();
 
@@ -29,7 +32,7 @@ module.exports = function (User) {
 		jobs['reset.clean'] = new cronJob('0 0 * * *', User.reset.clean, null, true);
 		winston.verbose('[user/jobs] Starting job (reset.clean)');
 
-		winston.verbose(`[user/jobs] jobs started`);
+		winston.verbose('[user/jobs] jobs started');
 	};
 
 	function startDigestJob(name, cronString, term) {
