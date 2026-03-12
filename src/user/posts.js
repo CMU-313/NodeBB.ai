@@ -118,18 +118,31 @@ module.exports = function (User) {
 	};
 
 	User.incrementUserPostCountBy = async function (uid, value) {
-		return await incrementUserFieldAndSetBy(uid, 'postcount', 'users:postcount', value);
+		return await incrementUserFieldAndSetBy({uid, field: 'postcount', set:'users:postcount', value});
 	};
 
 	User.incrementUserReputationBy = async function (uid, value) {
-		return await incrementUserFieldAndSetBy(uid, 'reputation', 'users:reputation', value);
+		return await incrementUserFieldAndSetBy({uid, field: 'reputation', set: 'users:reputation', value});
 	};
 
 	User.incrementUserFlagsBy = async function (uid, value) {
-		return await incrementUserFieldAndSetBy(uid, 'flags', 'users:flags', value);
+		return await incrementUserFieldAndSetBy({uid, field: 'flags', set: 'users:flags', value});
 	};
 
-	async function incrementUserFieldAndSetBy(uid, field, set, value) {
+	/**
+	 * Increment a numeric field on a user record and record who performed the
+	 * change.
+	 *
+	 * @param {Object} opts
+	 * @param {string} opts.uid     – id of the user to update
+	 * @param {string} opts.field      – field name to increment
+	 * @param {number} [opts.value=1] – amount to add
+	 * @param {string} opts.set      – id of the actor doing the change
+	 */
+	async function incrementUserFieldAndSetBy({uid, field, set = 1, value} = {}) {
+		if (!uid || !field || !set) {
+			throw new Error('userId, field and set are required');
+		}
 		value = parseInt(value, 10);
 		if (!value || !field || !(parseInt(uid, 10) > 0)) {
 			return;
