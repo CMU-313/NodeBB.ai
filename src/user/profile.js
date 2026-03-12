@@ -1,3 +1,4 @@
+
 'use strict';
 
 const _ = require('lodash');
@@ -285,6 +286,7 @@ module.exports = function (User) {
 			return;
 		}
 
+		// 👉 Looking for email change logic? src/user/email.js (UserEmail.confirmByUid)
 		if (newEmail) {
 			await User.email.sendValidationEmail(uid, {
 				email: newEmail,
@@ -304,18 +306,8 @@ module.exports = function (User) {
 		const newUserslug = slugify(newUsername);
 		const now = Date.now();
 		await Promise.all([
-			updateUidMapping({
-				field: 'username',
-				uid: uid,
-				value: newUsername,
-				oldValue: userData.username,
-			}),
-			updateUidMapping({
-				field: 'userslug',
-				uid: uid,
-				value: newUserslug,
-				oldValue: userData.userslug,
-			}),
+			updateUidMapping({ field: 'username', uid, value: newUsername, oldValue: userData.username }),
+			updateUidMapping({ field: 'userslug', uid, value: newUserslug, oldValue: userData.userslug }),
 			db.sortedSetAdd(`user:${uid}:usernames`, now, `${newUsername}:${now}:${callerUid}`),
 		]);
 		await db.sortedSetRemove('username:sorted', `${userData.username.toLowerCase()}:${uid}`);
@@ -335,12 +327,7 @@ module.exports = function (User) {
 
 	async function updateFullname(uid, newFullname) {
 		const fullname = await db.getObjectField(`user:${uid}`, 'fullname');
-		await updateUidMapping({
-			field: 'fullname',
-			uid: uid,
-			value: newFullname,
-			oldValue: fullname,
-		});
+		await updateUidMapping({ field: 'fullname', uid, value: newFullname, oldValue: fullname });
 		if (newFullname !== fullname) {
 			if (fullname) {
 				await db.sortedSetRemove('fullname:sorted', `${fullname.toLowerCase()}:${uid}`);
