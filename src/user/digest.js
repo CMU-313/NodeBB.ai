@@ -82,6 +82,14 @@ Digest.getSubscribers = async function (interval) {
 	return results.subscribers;
 };
 
+const hasDigestContent = (notifications, topics, rooms) => (
+	notifications.length > 0 ||
+    topics.top.length > 0 ||
+    topics.popular.length > 0 ||
+    topics.recent.length > 0 ||
+    rooms.length > 0
+);
+
 Digest.send = async function (data) {
 	let emailsSent = 0;
 	if (!data || !data.subscribers || !data.subscribers.length) {
@@ -109,9 +117,7 @@ Digest.send = async function (data) {
 			]);
 			const unreadNotifs = notifications.filter(Boolean);
 			// If there are no notifications and no new topics and no unread chats, don't bother sending a digest
-			if (!unreadNotifs.length &&
-				!topics.top.length && !topics.popular.length && !topics.recent.length &&
-				!publicRooms.length) {
+			if (!hasDigestContent(unreadNotifs, topics, publicRooms)) {
 				return;
 			}
 
