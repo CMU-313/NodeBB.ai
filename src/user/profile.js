@@ -362,11 +362,10 @@ module.exports = function (User) {
 
 		if (isSelf && hasPassword) {
 			const correct = await User.isPasswordCorrect(data.uid, data.currentPassword, data.ip);
-			if (!correct) {
-				throw new Error('[[user:change-password-error-wrong-current]]');
-			}
-			if (data.currentPassword === data.newPassword) {
-				throw new Error('[[user:change-password-error-same-password]]');
+			if (!correct || data.currentPassword === data.newPassword) {
+				throw new Error(!correct
+					? '[[user:change-password-error-wrong-current]]'
+					: '[[user:change-password-error-same-password]]');
 			}
 		}
 
