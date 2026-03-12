@@ -407,6 +407,200 @@ describe('API', async () => {
 		});
 	});
 
+	// Helper functions to reduce complexity
+	function testPathParameters(context, method, path) {
+		if (!context[method].parameters) {
+			return;
+		}
+
+		const pathParams = (path.match(/{[\w\-_]+}?/g) || []).map(m => m.slice(1, -1));
+		const schemaParams = context[method].parameters
+			.map(p => (p.in === 'path' ? p.name : null))
+			.filter(Boolean);
+		assert(
+			pathParams.every(p => schemaParams.includes(p)),
+			`${method.toUpperCase()} ${path} has path parameters specified but not defined`
+		);
+	}
+
+	function testParameterExamples(context, method, path, mocks, headers, qs) {
+		let testPath = path;
+		let { parameters } = context[method];
+
+		if (parameters) {
+			parameters = mocks[method][path] || parameters;
+
+			parameters.forEach((param) => {
+				assert(
+					param.example !== null && param.example !== undefined,
+					`${method.toUpperCase()} ${path} has parameters without examples`
+				);
+
+				switch (param.in) {
+					case 'path':
+						testPath = testPath.replace(`{${param.name}}`, param.example);
+						break;
+					case 'header':
+						headers[param.name] = param.example;
+						break;
+					case 'query':
+						qs[param.name] = param.example;
+						break;
+				}
+			});
+		}
+
+		return testPath;
+	}
+
+	function validateRequestBody(context, method, path) {
+		if (!['post', 'put', 'delete'].includes(method) || !context[method].requestBody) {
+			return;
+		}
+
+		const failMessage = `${method.toUpperCase()} ${path} has a malformed request body`;
+		assert(context[method].requestBody, failMessage);
+		assert(context[method].requestBody.content, failMessage);
+
+		if (context[method].requestBody.content['application/json']) {
+			assert(
+				context[method].requestBody.content['application/json'].schema,
+				failMessage
+			);
+			assert(
+				context[method].requestBody.content['application/json'].schema.properties,
+				failMessage
+			);
+		} else if (context[method].requestBody.content['multipart/form-data']) {
+			assert(
+				context[method].requestBody.content['multipart/form-data'].schema,
+				failMessage
+			);
+			assert(
+				context[method].requestBody.content['multipart/form-data'].schema.properties,
+				failMessage
+			);
+		}
+	}
+
+	async function performRequest(opts) {
+		const {
+			url, headers, qs, context, method, path,
+			jar, csrfToken, unauthenticatedRoutes, pathLib,
+		} = opts;
+
+		let result;
+		let body = {};
+		let type = 'json';
+
+		if (
+			context[method].requestBody &&
+			context[method].requestBody.required !== false &&
+			context[method].requestBody.content['application/json']
+		) {
+			body = buildBody(
+				context[method].requestBody.content['application/json'].schema.properties
+			);
+		} else if (
+			context[method].requestBody &&
+			context[method].requestBody.content['multipart/form-data']
+		) {
+			type = 'form';
+		}
+
+		try {
+			if (type === 'json') {
+				const searchParams = new URLSearchParams(qs);
+				result = await request[method](`${url}?${searchParams}`, {
+					jar: !unauthenticatedRoutes.includes(path) ? jar : undefined,
+					maxRedirect: 0,
+					redirect: 'manual',
+					headers,
+					body,
+				});
+			} else {
+				result = await helpers.uploadFile(
+					url,
+					pathLib.join(__dirname, './files/test.png'),
+					{},
+					jar,
+					csrfToken
+				);
+			}
+		} catch (e) {
+			assert(!e, `${method.toUpperCase()} ${path} errored with: ${e.message}`);
+		}
+
+		return result;
+	}
+
+	function checkStatusCode(result, context, method, path) {
+		const { responses } = context[method];
+		assert(
+			responses.hasOwnProperty('418') ||
+				Object.keys(responses).includes(String(result.response.statusCode)),
+			`${method.toUpperCase()} ${path} sent back unexpected HTTP status code: ${result.response.statusCode}`
+		);
+	}
+
+	function checkResponseBody(result, context, method, path, compareFn) {
+		const http302 = context[method].responses['302'];
+		if (http302 && result.response.statusCode === 302) {
+			const expectedHeaders = Object.keys(http302.headers).reduce((memo, name) => {
+				const value = http302.headers[name].schema.example;
+				memo[name] = value.startsWith(nconf.get('relative_path')) ?
+					value :
+					nconf.get('relative_path') + value;
+				return memo;
+			}, {});
+
+			for (const header of Object.keys(expectedHeaders)) {
+				assert(result.response.headers[header.toLowerCase()]);
+				assert.strictEqual(
+					result.response.headers[header.toLowerCase()],
+					expectedHeaders[header]
+				);
+			}
+			return;
+		}
+
+		if (result.response.statusCode === 400 && context[method].responses['400']) {
+			return;
+		}
+
+		const http200 = context[method].responses['200'];
+		if (!http200) return;
+
+		assert.strictEqual(
+			result.response.statusCode,
+			200,
+			`HTTP 200 expected (path: ${method} ${path}`
+		);
+
+		const hasJSON = http200.content && http200.content['application/json'];
+		if (hasJSON) {
+			const schema = context[method].responses['200'].content['application/json']
+				.schema;
+			compareFn(schema, result.body, method, path, 'root');
+		}
+	}
+
+	function maybeRelogin(method, path) {
+		const reloginPaths = [
+			'GET /api/user/{userslug}/edit/email',
+			'PUT /users/{uid}/password',
+			'DELETE /users/{uid}/sessions/{uuid}',
+		];
+		return reloginPaths.includes(`${method.toUpperCase()} ${path}`);
+	}
+
+	function buildBody(schema) {
+		return Object.keys(schema).reduce((memo, cur) => {
+			memo[cur] = schema[cur].example;
+			return memo;
+		}, {});
+	}
+
 	generateTests(readApi, Object.keys(readApi.paths));
 	generateTests(writeApi, Object.keys(writeApi.paths), writeApi.servers[0].url);
 
@@ -593,13 +787,6 @@ describe('API', async () => {
 				});
 			});
 		});
-	}
-
-	function buildBody(schema) {
-		return Object.keys(schema).reduce((memo, cur) => {
-			memo[cur] = schema[cur].example;
-			return memo;
-		}, {});
 	}
 
 	function compare(schema, response, method, path, context) {
