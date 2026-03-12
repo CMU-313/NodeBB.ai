@@ -31,9 +31,10 @@ module.exports = function (User) {
 	};
 
 	async function isReady(uid, cid, field) {
-		if (activitypub.helpers.isUri(uid) || parseInt(uid, 10) === 0) {
+		if (shouldSkipCheck(uid)) {
 			return;
 		}
+
 		const [userData, isAdminOrMod, isMemberOfExempt] = await Promise.all([
 			User.getUserFields(uid, ['uid', 'mutedUntil', 'joindate', 'email', 'reputation'].concat([field])),
 			privileges.categories.isAdminOrMod(cid, uid),
@@ -58,29 +59,46 @@ module.exports = function (User) {
 			isAdminOrMod,
 			isMemberOfExempt,
 		});
+
 		if (shouldIgnoreDelays) {
 			return;
 		}
 
 		const now = Date.now();
+		const lasttime = userData[field] || 0;
+
+		checkInitialPostDelay(now, userData);
+		checkNewbiePostDelay(now, lasttime, userData, isMemberOfExempt);
+		checkRegularPostDelay(now, lasttime);
+	}
+
+	function shouldSkipCheck(uid) {
+		return activitypub.helpers.isUri(uid) || parseInt(uid, 10) === 0;
+	}
+
+	function checkInitialPostDelay(now, userData) {
 		if (now - userData.joindate < meta.config.initialPostDelay * 1000) {
 			throw new Error(`[[error:user-too-new, ${meta.config.initialPostDelay}]]`);
 		}
+	}
 
-		const lasttime = userData[field] || 0;
-
+	function checkNewbiePostDelay(now, lasttime, userData, isMemberOfExempt) {
 		if (
 			!isMemberOfExempt &&
 			meta.config.newbiePostDelay > 0 &&
 			meta.config.newbieReputationThreshold > userData.reputation &&
 			now - lasttime < meta.config.newbiePostDelay * 1000
 		) {
-			if (meta.config.newbiewPostDelay % 60 === 0) {
+			if (meta.config.newbiePostDelay % 60 === 0) {
 				throw new Error(`[[error:too-many-posts-newbie-minutes, ${Math.floor(meta.config.newbiePostDelay / 60)}, ${meta.config.newbieReputationThreshold}]]`);
-			} else {
-				throw new Error(`[[error:too-many-posts-newbie, ${meta.config.newbiePostDelay}, ${meta.config.newbieReputationThreshold}]]`);
 			}
-		} else if (now - lasttime < meta.config.postDelay * 1000) {
+
+			throw new Error(`[[error:too-many-posts-newbie, ${meta.config.newbiePostDelay}, ${meta.config.newbieReputationThreshold}]]`);
+		}
+	}
+
+	function checkRegularPostDelay(now, lasttime) {
+		if (now - lasttime < meta.config.postDelay * 1000) {
 			throw new Error(`[[error:too-many-posts, ${meta.config.postDelay}]]`);
 		}
 	}
@@ -108,10 +126,17 @@ module.exports = function (User) {
 		uids = Array.isArray(uids) ? uids : [uids];
 		const exists = await User.exists(uids);
 		uids = uids.filter((uid, index) => exists[index]);
+
 		if (uids.length) {
 			const counts = await db.sortedSetsCard(uids.map(uid => `uid:${uid}:posts`));
+
 			await Promise.all([
-				db.setObjectBulk(uids.map((uid, index) => ([`user${activitypub.helpers.isUri(uid) ? 'Remote' : ''}:${uid}`, { postcount: counts[index] }]))),
+				db.setObjectBulk(
+					uids.map((uid, index) => ([
+						`user${activitypub.helpers.isUri(uid) ? 'Remote' : ''}:${uid}`,
+						{ postcount: counts[index] },
+					]))
+				),
 				db.sortedSetAdd('users:postcount', counts, uids),
 			]);
 		}
@@ -131,15 +156,19 @@ module.exports = function (User) {
 
 	async function incrementUserFieldAndSetBy(uid, field, set, value) {
 		value = parseInt(value, 10);
+
 		if (!value || !field || !(parseInt(uid, 10) > 0)) {
 			return;
 		}
+
 		const exists = await User.exists(uid);
 		if (!exists) {
 			return;
 		}
+
 		const newValue = await User.incrementUserFieldBy(uid, field, value);
 		await db.sortedSetAdd(set, newValue, uid);
+
 		return newValue;
 	}
 
