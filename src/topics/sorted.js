@@ -281,13 +281,8 @@ module.exports = function (Topics) {
 		return true;
 	}
 
-	async function filterTids(tids, params) {
-		const { filter, uid } = params;
-
-		tids = await applyTidFilter(tids, filter, uid);
-		tids = await privileges.topics.filterTids('topics:read', tids, uid);
-
-		const topicData = await Topics.getTopicsFields(tids, ['uid', 'tid', 'cid', 'tags']);
+	async function filterByVisibility(topicData, params) {
+		const { uid } = params;
 		const topicCids = _.uniq(topicData.map(topic => topic.cid)).filter(Boolean);
 
 		const [ignoredCids, filtered] = await Promise.all([
@@ -299,9 +294,19 @@ module.exports = function (Topics) {
 		const cids = params.cids && params.cids.map(String);
 		const { tags } = params;
 
-		tids = filtered
+		return filtered
 			.filter(t => isTopicVisible(t, isCidIgnored, cids, tags))
 			.map(t => t.tid);
+	}
+
+	async function filterTids(tids, params) {
+		const { filter, uid } = params;
+
+		tids = await applyTidFilter(tids, filter, uid);
+		tids = await privileges.topics.filterTids('topics:read', tids, uid);
+
+		const topicData = await Topics.getTopicsFields(tids, ['uid', 'tid', 'cid', 'tags']);
+		tids = await filterByVisibility(topicData, params);
 
 		const result = await plugins.hooks.fire('filter:topics.filterSortedTids', { tids: tids, params: params });
 		return result.tids;
