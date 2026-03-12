@@ -118,52 +118,40 @@ module.exports = function (User) {
 	};
 
 	User.incrementUserPostCountBy = async function (uid, value) {
-		return await incrementUserFieldAndSetBy(uid, 'postcount', 'users:postcount', value);
+		return await incrementUserFieldAndSetBy({uid, field: 'postcount', set:'users:postcount', value});
 	};
 
 	User.incrementUserReputationBy = async function (uid, value) {
-		return await incrementUserFieldAndSetBy(uid, 'reputation', 'users:reputation', value);
+		return await incrementUserFieldAndSetBy({uid, field: 'reputation', set: 'users:reputation', value});
 	};
 
 	User.incrementUserFlagsBy = async function (uid, value) {
-		return await incrementUserFieldAndSetBy(uid, 'flags', 'users:flags', value);
+		return await incrementUserFieldAndSetBy({uid, field: 'flags', set: 'users:flags', value});
 	};
 
-	User.incrementUserPostCountBy = async (uid, value) => incrementUserFieldAndSetBy({ 
-		uid, 
-		value, 
-		field: 'postcount', 
-		set: 'users:postcount', 
-	});
-
-	User.incrementUserReputationBy = async (uid, value) => incrementUserFieldAndSetBy({ 
-		uid, 
-		value, 
-		field: 'reputation', 
-		set: 'users:reputation' ,
-	});
-
-	User.incrementUserFlagsBy = async (uid, value) => incrementUserFieldAndSetBy({ 
-		uid, 
-		value, 
-		field: 'flags', 
-		set: 'users:flags' ,
-	});
-
-	async function incrementUserFieldAndSetBy({ uid, field, set, value }) {
-		const parsedValue = parseInt(value, 10);
-		const parsedUid = parseInt(uid, 10);
-		
-		if (!parsedValue || !field || !(parsedUid > 0)) {
+	/**
+	 * Increment a numeric field on a user record and record who performed the
+	 * change.
+	 *
+	 * @param {Object} opts
+	 * @param {string} opts.uid     – id of the user to update
+	 * @param {string} opts.field      – field name to increment
+	 * @param {number} [opts.value=1] – amount to add
+	 * @param {string} opts.set      – id of the actor doing the change
+	 */
+	async function incrementUserFieldAndSetBy({uid, field, set = 1, value} = {}) {
+		if (!uid || !field || !set) {
+			throw new Error('userId, field and set are required');
+		}
+		value = parseInt(value, 10);
+		if (!value || !field || !(parseInt(uid, 10) > 0)) {
 			return;
 		}
-		
 		const exists = await User.exists(uid);
 		if (!exists) {
 			return;
 		}
-
-		const newValue = await User.incrementUserFieldBy(uid, field, parsedValue);
+		const newValue = await User.incrementUserFieldBy(uid, field, value);
 		await db.sortedSetAdd(set, newValue, uid);
 		return newValue;
 	}
