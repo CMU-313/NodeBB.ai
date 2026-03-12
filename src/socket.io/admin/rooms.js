@@ -15,12 +15,9 @@ SocketRooms.getTotalGuestCount = async function () {
 	return s.length;
 };
 
-SocketRooms.getAll = async function () {
-	const sockets = await io.server.fetchSockets();
-
+function initTotals() {
 	totals.onlineGuestCount = 0;
 	totals.onlineRegisteredCount = 0;
-	totals.socketCount = sockets.length;
 	totals.topTenTopics = [];
 	totals.users = {
 		categories: 0,
@@ -29,46 +26,66 @@ SocketRooms.getAll = async function () {
 		topics: 0,
 		category: 0,
 	};
-	const userRooms = {};
-	const topicData = {};
+}
+
+const roomHandlers = {
+	online_guests: state => { state.totals.onlineGuestCount += 1; },
+	categories: state => { state.totals.users.categories += 1; },
+	recent_topics: state => { state.totals.users.recent += 1; },
+	unread_topics: state => { state.totals.users.unread += 1; },
+};
+
+function handleTopicRoom(key, state) {
+	const tid = key.match(/^topic_(\d+)/);
+	if (tid) {
+		state.totals.users.topics += 1;
+		state.topicData[tid[1]] = state.topicData[tid[1]] || { count: 0 };
+		state.topicData[tid[1]].count += 1;
+	}
+}
+
+function categorizeRoom(key, state) {
+	if (roomHandlers[key]) {
+		roomHandlers[key](state);
+	} else if (key.startsWith('uid_')) {
+		state.userRooms[key] = 1;
+	} else if (key.startsWith('category_')) {
+		state.totals.users.category += 1;
+	} else {
+		handleTopicRoom(key, state);
+	}
+}
+
+function countSocketRooms(sockets) {
+	const state = { totals, userRooms: {}, topicData: {} };
 	for (const s of sockets) {
 		for (const key of s.rooms) {
-			if (key === 'online_guests') {
-				totals.onlineGuestCount += 1;
-			} else if (key === 'categories') {
-				totals.users.categories += 1;
-			} else if (key === 'recent_topics') {
-				totals.users.recent += 1;
-			} else if (key === 'unread_topics') {
-				totals.users.unread += 1;
-			} else if (key.startsWith('uid_')) {
-				userRooms[key] = 1;
-			} else if (key.startsWith('category_')) {
-				totals.users.category += 1;
-			} else {
-				const tid = key.match(/^topic_(\d+)/);
-				if (tid) {
-					totals.users.topics += 1;
-					topicData[tid[1]] = topicData[tid[1]] || { count: 0 };
-					topicData[tid[1]].count += 1;
-				}
-			}
+			categorizeRoom(key, state);
 		}
 	}
-	totals.onlineRegisteredCount = Object.keys(userRooms).length;
+	return { userRooms: state.userRooms, topicData: state.topicData };
+}
 
-	let topTenTopics = [];
-	Object.keys(topicData).forEach((tid) => {
-		topTenTopics.push({ tid: tid, count: topicData[tid].count });
-	});
+async function buildTopTenTopics(topicData) {
+	let topTenTopics = Object.keys(topicData).map(tid => ({ tid, count: topicData[tid].count }));
 	topTenTopics = topTenTopics.sort((a, b) => b.count - a.count).slice(0, 10);
 	const topTenTids = topTenTopics.map(topic => topic.tid);
-
 	const titles = await topics.getTopicsFields(topTenTids, ['title']);
-	totals.topTenTopics = topTenTopics.map((topic, index) => {
+	return topTenTopics.map((topic, index) => {
 		topic.title = titles[index].title;
 		return topic;
 	});
+}
+
+SocketRooms.getAll = async function () {
+	const sockets = await io.server.fetchSockets();
+
+	initTotals();
+	totals.socketCount = sockets.length;
+
+	const { userRooms, topicData } = countSocketRooms(sockets);
+	totals.onlineRegisteredCount = Object.keys(userRooms).length;
+	totals.topTenTopics = await buildTopTenTopics(topicData);
 
 	return totals;
 };
@@ -86,6 +103,27 @@ SocketRooms.getOnlineUserCount = function (io) {
 
 	return count;
 };
+
+function collectLocalRoomStats(io, Sockets, socketData) {
+	socketData.onlineGuestCount = Sockets.getCountInRoom('online_guests');
+	socketData.onlineRegisteredCount = SocketRooms.getOnlineUserCount(io);
+	socketData.socketCount = io.sockets.sockets.size;
+	socketData.users.categories = Sockets.getCountInRoom('categories');
+	socketData.users.recent = Sockets.getCountInRoom('recent_topics');
+	socketData.users.unread = Sockets.getCountInRoom('unread_topics');
+
+	const topTenTopics = [];
+	for (const [room, clients] of io.sockets.adapter.rooms) {
+		const tid = room.match(/^topic_(\d+)/);
+		if (tid) {
+			socketData.users.topics += clients.size;
+			topTenTopics.push({ tid: tid[1], count: clients.size });
+		} else if (room.match(/^category/)) {
+			socketData.users.category += clients.size;
+		}
+	}
+	socketData.topics = topTenTopics.sort((a, b) => b.count - a.count).slice(0, 10);
+}
 
 SocketRooms.getLocalStats = function () {
 	const Sockets = require('../index');
@@ -107,28 +145,7 @@ SocketRooms.getLocalStats = function () {
 	};
 
 	if (io && io.sockets) {
-		socketData.onlineGuestCount = Sockets.getCountInRoom('online_guests');
-		socketData.onlineRegisteredCount = SocketRooms.getOnlineUserCount(io);
-		socketData.socketCount = io.sockets.sockets.size;
-		socketData.users.categories = Sockets.getCountInRoom('categories');
-		socketData.users.recent = Sockets.getCountInRoom('recent_topics');
-		socketData.users.unread = Sockets.getCountInRoom('unread_topics');
-
-		let topTenTopics = [];
-		let tid;
-
-		for (const [room, clients] of io.sockets.adapter.rooms) {
-			tid = room.match(/^topic_(\d+)/);
-			if (tid) {
-				socketData.users.topics += clients.size;
-				topTenTopics.push({ tid: tid[1], count: clients.size });
-			} else if (room.match(/^category/)) {
-				socketData.users.category += clients.size;
-			}
-		}
-
-		topTenTopics = topTenTopics.sort((a, b) => b.count - a.count).slice(0, 10);
-		socketData.topics = topTenTopics;
+		collectLocalRoomStats(io, Sockets, socketData);
 	}
 
 	return socketData;
