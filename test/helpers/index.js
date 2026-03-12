@@ -172,6 +172,7 @@ helpers.copyFile = function (source, target, callback) {
 };
 
 helpers.invite = async function (options) {
+	// support legacy positional arguments for backwards compatibility
 	if (arguments.length > 1 || typeof options !== 'object' || !options || !options.uid) {
 		const [data, uid, jar, csrf_token] = arguments;
 		options = {data, uid, jar, csrf_token};
@@ -187,6 +188,7 @@ helpers.invite = async function (options) {
 };
 
 helpers.createFolder = async function (options) {
+	// support legacy positional arguments for backwards compatibility
 	if (arguments.length > 1 || typeof options !== 'object' || !options || !options.folderName) {
 		const [path, folderName, jar, csrf_token] = arguments;
 		options = {path, folderName, jar, csrf_token};
