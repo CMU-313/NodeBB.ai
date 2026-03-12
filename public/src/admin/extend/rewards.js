@@ -1,6 +1,5 @@
 'use strict';
 
-
 define('admin/extend/rewards', [
 	'alerts',
 	'jquery-ui/widgets/sortable',
@@ -78,39 +77,58 @@ define('admin/extend/rewards', [
 		}
 	}
 
+	function getSelectedReward(selectedRid) {
+		return available.find(reward => reward.rid === selectedRid);
+	}
+
+	function updateRewardParent(parent, reward) {
+		parent.attr('data-rid', reward.rid);
+	}
+
+	function buildSelectInput(input) {
+		let html = `<select class="form-select form-select-sm" name="${input.name}" >`;
+		input.values.forEach(function (value) {
+			html += `<option value="${value.value}">${value.name}</option>`;
+		});
+		html += '</select>';
+		return html;
+	}
+
+	function buildTextInput(input) {
+		return `<input type="text" class="form-control form-control-sm" name="${input.name}"  />`;
+	}
+
+	function buildInputControl(input) {
+		switch (input.type) {
+			case 'select':
+				return buildSelectInput(input);
+			case 'text':
+				return buildTextInput(input);
+			default:
+				return '';
+		}
+	}
+
+	function buildInputHtml(input) {
+		return `<label class="form-label text-nowrap" for="${input.name}">${input.label}<br />${buildInputControl(input)}</label>`;
+	}
+
+	function renderRewardInputs(inputs) {
+		return inputs.map(buildInputHtml).join('');
+	}
+
 	function selectReward(el) {
 		const parent = el.parents('[data-rid]');
 		const div = parent.find('.inputs');
-		let inputs;
-		let html = '';
+		const selectedRid = el.attr('data-selected');
+		const selectedReward = getSelectedReward(selectedRid);
 
-		const selectedReward = available.find(reward => reward.rid === el.attr('data-selected'));
-		if (selectedReward) {
-			inputs = selectedReward.inputs;
-			parent.attr('data-rid', selectedReward.rid);
+		if (!selectedReward || !selectedReward.inputs) {
+			return alerts.error('[[admin/extend/rewards:alert.no-inputs-found]] ' + selectedRid);
 		}
 
-		if (!inputs) {
-			return alerts.error('[[admin/extend/rewards:alert.no-inputs-found]] ' + el.attr('data-selected'));
-		}
-
-		inputs.forEach(function (input) {
-			html += `<label class="form-label text-nowrap" for="${input.name}">${input.label}<br />`;
-			switch (input.type) {
-				case 'select':
-					html += `<select class="form-select form-select-sm" name="${input.name}" >`;
-					input.values.forEach(function (value) {
-						html += `<option value="${value.value}">${value.name}</option>`;
-					});
-					break;
-				case 'text':
-					html += `<input type="text" class="form-control form-control-sm" name="${input.name}"  />`;
-					break;
-			}
-			html += '</label>';
-		});
-
-		div.html(html);
+		updateRewardParent(parent, selectedReward);
+		div.html(renderRewardInputs(selectedReward.inputs));
 	}
 
 	function populateInputs() {
@@ -179,7 +197,6 @@ define('admin/extend/rewards', [
 				saveBtn.classList.toggle('saved', false);
 			}, 5000);
 
-			// newly added rewards are missing data-id, update to prevent rewards getting duplicated
 			$('#active li').each(function (index) {
 				if (!$(this).attr('data-id')) {
 					$(this).attr('data-id', result[index].id);
