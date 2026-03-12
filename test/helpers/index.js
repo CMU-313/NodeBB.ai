@@ -164,9 +164,9 @@ helpers.copyFile = function (source, target, callback) {
 	}
 };
 
-helpers.invite = async function (data, uid, jar, csrf_token) {
+helpers.invite = async function ({ data, uid, jar, csrf_token }) {
 	return await request.post(`${nconf.get('url')}/api/v3/users/${uid}/invites`, {
-		jar: jar,
+		jar,
 		body: data,
 		headers: {
 			'x-csrf-token': csrf_token,
