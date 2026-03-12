@@ -31,7 +31,7 @@ describe('Messaging Library', () => {
 
 	let chatMessageDelay;
 
-	const callv3API = async (method, path, body, user) => {
+	const callv3API = async ({ method, path, body, user }) => {
 		const options = {
 			body,
 			jar: mocks.users[user].jar,
@@ -45,7 +45,7 @@ describe('Messaging Library', () => {
 
 		return request[method](`${nconf.get('url')}/api/v3${path}`, options);
 	};
-
+	
 	before(async () => {
 		// Create 3 users: 1 admin, 2 regular
 		({
