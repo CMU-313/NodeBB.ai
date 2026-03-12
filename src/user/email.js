@@ -102,19 +102,7 @@ UserEmail.canSendValidation = async (uid, email) => {
 	return (ttl || Date.now()) + interval < max;
 };
 
-UserEmail.sendValidationEmail = async function (uid, options) {
-	/*
-	 * Options:
-	 * - email, overrides email retrieval
-	 * - force, sends email even if it is too soon to send another
-	 * - template, changes the template used for email sending
-	 */
-
-	if (meta.config.sendValidationEmail !== 1) {
-		winston.verbose(`[user/email] Validation email for uid ${uid} not sent due to config settings`);
-		return;
-	}
-
+UserEmail._normalizeOptions = async function (uid, options) {
 	options = options || {};
 
 	// Fallback behaviour (email passed in as second argument)
@@ -128,17 +116,11 @@ UserEmail.sendValidationEmail = async function (uid, options) {
 	if (!options.email || !options.email.length) {
 		options.email = await user.getUserField(uid, 'email');
 	}
-	if (!options.email) {
-		winston.warn(`[user/email] No email found for uid ${uid}`);
-		return;
-	}
 
-	const { emailConfirmInterval, emailConfirmExpiry } = meta.config;
-	if (!options.force && !await UserEmail.canSendValidation(uid, options.email)) {
-		throw new Error(`[[error:confirm-email-already-sent, ${emailConfirmInterval}]]`);
-	}
+	return options;
+};
 
-	const confirm_code = utils.generateUUID();
+UserEmail._prepareConfirmationData = async function (uid, options, confirm_code) {
 	const confirm_link = `${nconf.get('url')}/confirm/${confirm_code}`;
 	const username = await user.getUserField(uid, 'username');
 	const data = await plugins.hooks.fire('filter:user.verify', {
@@ -152,6 +134,12 @@ UserEmail.sendValidationEmail = async function (uid, options) {
 		template: options.template || 'verify-email',
 	});
 
+	return data;
+};
+
+UserEmail._persistConfirmationData = async function (uid, options, confirm_code) {
+	const {emailConfirmExpiry} = meta.config;
+
 	await UserEmail.expireValidation(uid);
 	await db.set(`confirm:byUid:${uid}`, confirm_code);
 
@@ -160,7 +148,9 @@ UserEmail.sendValidationEmail = async function (uid, options) {
 		uid: uid,
 		expires: Date.now() + (emailConfirmExpiry * 60 * 60 * 1000),
 	});
+};
 
+UserEmail._sendEmail = async function (uid, options, data, confirm_code) {
 	winston.verbose(`[user/email] Validation email for uid ${uid} sent to ${options.email}`);
 	events.log({
 		type: 'email-confirmation-sent',
@@ -174,6 +164,39 @@ UserEmail.sendValidationEmail = async function (uid, options) {
 	} else {
 		await emailer.send(data.template, uid, data);
 	}
+};
+
+UserEmail.sendValidationEmail = async function (uid, options) {
+	/*
+	 * Options:
+	 * - email, overrides email retrieval
+	 * - force, sends email even if it is too soon to send another
+	 * - template, changes the template used for email sending
+	 */
+
+	if (meta.config.sendValidationEmail !== 1) {
+		winston.verbose(`[user/email] Validation email for uid ${uid} not sent due to config settings`);
+		return;
+	}
+
+	options = await UserEmail._normalizeOptions(uid, options);
+
+	if (!options.email) {
+		winston.warn(`[user/email] No email found for uid ${uid}`);
+		return;
+	}
+
+	const { emailConfirmInterval } = meta.config;
+	if (!options.force && !await UserEmail.canSendValidation(uid, options.email)) {
+		throw new Error(`[[error:confirm-email-already-sent, ${emailConfirmInterval}]]`);
+	}
+
+	const confirm_code = utils.generateUUID();
+	const data = await UserEmail._prepareConfirmationData(uid, options, confirm_code);
+
+	await UserEmail._persistConfirmationData(uid, options, confirm_code);
+	await UserEmail._sendEmail(uid, options, data, confirm_code);
+
 	return confirm_code;
 };
 
