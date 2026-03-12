@@ -108,10 +108,11 @@ Digest.send = async function (data) {
 				getTermTopics(data.interval, userObj.uid),
 			]);
 			const unreadNotifs = notifications.filter(Boolean);
+			const hasUnreadNotifs = unreadNotifs.length > 0;
+			const hasTopicActivity = topics.top.length > 0 || topics.popular.length > 0 || topics.recent.length > 0;
+			const hasUnreadChats = publicRooms.length > 0;
 			// If there are no notifications and no new topics and no unread chats, don't bother sending a digest
-			if (!unreadNotifs.length &&
-				!topics.top.length && !topics.popular.length && !topics.recent.length &&
-				!publicRooms.length) {
+			if (!hasUnreadNotifs && !hasTopicActivity && !hasUnreadChats) {
 				return;
 			}
 
