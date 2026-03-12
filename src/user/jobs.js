@@ -7,18 +7,22 @@ const meta = require('../meta');
 
 const jobs = {};
 
+function normalizeDigestHour(digestHour) {
+	if (isNaN(digestHour)) {
+		return 17;
+	}
+
+	if (digestHour > 23 || digestHour < 0) {
+		return 0;
+	}
+
+	return digestHour;
+}
+
 module.exports = function (User) {
 	User.startJobs = function () {
 		winston.verbose('[user/jobs] (Re-)starting jobs...');
-
-		let { digestHour } = meta.config;
-
-		// Fix digest hour if invalid
-		if (isNaN(digestHour)) {
-			digestHour = 17;
-		} else if (digestHour > 23 || digestHour < 0) {
-			digestHour = 0;
-		}
+		const digestHour = normalizeDigestHour(meta.config.digestHour);
 
 		User.stopJobs();
 
@@ -36,18 +40,23 @@ module.exports = function (User) {
 		jobs[name] = new cronJob(cronString, (async () => {
 			winston.verbose(`[user/jobs] Digest job (${name}) started.`);
 			try {
-				if (name === 'digest.weekly') {
-					const counter = await db.increment('biweeklydigestcounter');
-					if (counter % 2) {
-						await User.digest.execute({ interval: 'biweek' });
-					}
-				}
-				await User.digest.execute({ interval: term });
+				await executeDigestForInterval(name, term, User);
 			} catch (err) {
 				winston.error(err.stack);
 			}
 		}), null, true);
 		winston.verbose(`[user/jobs] Starting job (${name})`);
+	}
+
+	async function executeDigestForInterval(name, term, User) {
+		if (name === 'digest.weekly') {
+			const counter = await db.increment('biweeklydigestcounter');
+			if (counter % 2) {
+				await User.digest.execute({ interval: 'biweek' });
+			}
+		}
+
+		await User.digest.execute({ interval: term });
 	}
 
 	User.stopJobs = function () {
