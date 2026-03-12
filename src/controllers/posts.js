@@ -14,44 +14,46 @@ const helpers = require('./helpers');
 const postsController = module.exports;
 
 postsController.redirectToPost = async function (req, res, next) {
-	const pid = utils.isNumber(req.params.pid) ? parseInt(req.params.pid, 10) : req.params.pid;
+	const { pid: rawPid } = req.params;
+	const pid = utils.isNumber(rawPid) ? parseInt(rawPid, 10) : rawPid;
+
 	if (!pid) {
 		return next();
 	}
 
+	const isNumericPid = utils.isNumber(pid);
+	const { activitypubEnabled } = meta.config;
+
 	// Kickstart note assertion if applicable
-	if (!utils.isNumber(pid) && req.uid && meta.config.activitypubEnabled) {
+	if (!isNumericPid && req.uid && activitypubEnabled) {
 		const exists = await posts.exists(pid);
 		if (!exists) {
 			await activitypub.notes.assert(req.uid, pid);
 		}
 	}
 
-	const [canRead, path] = await Promise.all([
-		privileges.posts.can('topics:read', pid, req.uid),
-		posts.generatePostPath(pid, req.uid),
-	]);
+	const canReadPromise = privileges.posts.can('topics:read', pid, req.uid);
+	const pathPromise = posts.generatePostPath(pid, req.uid);
+
+	const [canRead, path] = await Promise.all([canReadPromise, pathPromise]);
+
 	if (!path) {
 		return next();
 	}
+
 	if (!canRead) {
 		return helpers.notAllowed(req, res);
 	}
 
-	if (meta.config.activitypubEnabled) {
-		// Include link header for richer parsing
-		res.set('Link', `<${nconf.get('url')}/post/${req.params.pid}>; rel="alternate"; type="application/activity+json"`);
+	if (activitypubEnabled) {
+		res.set(
+			'Link',
+			`<${nconf.get('url')}/post/${rawPid}>; rel="alternate"; type="application/activity+json"`
+		);
 	}
 
 	const qs = querystring.stringify(req.query);
-	helpers.redirect(res, qs ? `${path}?${qs}` : path, true);
-};
+	const redirectPath = qs ? `${path}?${qs}` : path;
 
-postsController.getRecentPosts = async function (req, res) {
-	const page = parseInt(req.query.page, 10) || 1;
-	const postsPerPage = 20;
-	const start = Math.max(0, (page - 1) * postsPerPage);
-	const stop = start + postsPerPage - 1;
-	const data = await posts.getRecentPosts(req.uid, start, stop, req.params.term);
-	res.json(data);
+	helpers.redirect(res, redirectPath, true);
 };
