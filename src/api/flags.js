@@ -5,6 +5,20 @@ const flags = require('../flags');
 
 const flagsApi = module.exports;
 
+async function _assertNoteOwner(uid, flagId, datetime) {
+	try {
+		const note = await flags.getNote(flagId, datetime);
+		if (note.uid !== uid) {
+			throw new Error('[[error:no-privileges]]');
+		}
+	} catch (e) {
+		// It's OK if the note does not exist
+		if (e.message !== '[[error:invalid-data]]') {
+			throw e;
+		}
+	}
+}
+
 flagsApi.create = async (caller, data) => {
 	const required = ['type', 'id', 'reason'];
 	if (!required.every(prop => !!data[prop])) {
@@ -83,17 +97,7 @@ flagsApi.appendNote = async (caller, data) => {
 		throw new Error('[[error:no-privileges]]');
 	}
 	if (data.datetime && data.flagId) {
-		try {
-			const note = await flags.getNote(data.flagId, data.datetime);
-			if (note.uid !== caller.uid) {
-				throw new Error('[[error:no-privileges]]');
-			}
-		} catch (e) {
-			// Okay if not does not exist in database
-			if (e.message !== '[[error:invalid-data]]') {
-				throw e;
-			}
-		}
+		await _assertNoteOwner(caller.uid, data.flagId, data.datetime);
 	}
 	await flags.appendNote(data.flagId, caller.uid, data.note, data.datetime);
 	const [notes, history] = await Promise.all([
