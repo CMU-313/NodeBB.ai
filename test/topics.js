@@ -33,6 +33,21 @@ describe('Topic\'s', () => {
 	let csrf_token;
 	let fooUid;
 
+	function postTopicAndSetResults(done, callback) {
+		topics.post({
+			uid: topic.userId,
+			title: topic.title,
+			content: topic.content,
+			cid: topic.categoryId,
+		}, (err, result) => {
+			if (err) {
+				return done(err);
+			}
+			callback(result);
+			done();
+		});
+	}
+
 	before(async () => {
 		adminUid = await User.create({ username: 'admin', password: '123456' });
 		fooUid = await User.create({ username: 'foo' });
@@ -243,19 +258,9 @@ describe('Topic\'s', () => {
 		let newPost;
 
 		before((done) => {
-			topics.post({
-				uid: topic.userId,
-				title: topic.title,
-				content: topic.content,
-				cid: topic.categoryId,
-			}, (err, result) => {
-				if (err) {
-					return done(err);
-				}
-
+			postTopicAndSetResults(done, (result) => {
 				newTopic = result.topicData;
 				newPost = result.postData;
-				done();
 			});
 		});
 
@@ -381,19 +386,9 @@ describe('Topic\'s', () => {
 		let newPost;
 
 		before((done) => {
-			topics.post({
-				uid: topic.userId,
-				title: topic.title,
-				content: topic.content,
-				cid: topic.categoryId,
-			}, (err, result) => {
-				if (err) {
-					return done(err);
-				}
-
+			postTopicAndSetResults(done, (result) => {
 				newTopic = result.topicData;
 				newPost = result.postData;
-				done();
 			});
 		});
 
