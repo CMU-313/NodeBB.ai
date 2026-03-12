@@ -82,25 +82,33 @@ flagsApi.appendNote = async (caller, data) => {
 	if (!allowed) {
 		throw new Error('[[error:no-privileges]]');
 	}
-	if (data.datetime && data.flagId) {
-		try {
-			const note = await flags.getNote(data.flagId, data.datetime);
-			if (note.uid !== caller.uid) {
-				throw new Error('[[error:no-privileges]]');
-			}
-		} catch (e) {
-			// Okay if not does not exist in database
-			if (e.message !== '[[error:invalid-data]]') {
-				throw e;
-			}
-		}
-	}
+	
+	await flagsApi._validateNoteUpdate(caller.uid, data);
+	
 	await flags.appendNote(data.flagId, caller.uid, data.note, data.datetime);
 	const [notes, history] = await Promise.all([
 		flags.getNotes(data.flagId),
 		flags.getHistory(data.flagId),
 	]);
 	return { notes: notes, history: history };
+};
+
+flagsApi._validateNoteUpdate = async (uid, data) => {
+	if (!data.datetime || !data.flagId) {
+		return;
+	}
+	
+	try {
+		const note = await flags.getNote(data.flagId, data.datetime);
+		if (note.uid !== uid) {
+			throw new Error('[[error:no-privileges]]');
+		}
+	} catch (e) {
+		// Okay if note does not exist in database
+		if (e.message !== '[[error:invalid-data]]') {
+			throw e;
+		}
+	}
 };
 
 flagsApi.deleteNote = async (caller, data) => {
