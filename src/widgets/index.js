@@ -39,7 +39,7 @@ widgets.render = async function (uid, options) {
 	return returnData;
 };
 
-async function renderLocation(location, data, uid, options, config) {
+async function renderLocation({ location, data, uid, options, config }) {
 	const widgetsAtLocation = (data[options.template][location] || []).concat(data.global[location] || []);
 
 	if (!widgetsAtLocation.length) {
