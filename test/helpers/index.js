@@ -89,7 +89,14 @@ helpers.connectSocketIO = function (res, csrf_token) {
 	});
 };
 
-helpers.uploadFile = async function (uploadEndPoint, filePath, data, jar, csrf_token) {
+helpers.uploadFile = async function (options) {
+	// support legacy positional arguments for backwards compatibility
+	if (arguments.length > 1 || typeof options !== 'object' || !options || !options.uploadEndPoint) {
+		const [uploadEndPoint, filePath, data, jar, csrf_token] = arguments;
+		options = {uploadEndPoint, filePath, data, jar, csrf_token};
+	}
+	const {uploadEndPoint, filePath, data = {}, jar, csrf_token} = options;
+
 	const mime = require('mime');
 	const form = new FormData();
 	const file = await fs.promises.readFile(filePath);
@@ -164,9 +171,15 @@ helpers.copyFile = function (source, target, callback) {
 	}
 };
 
-helpers.invite = async function (data, uid, jar, csrf_token) {
+helpers.invite = async function (options) {
+	// support legacy positional arguments for backwards compatibility
+	if (arguments.length > 1 || typeof options !== 'object' || !options || !options.uid) {
+		const [data, uid, jar, csrf_token] = arguments;
+		options = {data, uid, jar, csrf_token};
+	}
+	const {data, uid, jar, csrf_token} = options;
 	return await request.post(`${nconf.get('url')}/api/v3/users/${uid}/invites`, {
-		jar: jar,
+		jar,
 		body: data,
 		headers: {
 			'x-csrf-token': csrf_token,
@@ -174,7 +187,13 @@ helpers.invite = async function (data, uid, jar, csrf_token) {
 	});
 };
 
-helpers.createFolder = async function (path, folderName, jar, csrf_token) {
+helpers.createFolder = async function (options) {
+	// support legacy positional arguments for backwards compatibility
+	if (arguments.length > 1 || typeof options !== 'object' || !options || !options.folderName) {
+		const [path, folderName, jar, csrf_token] = arguments;
+		options = {path, folderName, jar, csrf_token};
+	}
+	const {path, folderName, jar, csrf_token} = options;
 	return await request.put(`${nconf.get('url')}/api/v3/files/folder`, {
 		jar,
 		body: {
