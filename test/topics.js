@@ -242,21 +242,13 @@ describe('Topic\'s', () => {
 		let newTopic;
 		let newPost;
 
-		before((done) => {
-			topics.post({
+		before(async () => {
+			({ topicData: newTopic, postData: newPost } = await topics.post({
 				uid: topic.userId,
 				title: topic.title,
 				content: topic.content,
 				cid: topic.categoryId,
-			}, (err, result) => {
-				if (err) {
-					return done(err);
-				}
-
-				newTopic = result.topicData;
-				newPost = result.postData;
-				done();
-			});
+			}));
 		});
 
 		it('should create a new reply with proper parameters', (done) => {
@@ -380,23 +372,14 @@ describe('Topic\'s', () => {
 		let newTopic;
 		let newPost;
 
-		before((done) => {
-			topics.post({
+		before(async () => {
+			({ topicData: newTopic, postData: newPost } = await topics.post({
 				uid: topic.userId,
 				title: topic.title,
 				content: topic.content,
 				cid: topic.categoryId,
-			}, (err, result) => {
-				if (err) {
-					return done(err);
-				}
-
-				newTopic = result.topicData;
-				newPost = result.postData;
-				done();
-			});
+			}));
 		});
-
 
 		it('should not receive errors', (done) => {
 			topics.getTopicData(newTopic.tid, (err, topicData) => {
