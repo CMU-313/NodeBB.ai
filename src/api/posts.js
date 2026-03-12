@@ -85,7 +85,7 @@ postsAPI.getRaw = async (caller, { pid }) => {
 	return result.postData.content;
 };
 
-postsAPI.edit = async function (caller, data) {
+async function validateEditData(caller, data) {
 	if (!data || !data.pid || (meta.config.minimumPostLength !== 0 && !data.content)) {
 		throw new Error('[[error:invalid-data]]');
 	}
@@ -93,40 +93,40 @@ postsAPI.edit = async function (caller, data) {
 		throw new Error('[[error:not-logged-in]]');
 	}
 
-	// Discard content for non-local posts
 	if (!utils.isNumber(data.pid)) {
 		data.content = null;
-	} else {
-		// Trim and remove HTML (latter for composers that send in HTML, like redactor)
-		const contentLen = utils.stripHTMLTags(data.content).trim().length;
+		return;
+	}
 
-		if (meta.config.minimumPostLength !== 0 && contentLen < meta.config.minimumPostLength) {
-			throw new Error(`[[error:content-too-short, ${meta.config.minimumPostLength}]]`);
-		} else if (contentLen > meta.config.maximumPostLength) {
-			throw new Error(`[[error:content-too-long, ${meta.config.maximumPostLength}]]`);
-		}
+	const contentLen = utils.stripHTMLTags(data.content).trim().length;
+
+	if (meta.config.minimumPostLength !== 0 && contentLen < meta.config.minimumPostLength) {
+		throw new Error(`[[error:content-too-short, ${meta.config.minimumPostLength}]]`);
+	}
+
+	if (contentLen > meta.config.maximumPostLength) {
+		throw new Error(`[[error:content-too-long, ${meta.config.maximumPostLength}]]`);
 	}
 
 	if (data.title && data.title.length < meta.config.minimumTitleLength) {
 		throw new Error(`[[error:title-too-short, ${meta.config.minimumTitleLength}]]`);
-	} else if (data.title && data.title.length > meta.config.maximumTitleLength) {
+	}
+
+	if (data.title && data.title.length > meta.config.maximumTitleLength) {
 		throw new Error(`[[error:title-too-long, ${meta.config.maximumTitleLength}]]`);
-	} else if (!await posts.canUserPostContentWithLinks(caller.uid, data.content)) {
+	}
+
+	if (!await posts.canUserPostContentWithLinks(caller.uid, data.content)) {
 		throw new Error(`[[error:not-enough-reputation-to-post-links, ${meta.config['min:rep:post-links']}]]`);
 	}
+}
 
-	data.uid = caller.uid;
-	data.req = apiHelpers.buildReqObject(caller);
-	data.timestamp = parseInt(data.timestamp, 10) || Date.now();
-
-	const editResult = await posts.edit(data);
-	if (editResult.topic.isMainPost) {
-		await topics.thumbs.migrate(data.uuid, editResult.topic.tid);
-	}
+async function logEditEvents(caller, editResult) {
 	const selfPost = parseInt(caller.uid, 10) === parseInt(editResult.post.uid, 10);
+
 	if (!selfPost && editResult.post.changed) {
 		await events.log({
-			type: `post-edit`,
+			type: 'post-edit',
 			uid: caller.uid,
 			ip: caller.ip,
 			pid: editResult.post.pid,
@@ -145,18 +145,17 @@ postsAPI.edit = async function (caller, data) {
 			newTitle: validator.escape(String(editResult.topic.title)),
 		});
 	}
-	const postObj = await posts.getPostSummaryByPids([editResult.post.pid], caller.uid, { parse: false, extraFields: ['edited'] });
-	postObj.content = editResult.post.content; // re-use already parsed html
-	const returnData = { ...postObj[0], ...editResult.post };
-	returnData.topic = { ...postObj[0].topic, ...editResult.post.topic };
+}
 
+async function notifyPostEdit(caller, editResult) {
 	if (!editResult.post.deleted) {
 		websockets.in(`topic_${editResult.topic.tid}`).emit('event:post_edited', editResult);
+
 		setTimeout(() => {
-			require('.').activitypub.update.note(caller, { post: postObj[0] });
+			require('.').activitypub.update.note(caller, { post: editResult.post });
 		}, 5000);
 
-		return returnData;
+		return;
 	}
 
 	const memberData = await groups.getMembersOfGroups([
@@ -168,6 +167,35 @@ postsAPI.edit = async function (caller, data) {
 
 	const uids = _.uniq(_.flatten(memberData).concat(String(caller.uid)));
 	uids.forEach(uid => websockets.in(`uid_${uid}`).emit('event:post_edited', editResult));
+}
+
+postsAPI.edit = async function (caller, data) {
+	await validateEditData(caller, data);
+
+	data.uid = caller.uid;
+	data.req = apiHelpers.buildReqObject(caller);
+	data.timestamp = parseInt(data.timestamp, 10) || Date.now();
+
+	const editResult = await posts.edit(data);
+
+	if (editResult.topic.isMainPost) {
+		await topics.thumbs.migrate(data.uuid, editResult.topic.tid);
+	}
+
+	await logEditEvents(caller, editResult);
+
+	const postObj = await posts.getPostSummaryByPids(
+		[editResult.post.pid],
+		caller.uid,
+		{ parse: false, extraFields: ['edited'] }
+	);
+
+	postObj.content = editResult.post.content;
+
+	const returnData = { ...postObj[0], ...editResult.post };
+	returnData.topic = { ...postObj[0].topic, ...editResult.post.topic };
+
+	await notifyPostEdit(caller, editResult);
 
 	return returnData;
 };
