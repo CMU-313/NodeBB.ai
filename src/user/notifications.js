@@ -1,4 +1,3 @@
-
 'use strict';
 
 const winston = require('winston');
@@ -30,7 +29,7 @@ UserNotifications.get = async function (uid) {
 	return await plugins.hooks.fire('filter:user.notifications.get', {
 		uid,
 		read: read.filter(Boolean),
-		unread: unread,
+		unread,
 	});
 };
 
@@ -39,8 +38,8 @@ async function filterNotifications(nids, filter) {
 		return nids;
 	}
 	const keys = nids.map(nid => `notifications:${nid}`);
-	const notifications = await db.getObjectsFields(keys, ['nid', 'type']);
-	return notifications.filter(n => n && n.nid && n.type === filter).map(n => n.nid);
+	const notifObjs = await db.getObjectsFields(keys, ['nid', 'type']);
+	return notifObjs.filter(n => n && n.nid && n.type === filter).map(n => n.nid);
 }
 
 UserNotifications.getAll = async function (uid, filter) {
@@ -51,18 +50,18 @@ UserNotifications.getAll = async function (uid, filter) {
 UserNotifications.getAllWithCounts = async function (uid, filter) {
 	const nids = await getAllNids(uid);
 	const keys = nids.map(nid => `notifications:${nid}`);
-	let notifications = await db.getObjectsFields(keys, ['nid', 'type']);
+	let notifObjs = await db.getObjectsFields(keys, ['nid', 'type']);
 	const counts = {};
-	notifications.forEach((n) => {
+	notifObjs.forEach((n) => {
 		if (n && n.type) {
 			counts[n.type] = counts[n.type] || 0;
 			counts[n.type] += 1;
 		}
 	});
 	if (filter) {
-		notifications = notifications.filter(n => n && n.nid && n.type === filter);
+		notifObjs = notifObjs.filter(n => n && n.nid && n.type === filter);
 	}
-	return { counts, nids: notifications.map(n => n.nid) };
+	return { counts, nids: notifObjs.map(n => n.nid) };
 };
 
 async function getAllNids(uid) {
@@ -129,7 +128,7 @@ UserNotifications.getNotifications = async function (nids, uid) {
 	}));
 
 	const result = await plugins.hooks.fire('filter:user.notifications.getNotifications', {
-		uid: uid,
+		uid,
 		notifications: notificationData,
 	});
 	return result && result.notifications;
@@ -164,14 +163,11 @@ UserNotifications.getUnreadCount = async function (uid) {
 	const notifData = await db.getObjectsFields(keys, ['mergeId']);
 	const mergeIds = notifData.map(n => n.mergeId);
 
-	// Collapse any notifications with identical mergeIds
-	let count = mergeIds.reduce((count, mergeId, idx, arr) => {
-		// A missing (null) mergeId means that notification is counted separately.
+	let count = mergeIds.reduce((total, mergeId, idx, arr) => {
 		if (mergeId === null || idx === arr.indexOf(mergeId)) {
-			count += 1;
+			total += 1;
 		}
-
-		return count;
+		return total;
 	}, 0);
 
 	({ count } = await plugins.hooks.fire('filter:user.notifications.getCount', { uid, count }));
@@ -232,12 +228,12 @@ UserNotifications.sendWelcomeNotification = async function (uid) {
 		return;
 	}
 
-	const path = meta.config.welcomeLink ? meta.config.welcomeLink : '#';
+	const path = meta.config.welcomeLink || '#';
 	const notifObj = await notifications.create({
 		bodyShort: meta.config.welcomeNotification,
-		path: path,
+		path,
 		nid: `welcome_${uid}`,
-		from: meta.config.welcomeUid ? meta.config.welcomeUid : null,
+		from: meta.config.welcomeUid || null,
 	});
 
 	await notifications.push(notifObj, [uid]);
