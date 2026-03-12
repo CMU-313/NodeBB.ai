@@ -31,19 +31,37 @@ describe('Messaging Library', () => {
 
 	let chatMessageDelay;
 
-	const callv3API = async (method, path, body, user) => {
+	// helper for calling the v3 API; accepting either an options object or
+	// the original parameter list. this keeps the signature clean while
+	// still supporting existing call sites across the large test file.
+	const callv3API = async (methodOrOptions, path, body, user) => {
+		let method;
+		let urlPath;
+		let payload = {};
+		let uid;
+
+		if (typeof methodOrOptions === 'object' && methodOrOptions !== null && !Array.isArray(methodOrOptions)) {
+			({ method, path: urlPath, body: payload = {}, user: uid } = methodOrOptions);
+		} else {
+			// legacy style: callv3API(method, path, body, user)
+			method = methodOrOptions;
+			urlPath = path;
+			payload = body || {};
+			uid = user;
+		}
+
 		const options = {
-			body,
-			jar: mocks.users[user].jar,
+			body: payload,
+			jar: mocks.users[uid].jar,
 		};
 
 		if (method !== 'get') {
 			options.headers = {
-				'x-csrf-token': mocks.users[user].csrf,
+				'x-csrf-token': mocks.users[uid].csrf,
 			};
 		}
 
-		return request[method](`${nconf.get('url')}/api/v3${path}`, options);
+		return request[method](`${nconf.get('url')}/api/v3${urlPath}`, options);
 	};
 
 	before(async () => {
@@ -158,7 +176,7 @@ describe('Messaging Library', () => {
 		});
 
 		it('should fail to create a new chat room with invalid data', async () => {
-			const { body } = await callv3API('post', '/chats', {}, 'foo');
+			const { body } = await callv3API({ method: 'post', path: '/chats', body: {}, user: 'foo' });
 			assert.equal(body.status.message, await translator.translate('[[error:required-parameters-missing, uids]]'));
 		});
 
@@ -166,13 +184,13 @@ describe('Messaging Library', () => {
 			const oldValue = meta.config.chatMessageDelay;
 			meta.config.chatMessageDelay = 1000;
 
-			await callv3API('post', '/chats', {
+			await callv3API({ method: 'post', path: '/chats', body: {
 				uids: [mocks.users.baz.uid],
-			}, 'foo');
+			}, user: 'foo' });
 
-			const { response, body } = await callv3API('post', `/chats`, {
+			const { response, body } = await callv3API({ method: 'post', path: `/chats`, body: {
 				uids: [mocks.users.baz.uid],
-			}, 'foo');
+			}, user: 'foo' });
 
 			assert.equal(response.statusCode, 400);
 			assert.equal(body.status.code, 'bad-request');
@@ -182,9 +200,9 @@ describe('Messaging Library', () => {
 
 		it('should create a new chat room', async () => {
 			await User.setSetting(mocks.users.baz.uid, 'disableIncomingMessages', '0');
-			const { body } = await callv3API('post', `/chats`, {
+			const { body } = await callv3API({ method: 'post', path: `/chats`, body: {
 				uids: [mocks.users.baz.uid],
-			}, 'foo');
+			}, user: 'foo' });
 			await User.setSetting(mocks.users.baz.uid, 'disableIncomingMessages', '1');
 
 			roomId = body.response.roomId;
@@ -198,19 +216,19 @@ describe('Messaging Library', () => {
 			assert.strictEqual(messages[0].system, 1);
 			assert.strictEqual(messages[0].content, 'user-join');
 
-			const { response, body: body2 } = await callv3API('put', `/chats/${roomId}/messages/${messages[0].messageId}`, {
+			const { response, body: body2 } = await callv3API({ method: 'put', path: `/chats/${roomId}/messages/${messages[0].messageId}`, body: {
 				message: 'test',
-			}, 'foo');
+			}, user: 'foo' });
 			assert.strictEqual(response.statusCode, 400);
 			assert.equal(body2.status.message, await translator.translate('[[error:cant-edit-chat-message]]'));
 		});
 
 		it('should fail to add user to room with invalid data', async () => {
-			let { response, body } = await callv3API('post', `/chats/${roomId}/users`, {}, 'foo');
+			let { response, body } = await callv3API({ method: 'post', path: `/chats/${roomId}/users`, body: {}, user: 'foo' });
 			assert.strictEqual(response.statusCode, 400);
 			assert.strictEqual(body.status.message, await translator.translate('[[error:required-parameters-missing, uids]]'));
 
-			({ response, body } = await callv3API('post', `/chats/${roomId}/users`, { uids: [null] }, 'foo'));
+			({ response, body } = await callv3API({ method: 'post', path: `/chats/${roomId}/users`, body: { uids: [null] }, user: 'foo' }));
 			assert.strictEqual(response.statusCode, 400);
 			assert.strictEqual(body.status.message, await translator.translate('[[error:no-user]]'));
 		});
@@ -222,33 +240,33 @@ describe('Messaging Library', () => {
 		});
 
 		it('should get users in room', async () => {
-			const { body } = await callv3API('get', `/chats/${roomId}/users`, {}, 'foo');
+			const { body } = await callv3API({ method: 'get', path: `/chats/${roomId}/users`, body: {}, user: 'foo' });
 			assert(Array.isArray(body.response.users));
 			assert.strictEqual(body.response.users.length, 3);
 		});
 
 		it('should throw error if user is not in room', async () => {
-			const { response, body } = await callv3API('get', `/chats/${roomId}/users`, {}, 'bar');
+			const { response, body } = await callv3API({ method: 'get', path: `/chats/${roomId}/users`, body: {}, user: 'bar' });
 			assert.strictEqual(response.statusCode, 403);
 			assert.equal(body.status.message, await translator.translate('[[error:no-privileges]]'));
 		});
 
 		it('should fail to add users to room if max is reached', async () => {
 			meta.config.maximumUsersInChatRoom = 2;
-			const { response, body } = await callv3API('post', `/chats/${roomId}/users`, { uids: [mocks.users.bar.uid] }, 'foo');
+			const { response, body } = await callv3API({ method: 'post', path: `/chats/${roomId}/users`, body: { uids: [mocks.users.bar.uid] }, user: 'foo' });
 			assert.strictEqual(response.statusCode, 400);
 			assert.equal(body.status.message, await translator.translate('[[error:cant-add-more-users-to-chat-room]]'));
 			meta.config.maximumUsersInChatRoom = 0;
 		});
 
 		it('should fail to add users to room if user does not exist', async () => {
-			const { response, body } = await callv3API('post', `/chats/${roomId}/users`, { uids: [98237498234] }, 'foo');
+			const { response, body } = await callv3API({ method: 'post', path: `/chats/${roomId}/users`, body: { uids: [98237498234] }, user: 'foo' });
 			assert.strictEqual(response.statusCode, 400);
 			assert.strictEqual(body.status.message, await translator.translate('[[error:no-user]]'));
 		});
 
 		it('should fail to add self to room', async () => {
-			const { response, body } = await callv3API('post', `/chats/${roomId}/users`, { uids: [mocks.users.foo.uid] }, 'foo');
+			const { response, body } = await callv3API({ method: 'post', path: `/chats/${roomId}/users`, body: { uids: [mocks.users.foo.uid] }, user: 'foo' });
 			assert.strictEqual(response.statusCode, 400);
 			assert.strictEqual(body.status.message, await translator.translate('[[error:cant-chat-with-yourself]]'));
 		});
@@ -258,7 +276,7 @@ describe('Messaging Library', () => {
 			assert.strictEqual(response.statusCode, 400);
 			assert.strictEqual(body.status.message, await translator.translate('[[error:required-parameters-missing, uids]]'));
 
-			({ response, body } = await callv3API('delete', `/chats/${roomId}/users`, { uids: [98237423] }, 'foo'));
+			({ response, body } = await callv3API({ method: 'delete', path: `/chats/${roomId}/users`, body: { uids: [98237423] }, user: 'foo' }));
 			assert.strictEqual(response.statusCode, 400);
 			assert.strictEqual(body.status.message, await translator.translate('[[error:no-user]]'));
 		});
@@ -295,13 +313,13 @@ describe('Messaging Library', () => {
 		});
 
 		it('should change owner when owner leaves room', async () => {
-			const { body } = await callv3API('post', '/chats', {
+			const { body } = await callv3API({ method: 'post', path: '/chats', body: {
 				uids: [mocks.users.foo.uid],
-			}, 'herp');
+			}, user: 'herp' });
 
-			await callv3API('post', `/chats/${body.response.roomId}/users`, { uids: [mocks.users.baz.uid] }, 'herp');
+			await callv3API({ method: 'post', path: `/chats/${body.response.roomId}/users`, body: { uids: [mocks.users.baz.uid] }, user: 'herp' });
 
-			await callv3API('delete', `/chats/${body.response.roomId}/users/${mocks.users.herp.uid}`, {}, 'herp');
+			await callv3API({ method: 'delete', path: `/chats/${body.response.roomId}/users/${mocks.users.herp.uid}`, body: {}, user: 'herp' });
 
 			assert(await Messaging.isRoomOwner(mocks.users.foo.uid, roomId));
 		});
@@ -329,44 +347,44 @@ describe('Messaging Library', () => {
 			assert.strictEqual(response.statusCode, 400);
 			assert.strictEqual(body.status.message, await translator.translate('[[error:required-parameters-missing, uids]]'));
 
-			({ response, body } = await callv3API('delete', `/chats/${roomId}/users`, { uids: [null] }, 'foo'));
+			({ response, body } = await callv3API({ method: 'delete', path: `/chats/${roomId}/users`, body: { uids: [null] }, user: 'foo' }));
 			assert.strictEqual(response.statusCode, 400);
 			assert.strictEqual(body.status.message, await translator.translate('[[error:no-user]]'));
 		});
 
 		it('should fail to remove user from room if user does not exist', async () => {
-			const { response, body } = await callv3API('delete', `/chats/${roomId}/users`, { uids: [99] }, 'foo');
+			const { response, body } = await callv3API({ method: 'delete', path: `/chats/${roomId}/users`, body: { uids: [99] }, user: 'foo' });
 			assert.strictEqual(response.statusCode, 400);
 			assert.strictEqual(body.status.message, await translator.translate('[[error:no-user]]'));
 		});
 
 		it('should remove user from room', async () => {
-			const { response, body } = await callv3API('post', `/chats`, {
+			const { response, body } = await callv3API({ method: 'post', path: `/chats`, body: {
 				uids: [mocks.users.herp.uid],
-			}, 'foo');
+			}, user: 'foo' });
 			const { roomId } = body.response;
 			assert.strictEqual(response.statusCode, 200);
 
 			let isInRoom = await Messaging.isUserInRoom(mocks.users.herp.uid, roomId);
 			assert(isInRoom);
 
-			await callv3API('delete', `/chats/${roomId}/users`, { uids: [mocks.users.herp.uid] }, 'foo');
+			await callv3API({ method: 'delete', path: `/chats/${roomId}/users`, body: { uids: [mocks.users.herp.uid] }, user: 'foo' });
 			isInRoom = await Messaging.isUserInRoom(mocks.users.herp.uid, roomId);
 			assert(!isInRoom);
 		});
 
 		it('should fail to send a message to room with invalid data', async () => {
-			let { body } = await callv3API('post', `/chats/abc`, { message: 'test' }, 'foo');
+			let { body } = await callv3API({ method: 'post', path: `/chats/abc`, body: { message: 'test' }, user: 'foo' });
 			assert.strictEqual(body.status.message, await translator.translate('[[error:invalid-data]]'));
 
-			({ body } = await callv3API('post', `/chats/1`, {}, 'foo'));
+			({ body } = await callv3API({ method: 'post', path: `/chats/1`, body: {}, user: 'foo' }));
 			assert.strictEqual(body.status.message, await translator.translate('[[error:required-parameters-missing, message]]'));
 		});
 
 		it('should fail to send chat if content is empty', async () => {
-			const { body } = await callv3API('post', `/chats/${roomId}`, {
+			const { body } = await callv3API({ method: 'post', path: `/chats/${roomId}`, body: {
 				message: ' ',
-			}, 'foo');
+			}, user: 'foo' });
 			const { status, response } = body;
 
 			assert.deepStrictEqual(response, {});
@@ -390,7 +408,7 @@ describe('Messaging Library', () => {
 			const oldValue = meta.config.chatMessageDelay;
 			meta.config.chatMessageDelay = 1000;
 
-			await callv3API('post', `/chats/${roomId}`, { roomId: roomId, message: 'first chat message' }, 'foo');
+			await callv3API({ method: 'post', path: `/chats/${roomId}`, body: { roomId: roomId, message: 'first chat message' }, user: 'foo' });
 			const { body } = await callv3API('post', `/chats/${roomId}`, { roomId: roomId, message: 'first chat message' }, 'foo');
 			const { status } = body;
 			assert.equal(status.message, await translator.translate('[[error:too-many-messages]]'));
