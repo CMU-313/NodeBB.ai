@@ -1,4 +1,3 @@
-
 'use strict';
 
 const nconf = require('nconf');
@@ -14,6 +13,76 @@ const groups = require('../groups');
 const events = require('../events');
 
 const UserEmail = module.exports;
+
+// Helper functions for sendValidationEmail
+async function _getNormalizedOptions(uid, options) {
+	options = options || {};
+
+	// Fallback behaviour (email passed in as second argument)
+	if (typeof options === 'string') {
+		options = { email: options };
+	}
+
+	// If no email passed in (default), retrieve email from uid
+	if (!options.email || !options.email.length) {
+		options.email = await user.getUserField(uid, 'email');
+	}
+	return options;
+}
+
+async function _validateAndCheckSend(uid, options) {
+	if (meta.config.sendValidationEmail !== 1) {
+		winston.verbose(`[user/email] Validation email for uid ${uid} not sent due to config settings`);
+		return false;
+	}
+
+	if (!options.email) {
+		winston.warn(`[user/email] No email found for uid ${uid}`);
+		return false;
+	}
+
+	const { emailConfirmInterval } = meta.config;
+	if (!options.force && !await UserEmail.canSendValidation(uid, options.email)) {
+		throw new Error(`[[error:confirm-email-already-sent, ${emailConfirmInterval}]]`);
+	}
+	return true;
+}
+
+async function _createConfirmationRecord(uid, email, options) {
+	const confirm_code = utils.generateUUID();
+	const confirm_link = `${nconf.get('url')}/confirm/${confirm_code}`;
+	const username = await user.getUserField(uid, 'username');
+	const data = await plugins.hooks.fire('filter:user.verify', {
+		uid,
+		username,
+		confirm_link,
+		confirm_code,
+		email: email,
+
+		subject: options.subject || '[[email:email.verify-your-email.subject]]',
+		template: options.template || 'verify-email',
+	});
+
+	await UserEmail.expireValidation(uid);
+	await db.set(`confirm:byUid:${uid}`, confirm_code);
+
+	const { emailConfirmExpiry } = meta.config;
+	await db.setObject(`confirm:${confirm_code}`, {
+		email: email.toLowerCase(),
+		uid: uid,
+		expires: Date.now() + (emailConfirmExpiry * 60 * 60 * 1000),
+	});
+
+	return { confirm_code, data };
+}
+
+async function _sendEmailOrFireHook(uid, data) {
+	if (plugins.hooks.hasListeners('action:user.verify')) {
+		plugins.hooks.fire('action:user.verify', { uid: uid, data: data });
+	} else {
+		await emailer.send(data.template, uid, data);
+	}
+}
 
 UserEmail.exists = async function (email) {
 	const uid = await user.getUidByEmail(email.toLowerCase());
@@ -104,63 +173,25 @@ UserEmail.canSendValidation = async (uid, email) => {
 
 UserEmail.sendValidationEmail = async function (uid, options) {
 	/*
-	 * Options:
-	 * - email, overrides email retrieval
-	 * - force, sends email even if it is too soon to send another
-	 * - template, changes the template used for email sending
-	 */
+     * Options:
+     * - email, overrides email retrieval
+     * - force, sends email even if it is too soon to send another
+     * - template, changes the template used for email sending
+     */
 
-	if (meta.config.sendValidationEmail !== 1) {
-		winston.verbose(`[user/email] Validation email for uid ${uid} not sent due to config settings`);
+	// Normalize options
+	options = await _getNormalizedOptions(uid, options);
+
+	// Validate and check if sending is allowed
+	const shouldSend = await _validateAndCheckSend(uid, options);
+	if (!shouldSend) {
 		return;
 	}
 
-	options = options || {};
+	// Create confirmation record
+	const { confirm_code, data } = await _createConfirmationRecord(uid, options.email, options);
 
-	// Fallback behaviour (email passed in as second argument)
-	if (typeof options === 'string') {
-		options = {
-			email: options,
-		};
-	}
-
-	// If no email passed in (default), retrieve email from uid
-	if (!options.email || !options.email.length) {
-		options.email = await user.getUserField(uid, 'email');
-	}
-	if (!options.email) {
-		winston.warn(`[user/email] No email found for uid ${uid}`);
-		return;
-	}
-
-	const { emailConfirmInterval, emailConfirmExpiry } = meta.config;
-	if (!options.force && !await UserEmail.canSendValidation(uid, options.email)) {
-		throw new Error(`[[error:confirm-email-already-sent, ${emailConfirmInterval}]]`);
-	}
-
-	const confirm_code = utils.generateUUID();
-	const confirm_link = `${nconf.get('url')}/confirm/${confirm_code}`;
-	const username = await user.getUserField(uid, 'username');
-	const data = await plugins.hooks.fire('filter:user.verify', {
-		uid,
-		username,
-		confirm_link,
-		confirm_code,
-		email: options.email,
-
-		subject: options.subject || '[[email:email.verify-your-email.subject]]',
-		template: options.template || 'verify-email',
-	});
-
-	await UserEmail.expireValidation(uid);
-	await db.set(`confirm:byUid:${uid}`, confirm_code);
-
-	await db.setObject(`confirm:${confirm_code}`, {
-		email: options.email.toLowerCase(),
-		uid: uid,
-		expires: Date.now() + (emailConfirmExpiry * 60 * 60 * 1000),
-	});
-
+	// Log and send email
 	winston.verbose(`[user/email] Validation email for uid ${uid} sent to ${options.email}`);
 	events.log({
 		type: 'email-confirmation-sent',
@@ -169,11 +200,8 @@ UserEmail.sendValidationEmail = async function (uid, options) {
 		...options,
 	});
 
-	if (plugins.hooks.hasListeners('action:user.verify')) {
-		plugins.hooks.fire('action:user.verify', { uid: uid, data: data });
-	} else {
-		await emailer.send(data.template, uid, data);
-	}
+	await _sendEmailOrFireHook(uid, data);
+
 	return confirm_code;
 };
 
