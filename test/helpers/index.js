@@ -89,7 +89,7 @@ helpers.connectSocketIO = function (res, csrf_token) {
 	});
 };
 
-helpers.uploadFile = async function (uploadEndPoint, filePath, data, jar, csrf_token) {
+helpers.uploadFile = async function (uploadEndPoint, { filePath, data, jar, csrf_token }) {
 	const mime = require('mime');
 	const form = new FormData();
 	const file = await fs.promises.readFile(filePath);
