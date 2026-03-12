@@ -99,6 +99,31 @@ module.exports = function (Topics) {
 
 		params.cutoff = await Topics.unreadCutoff(params.uid);
 
+		// gather the initial candidates and some metadata
+		const {
+			tids: candidateTids,
+			isTopicsFollowed,
+			categoryTids,
+			userReadTimes,
+		} = await computeCandidateTopics(params);
+
+		if (!candidateTids.length) {
+			return { counts, tids: candidateTids, tidsByFilter, unreadCids };
+		}
+
+		// apply post‑fetch filtering (blocked users, privileges, etc.)
+		const filtered = await computeFilterResults(params, candidateTids, isTopicsFollowed, userReadTimes, categoryTids);
+
+		return {
+			counts: filtered.counts,
+			tids: filtered.tidsByFilter[params.filter],
+			tidsByFilter: filtered.tidsByFilter,
+			unreadCids: _.uniq(filtered.unreadCids),
+		};
+	}
+
+	// helpers to keep `getTids` cyclomatic complexity low
+	async function computeCandidateTopics(params) {
 		const [followedTids, ignoredTids, categoryTids, userScores, tids_unread] = await Promise.all([
 			getFollowedTids(params),
 			user.getIgnoredTids(params.uid, 0, -1),
@@ -113,7 +138,8 @@ module.exports = function (Topics) {
 			isTopicsFollowed[t.value] = true;
 		});
 		const unreadFollowed = await db.isSortedSetMembers(
-			`uid:${params.uid}:followed_tids`, tids_unread.map(t => t.value)
+			`uid:${params.uid}:followed_tids`,
+			tids_unread.map(t => t.value)
 		);
 
 		tids_unread.forEach((t, i) => {
@@ -125,17 +151,16 @@ module.exports = function (Topics) {
 			.concat(tids_unread.filter(t => !ignoredTids.includes(t.value)))
 			.sort((a, b) => b.score - a.score);
 
-		let tids = _.uniq(unreadTopics.map(topic => topic.value)).slice(0, 200);
+		const tids = _.uniq(unreadTopics.map(topic => topic.value)).slice(0, 200);
+		return { tids, isTopicsFollowed, categoryTids, userReadTimes };
+	}
 
-		if (!tids.length) {
-			return { counts, tids, tidsByFilter, unreadCids };
-		}
-
+	async function computeFilterResults(params, candidateTids, isTopicsFollowed, userReadTimes, categoryTids) {
 		const blockedUids = await user.blocks.list(params.uid);
 
-		tids = await filterTidsThatHaveBlockedPosts({
+		let tids = await filterTidsThatHaveBlockedPosts({
 			uid: params.uid,
-			tids: tids,
+			tids: candidateTids,
 			blockedUids: blockedUids,
 			recentTids: categoryTids,
 		});
@@ -150,6 +175,10 @@ module.exports = function (Topics) {
 
 		const filterCids = params.cid && params.cid.map(cid => utils.isNumber(cid) ? parseInt(cid, 10) : cid);
 		const filterTags = params.tag && params.tag.map(tag => String(tag));
+
+		const counts = { '': 0, new: 0, watched: 0, unreplied: 0 };
+		const tidsByFilter = { '': [], new: [], watched: [], unreplied: [] };
+		const unreadCids = [];
 
 		topicData.forEach((topic) => {
 			if (topic && topic.cid &&
@@ -181,12 +210,7 @@ module.exports = function (Topics) {
 		counts.unreplied = tidsByFilter.unreplied.length;
 		counts.new = tidsByFilter.new.length;
 
-		return {
-			counts: counts,
-			tids: tidsByFilter[params.filter],
-			tidsByFilter: tidsByFilter,
-			unreadCids: _.uniq(unreadCids),
-		};
+		return { counts, tidsByFilter, unreadCids };
 	}
 
 	async function getCategoryTids(params) {
