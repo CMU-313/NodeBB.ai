@@ -35,41 +35,51 @@ module.exports = function (User) {
 			return;
 		}
 
+		const readiness = await getReadinessContext(uid, cid, field);
+
+		if (!await shouldApplyPostingDelays(readiness)) {
+			return;
+		}
+
+		const now = Date.now();
+		const lasttime = readiness.userData[field] || 0;
+
+		checkInitialPostDelay(now, readiness.userData);
+		checkNewbiePostDelay(now, lasttime, readiness.userData, readiness.isMemberOfExempt);
+		checkRegularPostDelay(now, lasttime);
+	}
+
+	async function getReadinessContext(uid, cid, field) {
 		const [userData, isAdminOrMod, isMemberOfExempt] = await Promise.all([
 			User.getUserFields(uid, ['uid', 'mutedUntil', 'joindate', 'email', 'reputation'].concat([field])),
 			privileges.categories.isAdminOrMod(cid, uid),
 			groups.isMemberOfAny(uid, meta.config.groupsExemptFromNewUserRestrictions),
 		]);
 
-		if (!userData.uid) {
+		return { uid, cid, field, userData, isAdminOrMod, isMemberOfExempt };
+	}
+
+	async function shouldApplyPostingDelays(readiness) {
+		if (!readiness.userData.uid) {
 			throw new Error('[[error:no-user]]');
 		}
 
-		if (isAdminOrMod) {
-			return;
+		if (readiness.isAdminOrMod) {
+			return false;
 		}
 
-		await User.checkMuted(uid);
+		await User.checkMuted(readiness.uid);
 
 		const { shouldIgnoreDelays } = await plugins.hooks.fire('filter:user.posts.isReady', {
 			shouldIgnoreDelays: false,
-			user: userData,
-			cid,
-			field,
-			isAdminOrMod,
-			isMemberOfExempt,
+			user: readiness.userData,
+			cid: readiness.cid,
+			field: readiness.field,
+			isAdminOrMod: readiness.isAdminOrMod,
+			isMemberOfExempt: readiness.isMemberOfExempt,
 		});
 
-		if (shouldIgnoreDelays) {
-			return;
-		}
-
-		const now = Date.now();
-		const lasttime = userData[field] || 0;
-
-		checkInitialPostDelay(now, userData);
-		checkNewbiePostDelay(now, lasttime, userData, isMemberOfExempt);
-		checkRegularPostDelay(now, lasttime);
+		return !shouldIgnoreDelays;
 	}
 
 	function shouldSkipCheck(uid) {
