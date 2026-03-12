@@ -10,6 +10,47 @@ const utils = require('../utils');
 const plugins = require('../plugins');
 const Flags = require('../flags');
 
+async function getFlagMetadata(flags) {
+	const postFlags = flags.filter(flag => flag && flag.type === 'post');
+	const reports = await Promise.all(flags.map(flag => Flags.getReports(flag.flagId)));
+
+	flags.forEach((flag, idx) => {
+		if (flag) {
+			flag.timestamp = parseInt(flag.datetime, 10);
+			flag.timestampISO = utils.toISOString(flag.datetime);
+			flag.reports = reports[idx];
+		}
+	});
+
+	const pids = postFlags.map(flagObj => parseInt(flagObj.targetId, 10));
+	const postData = await posts.getPostsFields(pids, ['tid']);
+	const tids = postData.map(post => post.tid);
+
+	const topicData = await topics.getTopicsFields(tids, ['title']);
+	postFlags.forEach((flagObj, idx) => {
+		flagObj.pid = flagObj.targetId;
+		if (!tids[idx]) {
+			flagObj.targetPurged = true;
+		}
+		return _.extend(flagObj, topicData[idx]);
+	});
+	return flags;
+}
+
+async function formatBanMuteData(User, keys, noReasonLangKey) {
+	const data = await db.getObjects(keys);
+	const uids = data.map(d => d.fromUid);
+	const usersData = await User.getUsersFields(uids, ['uid', 'username', 'userslug', 'picture']);
+	return data.map((banObj, index) => {
+		banObj.user = usersData[index];
+		banObj.until = parseInt(banObj.expire, 10);
+		banObj.untilISO = utils.toISOString(banObj.until);
+		banObj.timestampISO = utils.toISOString(banObj.timestamp);
+		banObj.reason = validator.escape(String(banObj.reason || '')) || noReasonLangKey;
+		return banObj;
+	});
+}
+
 module.exports = function (User) {
 	User.getLatestBanInfo = async function (uid) {
 		// Simply retrieves the last record of the user's ban, even if they've been unbanned since then.
@@ -47,8 +88,8 @@ module.exports = function (User) {
 
 		[flags, bans, mutes] = await Promise.all([
 			getFlagMetadata(payload),
-			formatBanMuteData(bans, '[[user:info.banned-no-reason]]'),
-			formatBanMuteData(mutes, '[[user:info.muted-no-reason]]'),
+			formatBanMuteData(User, bans, '[[user:info.banned-no-reason]]'),
+			formatBanMuteData(User, mutes, '[[user:info.muted-no-reason]]'),
 		]);
 
 		return {
@@ -79,47 +120,6 @@ module.exports = function (User) {
 		});
 		return data;
 	};
-
-	async function getFlagMetadata(flags) {
-		const postFlags = flags.filter(flag => flag && flag.type === 'post');
-		const reports = await Promise.all(flags.map(flag => Flags.getReports(flag.flagId)));
-
-		flags.forEach((flag, idx) => {
-			if (flag) {
-				flag.timestamp = parseInt(flag.datetime, 10);
-				flag.timestampISO = utils.toISOString(flag.datetime);
-				flag.reports = reports[idx];
-			}
-		});
-
-		const pids = postFlags.map(flagObj => parseInt(flagObj.targetId, 10));
-		const postData = await posts.getPostsFields(pids, ['tid']);
-		const tids = postData.map(post => post.tid);
-
-		const topicData = await topics.getTopicsFields(tids, ['title']);
-		postFlags.forEach((flagObj, idx) => {
-			flagObj.pid = flagObj.targetId;
-			if (!tids[idx]) {
-				flagObj.targetPurged = true;
-			}
-			return _.extend(flagObj, topicData[idx]);
-		});
-		return flags;
-	}
-
-	async function formatBanMuteData(keys, noReasonLangKey) {
-		const data = await db.getObjects(keys);
-		const uids = data.map(d => d.fromUid);
-		const usersData = await User.getUsersFields(uids, ['uid', 'username', 'userslug', 'picture']);
-		return data.map((banObj, index) => {
-			banObj.user = usersData[index];
-			banObj.until = parseInt(banObj.expire, 10);
-			banObj.untilISO = utils.toISOString(banObj.until);
-			banObj.timestampISO = utils.toISOString(banObj.timestamp);
-			banObj.reason = validator.escape(String(banObj.reason || '')) || noReasonLangKey;
-			return banObj;
-		});
-	}
 
 	User.getModerationNotes = async function (uid, start, stop) {
 		const noteIds = await db.getSortedSetRevRange(`uid:${uid}:moderation:notes`, start, stop);
