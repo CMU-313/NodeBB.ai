@@ -228,9 +228,12 @@ describe('Post\'s', () => {
 			assert.strictEqual(score, -1);
 		});
 
-		it('should prevent downvoting more than total daily limit', async () => {
-			const oldValue = meta.config.downvotesPerDay;
-			meta.config.downvotesPerDay = 1;
+		const assertDownvoteLimitError = async ({
+			configKey,
+			expectedMessage,
+		}) => {
+			const oldValue = meta.config[configKey];
+			meta.config[configKey] = 1;
 			let err;
 			const p1 = await topics.reply({
 				uid: voteeUid,
@@ -241,27 +244,25 @@ describe('Post\'s', () => {
 				await apiPosts.downvote({ uid: voterUid }, { pid: p1.pid, room_id: 'topic_1' });
 			} catch (_err) {
 				err = _err;
+			} finally {
+				meta.config[configKey] = oldValue;
 			}
-			assert.equal(err.message, '[[error:too-many-downvotes-today, 1]]');
-			meta.config.downvotesPerDay = oldValue;
+
+			assert.equal(err.message, expectedMessage);
+		};
+
+		it('should prevent downvoting more than total daily limit', async () => {
+			await assertDownvoteLimitError({
+				configKey: 'downvotesPerDay',
+				expectedMessage: '[[error:too-many-downvotes-today, 1]]',
+			});
 		});
 
 		it('should prevent downvoting target user more than total daily limit', async () => {
-			const oldValue = meta.config.downvotesPerUserPerDay;
-			meta.config.downvotesPerUserPerDay = 1;
-			let err;
-			const p1 = await topics.reply({
-				uid: voteeUid,
-				tid: topicData.tid,
-				content: 'raw content',
+			await assertDownvoteLimitError({
+				configKey: 'downvotesPerUserPerDay',
+				expectedMessage: '[[error:too-many-downvotes-today-user, 1]]',
 			});
-			try {
-				await apiPosts.downvote({ uid: voterUid }, { pid: p1.pid, room_id: 'topic_1' });
-			} catch (_err) {
-				err = _err;
-			}
-			assert.equal(err.message, '[[error:too-many-downvotes-today-user, 1]]');
-			meta.config.downvotesPerUserPerDay = oldValue;
 		});
 	});
 
