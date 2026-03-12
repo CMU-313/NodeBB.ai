@@ -56,7 +56,7 @@ _mounts.globalMod = (app, middleware, controllers) => {
 	setupPageRoute(app, '/registration-queue', [], controllers.globalMods.registrationQueue);
 };
 
-_mounts.topic = (app, name, middleware, controllers) => {
+_mounts.topic = (app, name) => {
 	setupPageRoute(app, `/${name}/:topic_id/:slug/:post_index?`, [], controllers.topics.get);
 	setupPageRoute(app, `/${name}/:topic_id/:slug?`, [], controllers.topics.get);
 };
