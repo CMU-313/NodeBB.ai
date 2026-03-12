@@ -403,7 +403,7 @@ chatsAPI.getIpAddress = async (caller, { mid }) => {
 
 chatsAPI.editMessage = async (caller, { mid, roomId, message }) => {
 	await messaging.canEdit(mid, caller.uid);
-	await messaging.editMessage(caller.uid, mid, roomId, message);
+	await messaging.editMessage({ uid: caller.uid, mid, roomId, content: message });
 };
 
 chatsAPI.deleteMessage = async (caller, { mid }) => {
