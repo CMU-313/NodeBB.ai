@@ -30,14 +30,14 @@ function getFirst(batchData, sort) {
 	return selectedArray.length ? selectedArray.shift() : null;
 }
 
-function shouldContinue(item, resultLength, start, stop) {
-	if (!item) {
+function shouldContinue(state) {
+	if (!state.item) {
 		return false;
 	}
-	if (stop === -1) {
+	if (state.stop === -1) {
 		return true;
 	}
-	return resultLength < (stop - start + 1);
+	return state.resultLength < (state.stop - state.start + 1);
 }
 
 helpers.mergeBatch = function (batchData, start, stop, sort) {
@@ -49,7 +49,12 @@ helpers.mergeBatch = function (batchData, start, stop, sort) {
 		if (item) {
 			result.push(item);
 		}
-	} while (shouldContinue(item, result.length, start, stop));
+	} while (shouldContinue({
+		item,
+		resultLength: result.length,
+		start,
+		stop,
+	}));
 
 	return result;
 };
