@@ -45,7 +45,8 @@ Messaging.getMessages = async (params) => {
 		return;
 	}
 	const [mids, messageCount] = await Promise.all([
-		getMessageIds(roomId, uid, start, stop),
+		// getMessageIds(roomId, uid, start, stop)
+		getMessageIds(roomId, uid, { start, stop }),
 		db.getObjectField(`chat:room:${roomId}`, 'messageCount'),
 	]);
 	if (!mids.length) {
@@ -66,7 +67,19 @@ Messaging.getMessages = async (params) => {
 	return messageData;
 };
 
-async function getMessageIds(roomId, uid, start, stop) {
+// async function getMessageIds(roomId, uid, start, stop) {
+// 	const isPublic = await db.getObjectField(`chat:room:${roomId}`, 'public');
+// 	if (parseInt(isPublic, 10) === 1) {
+// 		return await db.getSortedSetRevRange(
+// 			`chat:room:${roomId}:mids`, start, stop,
+// 		);
+// 	}
+// 	const userjoinTimestamp = await db.sortedSetScore(`chat:room:${roomId}:uids`, uid);
+// 	return await db.getSortedSetRevRangeByScore(
+// 		`chat:room:${roomId}:mids`, start, stop - start + 1, '+inf', userjoinTimestamp
+// 	);
+// }
+async function getMessageIds(roomId, uid, { start, stop }) {
 	const isPublic = await db.getObjectField(`chat:room:${roomId}`, 'public');
 	if (parseInt(isPublic, 10) === 1) {
 		return await db.getSortedSetRevRange(
@@ -318,7 +331,8 @@ Messaging.getLatestUndeletedMessage = async (uid, roomId) => {
 
 	while (!done) {
 		/* eslint-disable no-await-in-loop */
-		mids = await getMessageIds(roomId, uid, index, index);
+		//mids = await getMessageIds(roomId, uid, index, index);
+		mids = await getMessageIds(roomId, uid, { start: index, stop: index });
 		if (mids.length) {
 			const states = await Messaging.getMessageFields(mids[0], ['deleted', 'system']);
 			done = !states.deleted && !states.system;
