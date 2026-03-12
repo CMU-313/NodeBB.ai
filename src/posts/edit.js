@@ -109,14 +109,7 @@ module.exports = function (Posts) {
 
 		const isMain = String(data.pid) === String(topicData.mainPid);
 		if (!isMain) {
-			return {
-				tid: tid,
-				cid: topicData.cid,
-				title: topicData.title,
-				isMainPost: false,
-				renamed: false,
-				tagsupdated: false,
-			};
+			return buildNonMainReturn(tid, topicData);
 		}
 
 		const newTopicData = {
@@ -126,21 +119,10 @@ module.exports = function (Posts) {
 			mainPid: data.pid,
 			timestamp: rescheduling(data, topicData) ? data.timestamp : topicData.timestamp,
 		};
-		if (title) {
-			newTopicData.title = title;
-			newTopicData.slug = `${tid}/${slugify(title) || 'topic'}`;
-		}
 
-		const tagsupdated = Array.isArray(data.tags) &&
-			!_.isEqual(data.tags, topicData.tags.map(tag => tag.value));
+		await handleTitle(newTopicData, title, tid);
 
-		if (tagsupdated) {
-			const canTag = await privileges.categories.can('topics:tag', topicData.cid, data.uid);
-			if (!canTag) {
-				throw new Error('[[error:no-privileges]]');
-			}
-			await topics.validateTags(data.tags, topicData.cid, data.uid, tid);
-		}
+		const tagsupdated = await handleTags(data, topicData, tid);
 
 		const results = await plugins.hooks.fire('filter:topic.edit', {
 			req: data.req,
@@ -153,14 +135,55 @@ module.exports = function (Posts) {
 		}
 		const tags = await topics.getTopicTagsObjects(tid);
 
-		if (rescheduling(data, topicData)) {
-			await topics.scheduled.reschedule(newTopicData);
-		}
+		await handleRescheduling(data, topicData, newTopicData);
 
 		newTopicData.tags = data.tags;
 		newTopicData.oldTitle = topicData.title;
 		const renamed = title && translator.escape(validator.escape(String(title))) !== topicData.title;
 		plugins.hooks.fire('action:topic.edit', { topic: newTopicData, uid: data.uid });
+		return buildMainReturn(tid, newTopicData, postData, title, renamed, tagsupdated, tags, topicData, data);
+	}
+
+	function buildNonMainReturn(tid, topicData) {
+		return {
+			tid: tid,
+			cid: topicData.cid,
+			title: topicData.title,
+			isMainPost: false,
+			renamed: false,
+			tagsupdated: false,
+		};
+	}
+
+	async function handleTitle(newTopicData, title, tid) {
+		if (title) {
+			newTopicData.title = title;
+			newTopicData.slug = `${tid}/${slugify(title) || 'topic'}`;
+		}
+	}
+
+	async function handleTags(data, topicData, tid) {
+		const tagsupdated = Array.isArray(data.tags) &&
+			!_.isEqual(data.tags, topicData.tags.map(tag => tag.value));
+
+		if (tagsupdated) {
+			const canTag = await privileges.categories.can('topics:tag', topicData.cid, data.uid);
+			if (!canTag) {
+				throw new Error('[[error:no-privileges]]');
+			}
+			await topics.validateTags(data.tags, topicData.cid, data.uid, tid);
+		}
+
+		return tagsupdated;
+	}
+
+	async function handleRescheduling(data, topicData, newTopicData) {
+		if (rescheduling(data, topicData)) {
+			await topics.scheduled.reschedule(newTopicData);
+		}
+	}
+
+	function buildMainReturn(tid, newTopicData, postData, title, renamed, tagsupdated, tags, topicData, data) {
 		return {
 			tid: tid,
 			cid: newTopicData.cid,
