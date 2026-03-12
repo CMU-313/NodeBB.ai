@@ -25,7 +25,6 @@ module.exports = function (User) {
 	};
 
 	User.blocks.can = async function ({ callerUid, blockerUid, blockeeUid, type }) {
-	// Guests can't block
 		if (blockerUid === 0 || blockeeUid === 0) {
 			throw new Error('[[error:cannot-block-guest]]');
 		} else if (blockerUid === blockeeUid) {
