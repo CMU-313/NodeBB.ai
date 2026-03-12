@@ -89,10 +89,69 @@ module.exports = function (Topics) {
 		return result;
 	};
 
-	async function getTids(params) {
+	function initResults() {
 		const counts = { '': 0, new: 0, watched: 0, unreplied: 0 };
 		const tidsByFilter = { '': [], new: [], watched: [], unreplied: [] };
 		const unreadCids = [];
+		return { counts, tidsByFilter, unreadCids };
+	}
+
+	function calculateCounts(counts, tidsByFilter) {
+		counts[''] = tidsByFilter[''].length;
+		counts.watched = tidsByFilter.watched.length;
+		counts.unreplied = tidsByFilter.unreplied.length;
+		counts.new = tidsByFilter.new.length;
+	}
+
+	function processTopics({
+		topicData,
+		filterCids,
+		filterTags,
+		blockedUids,
+		isTopicsFollowed,
+		userCidState,
+		userReadTimes,
+		tidsByFilter,
+		unreadCids,
+	}) {
+		topicData.forEach((topic) => {
+			if (!topic || !topic.cid) return;
+			if (blockedUids.includes(topic.uid)) return;
+
+			if (filterCids && !filterCids.includes(topic.cid)) return;
+
+			if (
+				filterTags &&
+				!filterTags.every(tag =>
+					topic.tags.find(topicTag => topicTag.value === tag)
+				)
+			) return;
+
+			if (
+				isTopicsFollowed[topic.tid] ||
+				[categories.watchStates.watching, categories.watchStates.tracking]
+					.includes(userCidState[topic.cid])
+			) {
+				tidsByFilter[''].push(topic.tid);
+				unreadCids.push(topic.cid);
+			}
+
+			if (isTopicsFollowed[topic.tid]) {
+				tidsByFilter.watched.push(topic.tid);
+			}
+
+			if (topic.postcount <= 1) {
+				tidsByFilter.unreplied.push(topic.tid);
+			}
+
+			if (!userReadTimes[topic.tid]) {
+				tidsByFilter.new.push(topic.tid);
+			}
+		});
+	}
+
+	async function getTids(params) {
+		const { counts, tidsByFilter, unreadCids } = initResults();
 		if (params.uid <= 0) {
 			return { counts, tids: [], tidsByFilter, unreadCids };
 		}
@@ -151,35 +210,19 @@ module.exports = function (Topics) {
 		const filterCids = params.cid && params.cid.map(cid => utils.isNumber(cid) ? parseInt(cid, 10) : cid);
 		const filterTags = params.tag && params.tag.map(tag => String(tag));
 
-		topicData.forEach((topic) => {
-			if (topic && topic.cid &&
-				(!filterCids || filterCids.includes(topic.cid)) &&
-				(!filterTags || filterTags.every(tag => topic.tags.find(topicTag => topicTag.value === tag))) &&
-				!blockedUids.includes(topic.uid)) {
-				if (isTopicsFollowed[topic.tid] ||
-					[categories.watchStates.watching, categories.watchStates.tracking].includes(userCidState[topic.cid])) {
-					tidsByFilter[''].push(topic.tid);
-					unreadCids.push(topic.cid);
-				}
-
-				if (isTopicsFollowed[topic.tid]) {
-					tidsByFilter.watched.push(topic.tid);
-				}
-
-				if (topic.postcount <= 1) {
-					tidsByFilter.unreplied.push(topic.tid);
-				}
-
-				if (!userReadTimes[topic.tid]) {
-					tidsByFilter.new.push(topic.tid);
-				}
-			}
+		processTopics({
+			topicData,
+			filterCids,
+			filterTags,
+			blockedUids,
+			isTopicsFollowed,
+			userCidState,
+			userReadTimes,
+			tidsByFilter,
+			unreadCids,
 		});
 
-		counts[''] = tidsByFilter[''].length;
-		counts.watched = tidsByFilter.watched.length;
-		counts.unreplied = tidsByFilter.unreplied.length;
-		counts.new = tidsByFilter.new.length;
+		calculateCounts(counts, tidsByFilter);
 
 		return {
 			counts: counts,
