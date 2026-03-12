@@ -129,16 +129,41 @@ module.exports = function (User) {
 		return await incrementUserFieldAndSetBy(uid, 'flags', 'users:flags', value);
 	};
 
-	async function incrementUserFieldAndSetBy(uid, field, set, value) {
-		value = parseInt(value, 10);
-		if (!value || !field || !(parseInt(uid, 10) > 0)) {
+	User.incrementUserPostCountBy = async (uid, value) => incrementUserFieldAndSetBy({ 
+		uid, 
+		value, 
+		field: 'postcount', 
+		set: 'users:postcount', 
+	});
+
+	User.incrementUserReputationBy = async (uid, value) => incrementUserFieldAndSetBy({ 
+		uid, 
+		value, 
+		field: 'reputation', 
+		set: 'users:reputation' ,
+	});
+
+	User.incrementUserFlagsBy = async (uid, value) => incrementUserFieldAndSetBy({ 
+		uid, 
+		value, 
+		field: 'flags', 
+		set: 'users:flags' ,
+	});
+
+	async function incrementUserFieldAndSetBy({ uid, field, set, value }) {
+		const parsedValue = parseInt(value, 10);
+		const parsedUid = parseInt(uid, 10);
+		
+		if (!parsedValue || !field || !(parsedUid > 0)) {
 			return;
 		}
+		
 		const exists = await User.exists(uid);
 		if (!exists) {
 			return;
 		}
-		const newValue = await User.incrementUserFieldBy(uid, field, value);
+
+		const newValue = await User.incrementUserFieldBy(uid, field, parsedValue);
 		await db.sortedSetAdd(set, newValue, uid);
 		return newValue;
 	}
