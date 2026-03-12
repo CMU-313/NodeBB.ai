@@ -24,8 +24,7 @@ module.exports = function (User) {
 		return isArray ? isBlocked : isBlocked[0];
 	};
 
-	User.blocks.can = async function (callerUid, blockerUid, blockeeUid, type) {
-		// Guests can't block
+	User.blocks.can = async function ({ callerUid, blockerUid, blockeeUid, type }) {
 		if (blockerUid === 0 || blockeeUid === 0) {
 			throw new Error('[[error:cannot-block-guest]]');
 		} else if (blockerUid === blockeeUid) {
@@ -38,9 +37,11 @@ module.exports = function (User) {
 			User.isAdminOrGlobalMod(callerUid),
 			User.isAdminOrGlobalMod(blockeeUid),
 		]);
+
 		if (isBlockeeAdminOrMod && type === 'block') {
 			throw new Error('[[error:cannot-block-privileged]]');
 		}
+
 		if (parseInt(callerUid, 10) !== parseInt(blockerUid, 10) && !isCallerAdminOrMod) {
 			throw new Error('[[error:no-privileges]]');
 		}
@@ -79,7 +80,8 @@ module.exports = function (User) {
 	};
 
 	User.blocks.applyChecks = async function (type, targetUid, uid) {
-		await User.blocks.can(uid, uid, targetUid);
+		await User.blocks.can(uid, uid, targetUid, type);
+		
 		const isBlock = type === 'block';
 		const is = await User.blocks.is(targetUid, uid);
 		if (is === isBlock) {
