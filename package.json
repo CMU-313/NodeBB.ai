@@ -75,6 +75,7 @@
         "file-loader": "6.2.0",
         "fs-extra": "11.3.0",
         "graceful-fs": "4.2.11",
+        "grunt-cli": "^1.5.0",
         "helmet": "7.2.0",
         "html-to-text": "9.0.5",
         "imagesloaded": "5.0.0",
